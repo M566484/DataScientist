@@ -1,0 +1,59 @@
+-- =====================================================
+-- DIM_DATE - Date Dimension
+-- =====================================================
+-- Purpose: Standard date dimension for time-based analysis
+-- Type: Conformed Dimension
+
+USE SCHEMA VETERAN_EVALUATION_DW.DIM;
+
+CREATE OR REPLACE TABLE DIM_DATE (
+    DATE_KEY INTEGER PRIMARY KEY,
+    FULL_DATE DATE NOT NULL UNIQUE,
+
+    -- Year attributes
+    YEAR_NUMBER INTEGER NOT NULL,
+    YEAR_NAME VARCHAR(4) NOT NULL,
+
+    -- Quarter attributes
+    QUARTER_NUMBER INTEGER NOT NULL,
+    QUARTER_NAME VARCHAR(6) NOT NULL,
+    YEAR_QUARTER VARCHAR(7) NOT NULL,
+
+    -- Month attributes
+    MONTH_NUMBER INTEGER NOT NULL,
+    MONTH_NAME VARCHAR(20) NOT NULL,
+    MONTH_ABBR VARCHAR(3) NOT NULL,
+    YEAR_MONTH VARCHAR(7) NOT NULL,
+
+    -- Week attributes
+    WEEK_OF_YEAR INTEGER NOT NULL,
+    WEEK_OF_MONTH INTEGER NOT NULL,
+
+    -- Day attributes
+    DAY_OF_MONTH INTEGER NOT NULL,
+    DAY_OF_YEAR INTEGER NOT NULL,
+    DAY_OF_WEEK INTEGER NOT NULL,
+    DAY_NAME VARCHAR(20) NOT NULL,
+    DAY_ABBR VARCHAR(3) NOT NULL,
+
+    -- Business day indicators
+    IS_WEEKEND BOOLEAN NOT NULL,
+    IS_WEEKDAY BOOLEAN NOT NULL,
+    IS_HOLIDAY BOOLEAN DEFAULT FALSE,
+    HOLIDAY_NAME VARCHAR(100),
+
+    -- Fiscal period (VA fiscal year starts Oct 1)
+    FISCAL_YEAR INTEGER NOT NULL,
+    FISCAL_QUARTER INTEGER NOT NULL,
+    FISCAL_MONTH INTEGER NOT NULL,
+
+    -- Metadata
+    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+)
+COMMENT = 'Date dimension table for time-based analysis. VA fiscal year starts October 1.';
+
+-- Create indexes for common queries
+CREATE INDEX IDX_DATE_FULL_DATE ON DIM_DATE(FULL_DATE);
+CREATE INDEX IDX_DATE_YEAR_MONTH ON DIM_DATE(YEAR_MONTH);
+CREATE INDEX IDX_DATE_FISCAL_YEAR ON DIM_DATE(FISCAL_YEAR);

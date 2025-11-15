@@ -1,0 +1,45 @@
+-- =====================================================
+-- DIM_APPOINTMENT - Appointment Dimension
+-- =====================================================
+-- Purpose: Appointment scheduling details
+-- SCD Type: Type 1 (degenerate dimension, can also be in fact)
+
+USE SCHEMA VETERAN_EVALUATION_DW.DIM;
+
+CREATE OR REPLACE TABLE DIM_APPOINTMENT (
+    APPOINTMENT_KEY INTEGER AUTOINCREMENT PRIMARY KEY,
+    APPOINTMENT_ID VARCHAR(50) NOT NULL UNIQUE,  -- Business key
+
+    -- Appointment Type
+    APPOINTMENT_TYPE VARCHAR(50),  -- In-Person, Telehealth, Phone
+    VISIT_TYPE VARCHAR(50),  -- C&P Exam, Follow-up, Consultation
+
+    -- Scheduling Information
+    SCHEDULED_DURATION_MINUTES INTEGER,
+    BUFFER_TIME_MINUTES INTEGER DEFAULT 0,
+
+    -- Status
+    APPOINTMENT_STATUS VARCHAR(50),  -- Scheduled, Confirmed, Completed, Cancelled, No-Show
+    CANCELLATION_REASON VARCHAR(255),
+    RESCHEDULED_FLAG BOOLEAN DEFAULT FALSE,
+    RESCHEDULED_COUNT INTEGER DEFAULT 0,
+
+    -- Reminders
+    REMINDER_SENT_FLAG BOOLEAN DEFAULT FALSE,
+    REMINDER_SENT_DATE DATE,
+    CONFIRMATION_RECEIVED_FLAG BOOLEAN DEFAULT FALSE,
+
+    -- Wait Time
+    DAYS_UNTIL_APPOINTMENT INTEGER,
+    SCHEDULING_TIER VARCHAR(20),  -- Within 20 days, 21-30 days, Over 30 days
+
+    -- Metadata
+    SOURCE_SYSTEM VARCHAR(50),
+    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+)
+COMMENT = 'Type 1 dimension for appointment details';
+
+-- Create indexes
+CREATE INDEX IDX_APPOINTMENT_STATUS ON DIM_APPOINTMENT(APPOINTMENT_STATUS);
+CREATE INDEX IDX_APPOINTMENT_TYPE ON DIM_APPOINTMENT(APPOINTMENT_TYPE);
