@@ -260,9 +260,35 @@ DIM_DATE (3,650 records for 10 years)
 All FACT tables (referenced in multiple date roles)
 ```
 
-## Indexing Strategy
+## Performance Optimization Strategy
 
-- Primary Keys: All surrogate keys (auto-increment)
-- Foreign Keys: All dimension references in fact tables
-- Common Filter Columns: Status flags, IS_CURRENT, dates, facility/state
-- Clustering Keys: Consider clustering facts by date + facility for query performance
+### Snowflake-Specific Approach
+
+Snowflake does not use traditional indexes. Instead, the model uses:
+
+**1. Primary Keys** (Metadata Only)
+- All surrogate keys defined as PRIMARY KEY
+- Used for documentation and BI tool optimization
+- NOT enforced by Snowflake
+
+**2. Foreign Keys** (Metadata Only)
+- All dimension references in fact tables
+- Helps query optimizer understand relationships
+- NOT enforced by Snowflake
+
+**3. Clustering Keys** (Implemented in DDL)
+
+All fact tables include clustering keys for optimal query performance:
+
+- `FACT_EVALUATION`: `CLUSTER BY (EVALUATION_DATE_KEY, FACILITY_KEY)`
+- `FACT_CLAIM_STATUS`: `CLUSTER BY (CLAIM_KEY, RATING_DECISION_DATE_KEY)`
+- `FACT_APPOINTMENT`: `CLUSTER BY (APPOINTMENT_DATE_KEY, FACILITY_KEY)`
+- `FACT_DAILY_SNAPSHOT`: `CLUSTER BY (SNAPSHOT_DATE_KEY, FACILITY_KEY)`
+
+Clustering organizes micro-partitions for efficient data pruning during queries.
+
+**4. Automatic Optimizations**
+- Micro-partitioning (automatic)
+- Columnar storage (automatic)
+- Result caching (automatic)
+- Query optimization based on metadata (automatic)

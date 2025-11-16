@@ -560,18 +560,88 @@ Implement these checks in your ETL process:
 
 ### Performance Optimization
 
-1. **Clustering Keys**: Consider clustering fact tables by date and facility
-   ```sql
-   ALTER TABLE FACT_EVALUATION CLUSTER BY (EVALUATION_DATE_KEY, FACILITY_KEY);
-   ```
+#### Snowflake-Specific Optimizations
 
-2. **Materialized Views**: Create for frequently accessed aggregations
+Snowflake does not use traditional indexes. Instead, it uses several optimization techniques:
+
+1. **Clustering Keys** (Already Implemented)
+
+   All fact tables are pre-configured with clustering keys optimized for common query patterns:
+
+   - `FACT_EVALUATION`: Clustered by `(EVALUATION_DATE_KEY, FACILITY_KEY)`
+   - `FACT_CLAIM_STATUS`: Clustered by `(CLAIM_KEY, RATING_DECISION_DATE_KEY)`
+   - `FACT_APPOINTMENT`: Clustered by `(APPOINTMENT_DATE_KEY, FACILITY_KEY)`
+   - `FACT_DAILY_SNAPSHOT`: Clustered by `(SNAPSHOT_DATE_KEY, FACILITY_KEY)`
+
+   Clustering improves query performance by co-locating similar data in micro-partitions.
+
+2. **Automatic Micro-Partitioning**
+
+   Snowflake automatically partitions tables into micro-partitions (50-500 MB compressed).
+   The clustering keys help organize these partitions for efficient pruning during queries.
+
+3. **Primary and Foreign Keys** (Metadata Only)
+
+   The primary and foreign key constraints in the DDL are for metadata purposes only.
+   Snowflake does NOT enforce these constraints, but they help:
+   - Query optimizers understand relationships
+   - BI tools generate better queries
+   - Documentation of data relationships
+
+4. **Materialized Views** (Optional)
+
+   Create materialized views for frequently accessed aggregations:
    ```sql
    CREATE MATERIALIZED VIEW MV_MONTHLY_EVAL_SUMMARY AS
-   SELECT facility_key, evaluation_date_key, COUNT(*), AVG(duration) ...
+   SELECT
+       facility_key,
+       DATE_TRUNC('month', d.full_date) AS month,
+       COUNT(*) AS eval_count,
+       AVG(evaluation_duration_minutes) AS avg_duration
+   FROM FACT_EVALUATION fe
+   JOIN DIM_DATE d ON fe.evaluation_date_key = d.date_key
+   GROUP BY facility_key, DATE_TRUNC('month', d.full_date);
    ```
 
-3. **Incremental Loads**: Use STREAM and TASK for continuous data integration
+5. **Search Optimization Service** (Optional)
+
+   For dimension tables with high-cardinality string columns:
+   ```sql
+   ALTER TABLE DIM_VETERAN ADD SEARCH OPTIMIZATION ON EQUALITY(VETERAN_ID);
+   ALTER TABLE DIM_EVALUATOR ADD SEARCH OPTIMIZATION ON EQUALITY(EVALUATOR_ID);
+   ```
+
+6. **Incremental Loads**
+
+   Use Snowflake STREAM and TASK for continuous data integration:
+   ```sql
+   -- Create stream to track changes
+   CREATE STREAM veteran_changes ON TABLE staging.veteran_source;
+
+   -- Create task to process changes
+   CREATE TASK load_veteran_dimension
+       WAREHOUSE = ETL_WH
+       SCHEDULE = '5 MINUTE'
+   WHEN SYSTEM$STREAM_HAS_DATA('veteran_changes')
+   AS
+       -- Insert/Update logic here
+   ```
+
+7. **Result Caching**
+
+   Snowflake automatically caches query results for 24 hours. Identical queries return
+   cached results instantly at no cost.
+
+8. **Column Pruning**
+
+   Snowflake stores data in columnar format. Select only needed columns to minimize I/O:
+   ```sql
+   -- Good: Only select needed columns
+   SELECT veteran_key, evaluation_date_key, evaluation_cost_amount
+   FROM FACT_EVALUATION;
+
+   -- Avoid: SELECT * reads all columns
+   ```
 
 ---
 
