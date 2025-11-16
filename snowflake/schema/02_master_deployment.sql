@@ -24,6 +24,7 @@
 !source ../facts/03_fact_appointment.sql
 !source ../facts/04_fact_daily_snapshot.sql
 !source ../facts/05_fact_appointment_events.sql
+!source ../facts/06_fact_evaluation_qa_events.sql
 
 -- Step 4: Populate Date Dimension
 !source 01_populate_date_dimension.sql
