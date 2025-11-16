@@ -1,87 +1,88 @@
 -- =====================================================
--- DIM_EVALUATOR - Medical Evaluator Dimension
+-- dim_evaluators - Medical Evaluator Dimension
 -- =====================================================
 -- Purpose: Medical professionals and evaluators
 -- SCD Type: Type 2
+-- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.DIM;
+USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE DIM_EVALUATOR (
-    EVALUATOR_KEY INTEGER AUTOINCREMENT PRIMARY KEY,
-    EVALUATOR_ID VARCHAR(50) NOT NULL,  -- Business key (NPI, License Number)
+CREATE OR REPLACE TABLE dim_evaluators (
+    evaluator_sk INTEGER AUTOINCREMENT PRIMARY KEY,
+    evaluator_id VARCHAR(50) NOT NULL,  -- Business key (NPI, License Number)
 
     -- Personal Information
-    FIRST_NAME VARCHAR(100),
-    LAST_NAME VARCHAR(100),
-    FULL_NAME VARCHAR(255),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    full_name VARCHAR(255),
 
     -- Professional Information
-    SPECIALTY VARCHAR(100),  -- Psychiatry, Orthopedics, Neurology, etc.
-    SUB_SPECIALTY VARCHAR(100),
-    CREDENTIALS VARCHAR(100),  -- MD, DO, PhD, PsyD, etc.
-    LICENSE_NUMBER VARCHAR(50),
-    LICENSE_STATE VARCHAR(2),
-    LICENSE_EXPIRATION_DATE DATE,
-    NPI_NUMBER VARCHAR(10),  -- National Provider Identifier
+    specialty VARCHAR(100),  -- Psychiatry, Orthopedics, Neurology, etc.
+    sub_specialty VARCHAR(100),
+    credentials VARCHAR(100),  -- MD, DO, PhD, PsyD, etc.
+    license_number VARCHAR(50),
+    license_state VARCHAR(2),
+    license_expiration_date DATE,
+    npi_number VARCHAR(10),  -- National Provider Identifier
 
     -- Employment Information
-    EMPLOYER_NAME VARCHAR(255),
-    EMPLOYMENT_TYPE VARCHAR(50),  -- VA Staff, Contract, Private
-    HIRE_DATE DATE,
+    employer_name VARCHAR(255),
+    employment_type VARCHAR(50),  -- VA Staff, Contract, Private
+    hire_date DATE,
 
     -- Qualifications
-    YEARS_OF_EXPERIENCE INTEGER,
-    VA_CERTIFIED_FLAG BOOLEAN DEFAULT FALSE,
-    CERTIFICATION_DATE DATE,
-    BOARD_CERTIFIED_FLAG BOOLEAN DEFAULT FALSE,
+    years_of_experience INTEGER,
+    va_certified_flag BOOLEAN DEFAULT FALSE,
+    certification_date DATE,
+    board_certified_flag BOOLEAN DEFAULT FALSE,
 
     -- Performance Metrics
-    AVERAGE_EVALUATION_TIME_MINUTES INTEGER,
-    TOTAL_EVALUATIONS_COMPLETED INTEGER DEFAULT 0,
+    average_evaluation_time_minutes INTEGER,
+    total_evaluations_completed INTEGER DEFAULT 0,
 
     -- Status
-    ACTIVE_FLAG BOOLEAN DEFAULT TRUE,
-    TERMINATION_DATE DATE,
+    active_flag BOOLEAN DEFAULT TRUE,
+    termination_date DATE,
 
     -- SCD Type 2 attributes
-    EFFECTIVE_START_DATE TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    EFFECTIVE_END_DATE TIMESTAMP_NTZ DEFAULT TO_TIMESTAMP_NTZ('9999-12-31 23:59:59'),
-    IS_CURRENT BOOLEAN NOT NULL DEFAULT TRUE,
+    effective_start_date TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    effective_end_date TIMESTAMP_NTZ DEFAULT TO_TIMESTAMP_NTZ('9999-12-31 23:59:59'),
+    is_current BOOLEAN NOT NULL DEFAULT TRUE,
 
     -- Metadata
-    SOURCE_SYSTEM VARCHAR(50),
-    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    source_system VARCHAR(50),
+    created_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 )
 COMMENT = 'Type 2 SCD dimension for medical evaluators and professionals';
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN DIM_EVALUATOR.EVALUATOR_KEY IS 'Surrogate primary key for the evaluator dimension';
-COMMENT ON COLUMN DIM_EVALUATOR.EVALUATOR_ID IS 'Business key - Unique evaluator identifier (NPI, License Number)';
-COMMENT ON COLUMN DIM_EVALUATOR.FIRST_NAME IS 'Evaluator first name';
-COMMENT ON COLUMN DIM_EVALUATOR.LAST_NAME IS 'Evaluator last name';
-COMMENT ON COLUMN DIM_EVALUATOR.FULL_NAME IS 'Evaluator full name (concatenated)';
-COMMENT ON COLUMN DIM_EVALUATOR.SPECIALTY IS 'Medical specialty (Psychiatry, Orthopedics, Neurology, etc.)';
-COMMENT ON COLUMN DIM_EVALUATOR.SUB_SPECIALTY IS 'Sub-specialty within primary specialty';
-COMMENT ON COLUMN DIM_EVALUATOR.CREDENTIALS IS 'Professional credentials (MD, DO, PhD, PsyD, etc.)';
-COMMENT ON COLUMN DIM_EVALUATOR.LICENSE_NUMBER IS 'Medical license number';
-COMMENT ON COLUMN DIM_EVALUATOR.LICENSE_STATE IS 'State where licensed to practice';
-COMMENT ON COLUMN DIM_EVALUATOR.LICENSE_EXPIRATION_DATE IS 'License expiration date';
-COMMENT ON COLUMN DIM_EVALUATOR.NPI_NUMBER IS 'National Provider Identifier (10-digit unique ID)';
-COMMENT ON COLUMN DIM_EVALUATOR.EMPLOYER_NAME IS 'Current employer organization name';
-COMMENT ON COLUMN DIM_EVALUATOR.EMPLOYMENT_TYPE IS 'Employment type (VA Staff, Contract, Private)';
-COMMENT ON COLUMN DIM_EVALUATOR.HIRE_DATE IS 'Date hired or contracted';
-COMMENT ON COLUMN DIM_EVALUATOR.YEARS_OF_EXPERIENCE IS 'Total years of professional experience';
-COMMENT ON COLUMN DIM_EVALUATOR.VA_CERTIFIED_FLAG IS 'TRUE if VA certified to perform C&P exams';
-COMMENT ON COLUMN DIM_EVALUATOR.CERTIFICATION_DATE IS 'Date of VA certification';
-COMMENT ON COLUMN DIM_EVALUATOR.BOARD_CERTIFIED_FLAG IS 'TRUE if board certified in specialty';
-COMMENT ON COLUMN DIM_EVALUATOR.AVERAGE_EVALUATION_TIME_MINUTES IS 'Average time per evaluation in minutes';
-COMMENT ON COLUMN DIM_EVALUATOR.TOTAL_EVALUATIONS_COMPLETED IS 'Lifetime count of evaluations completed';
-COMMENT ON COLUMN DIM_EVALUATOR.ACTIVE_FLAG IS 'TRUE if currently active/available';
-COMMENT ON COLUMN DIM_EVALUATOR.TERMINATION_DATE IS 'Date employment/contract ended';
-COMMENT ON COLUMN DIM_EVALUATOR.EFFECTIVE_START_DATE IS 'Start date when this version of the record became effective';
-COMMENT ON COLUMN DIM_EVALUATOR.EFFECTIVE_END_DATE IS 'End date when this version of the record became obsolete (9999-12-31 if current)';
-COMMENT ON COLUMN DIM_EVALUATOR.IS_CURRENT IS 'TRUE if this is the current active version of the record';
-COMMENT ON COLUMN DIM_EVALUATOR.SOURCE_SYSTEM IS 'Source system that provided this data';
-COMMENT ON COLUMN DIM_EVALUATOR.CREATED_TIMESTAMP IS 'Timestamp when record was created';
-COMMENT ON COLUMN DIM_EVALUATOR.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN dim_evaluators.evaluator_sk IS 'Surrogate primary key for the evaluator dimension';
+COMMENT ON COLUMN dim_evaluators.evaluator_id IS 'Business key - Unique evaluator identifier (NPI, License Number)';
+COMMENT ON COLUMN dim_evaluators.first_name IS 'Evaluator first name';
+COMMENT ON COLUMN dim_evaluators.last_name IS 'Evaluator last name';
+COMMENT ON COLUMN dim_evaluators.full_name IS 'Evaluator full name (concatenated)';
+COMMENT ON COLUMN dim_evaluators.specialty IS 'Medical specialty (Psychiatry, Orthopedics, Neurology, etc.)';
+COMMENT ON COLUMN dim_evaluators.sub_specialty IS 'Sub-specialty within primary specialty';
+COMMENT ON COLUMN dim_evaluators.credentials IS 'Professional credentials (MD, DO, PhD, PsyD, etc.)';
+COMMENT ON COLUMN dim_evaluators.license_number IS 'Medical license number';
+COMMENT ON COLUMN dim_evaluators.license_state IS 'State where licensed to practice';
+COMMENT ON COLUMN dim_evaluators.license_expiration_date IS 'License expiration date';
+COMMENT ON COLUMN dim_evaluators.npi_number IS 'National Provider Identifier (10-digit unique ID)';
+COMMENT ON COLUMN dim_evaluators.employer_name IS 'Current employer organization name';
+COMMENT ON COLUMN dim_evaluators.employment_type IS 'Employment type (VA Staff, Contract, Private)';
+COMMENT ON COLUMN dim_evaluators.hire_date IS 'Date hired or contracted';
+COMMENT ON COLUMN dim_evaluators.years_of_experience IS 'Total years of professional experience';
+COMMENT ON COLUMN dim_evaluators.va_certified_flag IS 'TRUE if VA certified to perform C&P exams';
+COMMENT ON COLUMN dim_evaluators.certification_date IS 'Date of VA certification';
+COMMENT ON COLUMN dim_evaluators.board_certified_flag IS 'TRUE if board certified in specialty';
+COMMENT ON COLUMN dim_evaluators.average_evaluation_time_minutes IS 'Average time per evaluation in minutes';
+COMMENT ON COLUMN dim_evaluators.total_evaluations_completed IS 'Lifetime count of evaluations completed';
+COMMENT ON COLUMN dim_evaluators.active_flag IS 'TRUE if currently active/available';
+COMMENT ON COLUMN dim_evaluators.termination_date IS 'Date employment/contract ended';
+COMMENT ON COLUMN dim_evaluators.effective_start_date IS 'Start date when this version of the record became effective';
+COMMENT ON COLUMN dim_evaluators.effective_end_date IS 'End date when this version of the record became obsolete (9999-12-31 if current)';
+COMMENT ON COLUMN dim_evaluators.is_current IS 'TRUE if this is the current active version of the record';
+COMMENT ON COLUMN dim_evaluators.source_system IS 'Source system that provided this data';
+COMMENT ON COLUMN dim_evaluators.created_timestamp IS 'Timestamp when record was created';
+COMMENT ON COLUMN dim_evaluators.updated_timestamp IS 'Timestamp when record was last updated';

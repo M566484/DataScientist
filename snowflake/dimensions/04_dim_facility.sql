@@ -1,97 +1,98 @@
 -- =====================================================
--- DIM_FACILITY - VA Facility Dimension
+-- dim_facilities - VA Facility Dimension
 -- =====================================================
 -- Purpose: VA medical centers and evaluation facilities
 -- SCD Type: Type 2
+-- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.DIM;
+USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE DIM_FACILITY (
-    FACILITY_KEY INTEGER AUTOINCREMENT PRIMARY KEY,
-    FACILITY_ID VARCHAR(50) NOT NULL,  -- Business key (Station Number)
+CREATE OR REPLACE TABLE dim_facilities (
+    facility_sk INTEGER AUTOINCREMENT PRIMARY KEY,
+    facility_id VARCHAR(50) NOT NULL,  -- Business key (Station Number)
 
     -- Facility Information
-    FACILITY_NAME VARCHAR(255) NOT NULL,
-    FACILITY_TYPE VARCHAR(50),  -- VAMC, CBOC, Vet Center, Contract Facility
-    STATION_NUMBER VARCHAR(10),  -- VA Station Number
+    facility_name VARCHAR(255) NOT NULL,
+    facility_type VARCHAR(50),  -- VAMC, CBOC, Vet Center, Contract Facility
+    station_number VARCHAR(10),  -- VA Station Number
 
     -- Location Information
-    ADDRESS_LINE1 VARCHAR(255),
-    ADDRESS_LINE2 VARCHAR(255),
-    CITY VARCHAR(100),
-    STATE VARCHAR(2),
-    ZIP_CODE VARCHAR(10),
-    COUNTY VARCHAR(100),
-    REGION VARCHAR(50),  -- VISN (Veterans Integrated Service Network)
-    VISN_NUMBER INTEGER,
+    address_line1 VARCHAR(255),
+    address_line2 VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(2),
+    zip_code VARCHAR(10),
+    county VARCHAR(100),
+    region VARCHAR(50),  -- VISN (Veterans Integrated Service Network)
+    visn_number INTEGER,
 
     -- Contact Information
-    PHONE VARCHAR(20),
-    FAX VARCHAR(20),
-    EMAIL VARCHAR(255),
-    WEBSITE VARCHAR(255),
+    phone VARCHAR(20),
+    fax VARCHAR(20),
+    email VARCHAR(255),
+    website VARCHAR(255),
 
     -- Facility Characteristics
-    BED_COUNT INTEGER,
-    SPECIALTY_SERVICES VARIANT,  -- JSON array of services offered
-    TRAUMA_LEVEL VARCHAR(20),
-    TEACHING_FACILITY_FLAG BOOLEAN DEFAULT FALSE,
+    bed_count INTEGER,
+    specialty_services VARIANT,  -- JSON array of services offered
+    trauma_level VARCHAR(20),
+    teaching_facility_flag BOOLEAN DEFAULT FALSE,
 
     -- Accreditation
-    ACCREDITED_FLAG BOOLEAN DEFAULT FALSE,
-    ACCREDITATION_BODY VARCHAR(100),
-    ACCREDITATION_DATE DATE,
-    ACCREDITATION_EXPIRATION DATE,
+    accredited_flag BOOLEAN DEFAULT FALSE,
+    accreditation_body VARCHAR(100),
+    accreditation_date DATE,
+    accreditation_expiration DATE,
 
     -- Status
-    ACTIVE_FLAG BOOLEAN DEFAULT TRUE,
-    OPENED_DATE DATE,
-    CLOSED_DATE DATE,
+    active_flag BOOLEAN DEFAULT TRUE,
+    opened_date DATE,
+    closed_date DATE,
 
     -- SCD Type 2 attributes
-    EFFECTIVE_START_DATE TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    EFFECTIVE_END_DATE TIMESTAMP_NTZ DEFAULT TO_TIMESTAMP_NTZ('9999-12-31 23:59:59'),
-    IS_CURRENT BOOLEAN NOT NULL DEFAULT TRUE,
+    effective_start_date TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    effective_end_date TIMESTAMP_NTZ DEFAULT TO_TIMESTAMP_NTZ('9999-12-31 23:59:59'),
+    is_current BOOLEAN NOT NULL DEFAULT TRUE,
 
     -- Metadata
-    SOURCE_SYSTEM VARCHAR(50),
-    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    source_system VARCHAR(50),
+    created_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 )
 COMMENT = 'Type 2 SCD dimension for VA facilities and medical centers';
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN DIM_FACILITY.FACILITY_KEY IS 'Surrogate primary key for the facility dimension';
-COMMENT ON COLUMN DIM_FACILITY.FACILITY_ID IS 'Business key - Unique facility identifier (Station Number)';
-COMMENT ON COLUMN DIM_FACILITY.FACILITY_NAME IS 'Official facility name';
-COMMENT ON COLUMN DIM_FACILITY.FACILITY_TYPE IS 'Facility type (VAMC, CBOC, Vet Center, Contract Facility)';
-COMMENT ON COLUMN DIM_FACILITY.STATION_NUMBER IS 'VA Station Number (official facility identifier)';
-COMMENT ON COLUMN DIM_FACILITY.ADDRESS_LINE1 IS 'Street address line 1';
-COMMENT ON COLUMN DIM_FACILITY.ADDRESS_LINE2 IS 'Street address line 2';
-COMMENT ON COLUMN DIM_FACILITY.CITY IS 'City';
-COMMENT ON COLUMN DIM_FACILITY.STATE IS 'Two-letter state code';
-COMMENT ON COLUMN DIM_FACILITY.ZIP_CODE IS 'ZIP code';
-COMMENT ON COLUMN DIM_FACILITY.COUNTY IS 'County name';
-COMMENT ON COLUMN DIM_FACILITY.REGION IS 'VISN region name';
-COMMENT ON COLUMN DIM_FACILITY.VISN_NUMBER IS 'Veterans Integrated Service Network number (1-23)';
-COMMENT ON COLUMN DIM_FACILITY.PHONE IS 'Main phone number';
-COMMENT ON COLUMN DIM_FACILITY.FAX IS 'Fax number';
-COMMENT ON COLUMN DIM_FACILITY.EMAIL IS 'General email address';
-COMMENT ON COLUMN DIM_FACILITY.WEBSITE IS 'Facility website URL';
-COMMENT ON COLUMN DIM_FACILITY.BED_COUNT IS 'Number of inpatient beds';
-COMMENT ON COLUMN DIM_FACILITY.SPECIALTY_SERVICES IS 'JSON array of specialty services offered';
-COMMENT ON COLUMN DIM_FACILITY.TRAUMA_LEVEL IS 'Trauma center level designation';
-COMMENT ON COLUMN DIM_FACILITY.TEACHING_FACILITY_FLAG IS 'TRUE if academic teaching facility';
-COMMENT ON COLUMN DIM_FACILITY.ACCREDITED_FLAG IS 'TRUE if currently accredited';
-COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_BODY IS 'Accrediting organization name (e.g., Joint Commission)';
-COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_DATE IS 'Date of current accreditation';
-COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_EXPIRATION IS 'Accreditation expiration date';
-COMMENT ON COLUMN DIM_FACILITY.ACTIVE_FLAG IS 'TRUE if facility is currently operational';
-COMMENT ON COLUMN DIM_FACILITY.OPENED_DATE IS 'Date facility opened';
-COMMENT ON COLUMN DIM_FACILITY.CLOSED_DATE IS 'Date facility closed (if applicable)';
-COMMENT ON COLUMN DIM_FACILITY.EFFECTIVE_START_DATE IS 'Start date when this version of the record became effective';
-COMMENT ON COLUMN DIM_FACILITY.EFFECTIVE_END_DATE IS 'End date when this version of the record became obsolete (9999-12-31 if current)';
-COMMENT ON COLUMN DIM_FACILITY.IS_CURRENT IS 'TRUE if this is the current active version of the record';
-COMMENT ON COLUMN DIM_FACILITY.SOURCE_SYSTEM IS 'Source system that provided this data';
-COMMENT ON COLUMN DIM_FACILITY.CREATED_TIMESTAMP IS 'Timestamp when record was created';
-COMMENT ON COLUMN DIM_FACILITY.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN dim_facilities.facility_sk IS 'Surrogate primary key for the facility dimension';
+COMMENT ON COLUMN dim_facilities.facility_id IS 'Business key - Unique facility identifier (Station Number)';
+COMMENT ON COLUMN dim_facilities.facility_name IS 'Official facility name';
+COMMENT ON COLUMN dim_facilities.facility_type IS 'Facility type (VAMC, CBOC, Vet Center, Contract Facility)';
+COMMENT ON COLUMN dim_facilities.station_number IS 'VA Station Number (official facility identifier)';
+COMMENT ON COLUMN dim_facilities.address_line1 IS 'Street address line 1';
+COMMENT ON COLUMN dim_facilities.address_line2 IS 'Street address line 2';
+COMMENT ON COLUMN dim_facilities.city IS 'City';
+COMMENT ON COLUMN dim_facilities.state IS 'Two-letter state code';
+COMMENT ON COLUMN dim_facilities.zip_code IS 'ZIP code';
+COMMENT ON COLUMN dim_facilities.county IS 'County name';
+COMMENT ON COLUMN dim_facilities.region IS 'VISN region name';
+COMMENT ON COLUMN dim_facilities.visn_number IS 'Veterans Integrated Service Network number (1-23)';
+COMMENT ON COLUMN dim_facilities.phone IS 'Main phone number';
+COMMENT ON COLUMN dim_facilities.fax IS 'Fax number';
+COMMENT ON COLUMN dim_facilities.email IS 'General email address';
+COMMENT ON COLUMN dim_facilities.website IS 'Facility website URL';
+COMMENT ON COLUMN dim_facilities.bed_count IS 'Number of inpatient beds';
+COMMENT ON COLUMN dim_facilities.specialty_services IS 'JSON array of specialty services offered';
+COMMENT ON COLUMN dim_facilities.trauma_level IS 'Trauma center level designation';
+COMMENT ON COLUMN dim_facilities.teaching_facility_flag IS 'TRUE if academic teaching facility';
+COMMENT ON COLUMN dim_facilities.accredited_flag IS 'TRUE if currently accredited';
+COMMENT ON COLUMN dim_facilities.accreditation_body IS 'Accrediting organization name (e.g., Joint Commission)';
+COMMENT ON COLUMN dim_facilities.accreditation_date IS 'Date of current accreditation';
+COMMENT ON COLUMN dim_facilities.accreditation_expiration IS 'Accreditation expiration date';
+COMMENT ON COLUMN dim_facilities.active_flag IS 'TRUE if facility is currently operational';
+COMMENT ON COLUMN dim_facilities.opened_date IS 'Date facility opened';
+COMMENT ON COLUMN dim_facilities.closed_date IS 'Date facility closed (if applicable)';
+COMMENT ON COLUMN dim_facilities.effective_start_date IS 'Start date when this version of the record became effective';
+COMMENT ON COLUMN dim_facilities.effective_end_date IS 'End date when this version of the record became obsolete (9999-12-31 if current)';
+COMMENT ON COLUMN dim_facilities.is_current IS 'TRUE if this is the current active version of the record';
+COMMENT ON COLUMN dim_facilities.source_system IS 'Source system that provided this data';
+COMMENT ON COLUMN dim_facilities.created_timestamp IS 'Timestamp when record was created';
+COMMENT ON COLUMN dim_facilities.updated_timestamp IS 'Timestamp when record was last updated';

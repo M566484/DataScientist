@@ -1,3 +1,5 @@
+> **Updated to align with VES Snowflake Naming Conventions v1.0**
+
 Veteran Evaluation Services - Dimensional Model
 ================================================
 
@@ -31,12 +33,12 @@ USE DATABASE VETERAN_EVALUATION_DW;
 -- Check dimension tables
 SELECT TABLE_NAME, ROW_COUNT
 FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'DIM';
+WHERE TABLE_SCHEMA = 'WAREHOUSE';
 
 -- Check fact tables
 SELECT TABLE_NAME, ROW_COUNT
 FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'FACT';
+WHERE TABLE_SCHEMA = 'WAREHOUSE';
 ```
 
 ## Repository Structure
@@ -70,20 +72,20 @@ WHERE TABLE_SCHEMA = 'FACT';
 ## Key Features
 
 ### Dimension Tables (8 tables)
-- **DIM_DATE**: Standard date dimension with VA fiscal year support
-- **DIM_VETERAN**: Veteran demographics and service history (Type 2 SCD)
-- **DIM_EVALUATOR**: Medical professionals and evaluators (Type 2 SCD)
-- **DIM_FACILITY**: VA facilities and medical centers (Type 2 SCD)
-- **DIM_EVALUATION_TYPE**: Types of medical evaluations
-- **DIM_MEDICAL_CONDITION**: Medical conditions and diagnoses
-- **DIM_CLAIM**: VA disability claims (Type 2 SCD)
-- **DIM_APPOINTMENT**: Appointment scheduling details
+- **dim_dates**: Standard date dimension with VA fiscal year support
+- **dim_veterans**: Veteran demographics and service history (Type 2 SCD)
+- **dim_evaluators**: Medical professionals and evaluators (Type 2 SCD)
+- **dim_facilities**: VA facilities and medical centers (Type 2 SCD)
+- **dim_evaluation_types**: Types of medical evaluations
+- **dim_medical_conditions**: Medical conditions and diagnoses
+- **dim_claims**: VA disability claims (Type 2 SCD)
+- **dim_appointments**: Appointment scheduling details
 
 ### Fact Tables (4 tables)
-- **FACT_EVALUATION**: Transaction fact for evaluations (grain: evaluation per condition)
-- **FACT_CLAIM_STATUS**: Accumulating snapshot for claim processing
-- **FACT_APPOINTMENT**: Transaction fact for appointments
-- **FACT_DAILY_SNAPSHOT**: Periodic snapshot for daily KPIs
+- **fct_evaluations_completed**: Transaction fact for evaluations (grain: evaluation per condition)
+- **fct_claim_status_changes**: Accumulating snapshot for claim processing
+- **fct_appointments_scheduled**: Transaction fact for appointments
+- **fct_daily_facility_snapshot**: Periodic snapshot for daily KPIs
 
 ### Special Features
 - Slowly Changing Dimensions (Type 2) for tracking historical changes
@@ -104,24 +106,24 @@ For complete documentation, see:
 ### Wait Time Analysis
 ```sql
 SELECT
-    f.FACILITY_NAME,
-    AVG(fa.TOTAL_WAIT_DAYS) AS avg_wait_days,
-    SUM(CASE WHEN fa.MEETS_VA_WAIT_TIME_GOAL = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS compliance_pct
-FROM FACT_APPOINTMENT fa
-JOIN DIM_FACILITY f ON fa.FACILITY_KEY = f.FACILITY_KEY
-GROUP BY f.FACILITY_NAME;
+    f.facility_name,
+    AVG(fa.total_wait_days) AS avg_wait_days,
+    SUM(CASE WHEN fa.meets_va_wait_time_goal = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS compliance_pct
+FROM fct_appointments_scheduled fa
+JOIN dim_facilities f ON fa.facility_sk = f.facility_sk
+GROUP BY f.facility_name;
 ```
 
 ### Evaluation Quality Metrics
 ```sql
 SELECT
-    e.SPECIALTY,
-    AVG(fe.REPORT_COMPLETENESS_SCORE) AS avg_completeness,
-    SUM(CASE WHEN fe.SUFFICIENT_EXAM_FLAG = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS sufficient_rate_pct
-FROM FACT_EVALUATION fe
-JOIN DIM_EVALUATOR e ON fe.EVALUATOR_KEY = e.EVALUATOR_KEY
-WHERE e.IS_CURRENT = TRUE
-GROUP BY e.SPECIALTY;
+    e.specialty,
+    AVG(fe.report_completeness_score) AS avg_completeness,
+    SUM(CASE WHEN fe.sufficient_exam_flag = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS sufficient_rate_pct
+FROM fct_evaluations_completed fe
+JOIN dim_evaluators e ON fe.evaluator_sk = e.evaluator_sk
+WHERE e.is_current = TRUE
+GROUP BY e.specialty;
 ```
 
 More examples in the [documentation](DIMENSIONAL_MODEL_DOCUMENTATION.md#common-queries).

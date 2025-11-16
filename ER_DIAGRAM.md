@@ -1,3 +1,5 @@
+> **Updated to align with VES Snowflake Naming Conventions v1.0**
+
 # Veteran Evaluation Services - Entity Relationship Diagram
 
 ## Star Schema Overview
@@ -13,37 +15,38 @@
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐     │
-│  │   DIM_DATE      │      │  DIM_VETERAN    │      │ DIM_EVALUATOR   │     │
+│  │   dim_dates     │      │  dim_veterans   │      │ dim_evaluators  │     │
 │  ├─────────────────┤      ├─────────────────┤      ├─────────────────┤     │
-│  │ DATE_KEY (PK)   │      │ VETERAN_KEY(PK) │      │EVALUATOR_KEY(PK)│     │
-│  │ FULL_DATE       │      │ VETERAN_ID      │      │ EVALUATOR_ID    │     │
-│  │ YEAR_NUMBER     │      │ FIRST_NAME      │      │ FULL_NAME       │     │
-│  │ QUARTER_NUMBER  │      │ LAST_NAME       │      │ SPECIALTY       │     │
-│  │ MONTH_NUMBER    │      │ SERVICE_BRANCH  │      │ CREDENTIALS     │     │
-│  │ FISCAL_YEAR     │      │ DISABILITY_PCT  │      │ ACTIVE_FLAG     │     │
-│  │ IS_HOLIDAY      │      │ IS_CURRENT      │      │ IS_CURRENT      │     │
+│  │ date_sk (PK)    │      │ veteran_sk (PK) │      │ evaluator_sk(PK)│     │
+│  │ full_date       │      │ veteran_id      │      │ evaluator_id    │     │
+│  │ year_number     │      │ first_name      │      │ full_name       │     │
+│  │ quarter_number  │      │ last_name       │      │ specialty       │     │
+│  │ month_number    │      │ service_branch  │      │ credentials     │     │
+│  │ fiscal_year     │      │ disability_pct  │      │ active_flag     │     │
+│  │ is_holiday      │      │ is_current      │      │ is_current      │     │
 │  └─────────────────┘      └─────────────────┘      └─────────────────┘     │
 │                                                                               │
 │  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐     │
-│  │  DIM_FACILITY   │      │ DIM_EVAL_TYPE   │      │ DIM_MEDICAL_    │     │
-│  ├─────────────────┤      ├─────────────────┤      │   CONDITION     │     │
-│  │FACILITY_KEY(PK) │      │EVAL_TYPE_KEY(PK)│      ├─────────────────┤     │
-│  │ FACILITY_ID     │      │ EVAL_TYPE_ID    │      │ MED_COND_KEY(PK)│     │
-│  │ FACILITY_NAME   │      │ EVAL_TYPE_NAME  │      │ CONDITION_NAME  │     │
-│  │ STATE           │      │ CATEGORY        │      │ ICD10_CODE      │     │
-│  │ VISN_NUMBER     │      │ DURATION_MIN    │      │ DIAGNOSTIC_CODE │     │
-│  │ IS_CURRENT      │      │ ACTIVE_FLAG     │      │ PRESUMPTIVE_FLG │     │
-│  └─────────────────┘      └─────────────────┘      └─────────────────┘     │
+│  │ dim_facilities  │      │ dim_evaluation_ │      │ dim_medical_    │     │
+│  ├─────────────────┤      │      types      │      │   conditions    │     │
+│  │ facility_sk (PK)│      ├─────────────────┤      ├─────────────────┤     │
+│  │ facility_id     │      │eval_type_sk (PK)│      │ med_cond_sk (PK)│     │
+│  │ facility_name   │      │ eval_type_id    │      │ condition_name  │     │
+│  │ state           │      │ eval_type_name  │      │ icd10_code      │     │
+│  │ visn_number     │      │ category        │      │ diagnostic_code │     │
+│  │ is_current      │      │ duration_min    │      │ presumptive_flg │     │
+│  └─────────────────┘      │ active_flag     │      └─────────────────┘     │
+│                            └─────────────────┘                               │
 │                                                                               │
 │  ┌─────────────────┐      ┌─────────────────┐                               │
-│  │   DIM_CLAIM     │      │ DIM_APPOINTMENT │                               │
+│  │   dim_claims    │      │ dim_appointments│                               │
 │  ├─────────────────┤      ├─────────────────┤                               │
-│  │  CLAIM_KEY (PK) │      │APPT_KEY (PK)    │                               │
-│  │  CLAIM_ID       │      │ APPOINTMENT_ID  │                               │
-│  │  CLAIM_NUMBER   │      │ APPT_TYPE       │                               │
-│  │  CLAIM_STATUS   │      │ APPT_STATUS     │                               │
-│  │  CLAIM_TYPE     │      │ DURATION_MIN    │                               │
-│  │  IS_CURRENT     │      │ RESCHEDULED_FLG │                               │
+│  │  claim_sk (PK)  │      │ appt_sk (PK)    │                               │
+│  │  claim_id       │      │ appointment_id  │                               │
+│  │  claim_number   │      │ appt_type       │                               │
+│  │  claim_status   │      │ appt_status     │                               │
+│  │  claim_type     │      │ duration_min    │                               │
+│  │  is_current     │      │ rescheduled_flg │                               │
 │  └─────────────────┘      └─────────────────┘                               │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -57,133 +60,133 @@
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         FACT_EVALUATION                                       │
+│                     fct_evaluations_completed                                 │
 │                    (Transaction Fact Table)                                   │
 │            Grain: One row per evaluation per condition                        │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  EVALUATION_FACT_KEY (PK)                                                    │
+│  evaluation_fact_sk (PK)                                                     │
 │                                                                               │
 │  Foreign Keys (Dimensions):                                                  │
-│  ├─ VETERAN_KEY ────────────────────────► DIM_VETERAN                        │
-│  ├─ EVALUATOR_KEY ──────────────────────► DIM_EVALUATOR                      │
-│  ├─ FACILITY_KEY ───────────────────────► DIM_FACILITY                       │
-│  ├─ EVALUATION_TYPE_KEY ────────────────► DIM_EVALUATION_TYPE                │
-│  ├─ MEDICAL_CONDITION_KEY ──────────────► DIM_MEDICAL_CONDITION              │
-│  ├─ CLAIM_KEY ──────────────────────────► DIM_CLAIM                          │
-│  ├─ APPOINTMENT_KEY ────────────────────► DIM_APPOINTMENT                    │
-│  ├─ EVALUATION_DATE_KEY ────────────────► DIM_DATE                           │
-│  ├─ SCHEDULED_DATE_KEY ─────────────────► DIM_DATE                           │
-│  └─ CLAIM_DATE_KEY ─────────────────────► DIM_DATE                           │
+│  ├─ veteran_sk ─────────────────────────► dim_veterans                       │
+│  ├─ evaluator_sk ───────────────────────► dim_evaluators                     │
+│  ├─ facility_sk ────────────────────────► dim_facilities                     │
+│  ├─ evaluation_type_sk ─────────────────► dim_evaluation_types               │
+│  ├─ medical_condition_sk ───────────────► dim_medical_conditions             │
+│  ├─ claim_sk ───────────────────────────► dim_claims                         │
+│  ├─ appointment_sk ─────────────────────► dim_appointments                   │
+│  ├─ evaluation_date_sk ─────────────────► dim_dates                          │
+│  ├─ scheduled_date_sk ──────────────────► dim_dates                          │
+│  └─ claim_date_sk ──────────────────────► dim_dates                          │
 │                                                                               │
 │  Degenerate Dimensions:                                                      │
-│  ├─ EVALUATION_ID                                                            │
-│  ├─ DBQ_FORM_ID                                                              │
-│  └─ EXAM_REQUEST_ID                                                          │
+│  ├─ evaluation_id                                                            │
+│  ├─ dbq_form_id                                                              │
+│  └─ exam_request_id                                                          │
 │                                                                               │
 │  Facts (Measures):                                                           │
-│  ├─ EVALUATION_DURATION_MINUTES                                              │
-│  ├─ TOTAL_WAIT_DAYS                                                          │
-│  ├─ EVALUATION_COST_AMOUNT                                                   │
-│  ├─ RECOMMENDED_RATING_PERCENTAGE                                            │
-│  ├─ REPORT_COMPLETENESS_SCORE                                                │
-│  ├─ ATTENDED_FLAG                                                            │
-│  ├─ NO_SHOW_FLAG                                                             │
-│  ├─ SUFFICIENT_EXAM_FLAG                                                     │
-│  └─ TELEHEALTH_FLAG                                                          │
+│  ├─ evaluation_duration_minutes                                              │
+│  ├─ total_wait_days                                                          │
+│  ├─ evaluation_cost_amount                                                   │
+│  ├─ recommended_rating_percentage                                            │
+│  ├─ report_completeness_score                                                │
+│  ├─ attended_flag                                                            │
+│  ├─ no_show_flag                                                             │
+│  ├─ sufficient_exam_flag                                                     │
+│  └─ telehealth_flag                                                          │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                      FACT_CLAIM_STATUS                                        │
+│                      fct_claim_status_changes                                 │
 │                 (Accumulating Snapshot Fact Table)                            │
 │                Grain: One row per claim status change                         │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  CLAIM_STATUS_FACT_KEY (PK)                                                  │
+│  claim_status_fact_sk (PK)                                                   │
 │                                                                               │
 │  Foreign Keys:                                                               │
-│  ├─ VETERAN_KEY ────────────────────────► DIM_VETERAN                        │
-│  ├─ CLAIM_KEY ──────────────────────────► DIM_CLAIM                          │
-│  ├─ FACILITY_KEY ───────────────────────► DIM_FACILITY                       │
+│  ├─ veteran_sk ─────────────────────────► dim_veterans                       │
+│  ├─ claim_sk ───────────────────────────► dim_claims                         │
+│  ├─ facility_sk ────────────────────────► dim_facilities                     │
 │  │                                                                            │
 │  │  Multiple Date Keys (Milestones):                                         │
-│  ├─ CLAIM_FILED_DATE_KEY ───────────────► DIM_DATE                           │
-│  ├─ CLAIM_RECEIVED_DATE_KEY ────────────► DIM_DATE                           │
-│  ├─ EXAM_SCHEDULED_DATE_KEY ────────────► DIM_DATE                           │
-│  ├─ EXAM_COMPLETED_DATE_KEY ────────────► DIM_DATE                           │
-│  └─ RATING_DECISION_DATE_KEY ───────────► DIM_DATE                           │
+│  ├─ claim_filed_date_sk ────────────────► dim_dates                          │
+│  ├─ claim_received_date_sk ─────────────► dim_dates                          │
+│  ├─ exam_scheduled_date_sk ─────────────► dim_dates                          │
+│  ├─ exam_completed_date_sk ─────────────► dim_dates                          │
+│  └─ rating_decision_date_sk ────────────► dim_dates                          │
 │                                                                               │
 │  Facts (Measures):                                                           │
-│  ├─ DAYS_IN_PREVIOUS_STATUS                                                  │
-│  ├─ TOTAL_DAYS_PENDING                                                       │
-│  ├─ DAYS_TO_COMPLETE                                                         │
-│  ├─ DAYS_CLAIM_TO_INITIAL_REVIEW                                             │
-│  ├─ DAYS_EXAM_TO_DECISION                                                    │
-│  ├─ RATING_PERCENTAGE_GRANTED                                                │
-│  ├─ SERVICE_CONNECTED_GRANTED                                                │
-│  ├─ DECISION_MADE                                                            │
-│  └─ REMAND_FLAG                                                              │
+│  ├─ days_in_previous_status                                                  │
+│  ├─ total_days_pending                                                       │
+│  ├─ days_to_complete                                                         │
+│  ├─ days_claim_to_initial_review                                             │
+│  ├─ days_exam_to_decision                                                    │
+│  ├─ rating_percentage_granted                                                │
+│  ├─ service_connected_granted                                                │
+│  ├─ decision_made                                                            │
+│  └─ remand_flag                                                              │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                       FACT_APPOINTMENT                                        │
+│                       fct_appointments_scheduled                              │
 │                    (Transaction Fact Table)                                   │
 │                 Grain: One row per appointment                                │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  APPOINTMENT_FACT_KEY (PK)                                                   │
+│  appointment_fact_sk (PK)                                                    │
 │                                                                               │
 │  Foreign Keys:                                                               │
-│  ├─ VETERAN_KEY ────────────────────────► DIM_VETERAN                        │
-│  ├─ EVALUATOR_KEY ──────────────────────► DIM_EVALUATOR                      │
-│  ├─ FACILITY_KEY ───────────────────────► DIM_FACILITY                       │
-│  ├─ EVALUATION_TYPE_KEY ────────────────► DIM_EVALUATION_TYPE                │
-│  ├─ APPOINTMENT_KEY ────────────────────► DIM_APPOINTMENT                    │
-│  ├─ CLAIM_KEY ──────────────────────────► DIM_CLAIM                          │
-│  ├─ REQUESTED_DATE_KEY ─────────────────► DIM_DATE                           │
-│  ├─ SCHEDULED_DATE_KEY ─────────────────► DIM_DATE                           │
-│  └─ APPOINTMENT_DATE_KEY ───────────────► DIM_DATE                           │
+│  ├─ veteran_sk ─────────────────────────► dim_veterans                       │
+│  ├─ evaluator_sk ───────────────────────► dim_evaluators                     │
+│  ├─ facility_sk ────────────────────────► dim_facilities                     │
+│  ├─ evaluation_type_sk ─────────────────► dim_evaluation_types               │
+│  ├─ appointment_sk ─────────────────────► dim_appointments                   │
+│  ├─ claim_sk ───────────────────────────► dim_claims                         │
+│  ├─ requested_date_sk ──────────────────► dim_dates                          │
+│  ├─ scheduled_date_sk ──────────────────► dim_dates                          │
+│  └─ appointment_date_sk ────────────────► dim_dates                          │
 │                                                                               │
 │  Facts (Measures):                                                           │
-│  ├─ TOTAL_WAIT_DAYS                                                          │
-│  ├─ ACTUAL_DURATION_MINUTES                                                  │
-│  ├─ DURATION_VARIANCE_MINUTES                                                │
-│  ├─ ATTENDED_FLAG                                                            │
-│  ├─ NO_SHOW_FLAG                                                             │
-│  ├─ CANCELLED_FLAG                                                           │
-│  ├─ RESCHEDULE_COUNT                                                         │
-│  ├─ MEETS_VA_WAIT_TIME_GOAL                                                  │
-│  ├─ SATISFACTION_SCORE                                                       │
-│  ├─ TRAVEL_DISTANCE_MILES                                                    │
-│  └─ TELEHEALTH_FLAG                                                          │
+│  ├─ total_wait_days                                                          │
+│  ├─ actual_duration_minutes                                                  │
+│  ├─ duration_variance_minutes                                                │
+│  ├─ attended_flag                                                            │
+│  ├─ no_show_flag                                                             │
+│  ├─ cancelled_flag                                                           │
+│  ├─ reschedule_count                                                         │
+│  ├─ meets_va_wait_time_goal                                                  │
+│  ├─ satisfaction_score                                                       │
+│  ├─ travel_distance_miles                                                    │
+│  └─ telehealth_flag                                                          │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                     FACT_DAILY_SNAPSHOT                                       │
+│                     fct_daily_facility_snapshot                               │
 │                 (Periodic Snapshot Fact Table)                                │
 │              Grain: One row per facility per date                             │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
-│  DAILY_SNAPSHOT_KEY (PK)                                                     │
+│  daily_snapshot_sk (PK)                                                      │
 │                                                                               │
 │  Foreign Keys:                                                               │
-│  ├─ FACILITY_KEY ───────────────────────► DIM_FACILITY                       │
-│  └─ SNAPSHOT_DATE_KEY ──────────────────► DIM_DATE                           │
+│  ├─ facility_sk ────────────────────────► dim_facilities                     │
+│  └─ snapshot_date_sk ───────────────────► dim_dates                          │
 │                                                                               │
 │  Facts (Aggregated Measures):                                                │
-│  ├─ EVALUATIONS_COMPLETED_COUNT                                              │
-│  ├─ EVALUATION_COMPLETION_RATE                                               │
-│  ├─ AVERAGE_WAIT_TIME_DAYS                                                   │
-│  ├─ CLAIMS_PENDING_COUNT                                                     │
-│  ├─ EVALUATION_BACKLOG_COUNT                                                 │
-│  ├─ WAIT_TIME_COMPLIANCE_RATE                                                │
-│  ├─ TOTAL_EVALUATION_COSTS                                                   │
-│  ├─ AVERAGE_COST_PER_EVALUATION                                              │
-│  ├─ AVERAGE_SATISFACTION_SCORE                                               │
-│  └─ NET_PROMOTER_SCORE                                                       │
+│  ├─ evaluations_completed_count                                              │
+│  ├─ evaluation_completion_rate                                               │
+│  ├─ average_wait_time_days                                                   │
+│  ├─ claims_pending_count                                                     │
+│  ├─ evaluation_backlog_count                                                 │
+│  ├─ wait_time_compliance_rate                                                │
+│  ├─ total_evaluation_costs                                                   │
+│  ├─ average_cost_per_evaluation                                              │
+│  ├─ average_satisfaction_score                                               │
+│  └─ net_promoter_score                                                       │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
@@ -193,28 +196,28 @@
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  Conformed Dimensions (shared across fact tables):                           │
-│  • DIM_VETERAN                                                                │
-│  • DIM_DATE                                                                   │
-│  • DIM_FACILITY                                                               │
-│  • DIM_EVALUATOR                                                              │
-│  • DIM_CLAIM                                                                  │
+│  • dim_veterans                                                               │
+│  • dim_dates                                                                  │
+│  • dim_facilities                                                             │
+│  • dim_evaluators                                                             │
+│  • dim_claims                                                                 │
 │                                                                               │
 │  Role-Playing Dimensions:                                                    │
-│  • DIM_DATE used in multiple roles:                                          │
+│  • dim_dates used in multiple roles:                                         │
 │    - Evaluation Date, Scheduled Date, Claim Date                             │
 │    - Requested Date, Appointment Date, Completed Date                        │
 │    - Various milestone dates in claim processing                             │
 │                                                                               │
 │  Slowly Changing Dimensions (Type 2):                                        │
-│  • DIM_VETERAN (track disability rating changes)                             │
-│  • DIM_EVALUATOR (track credential/performance changes)                      │
-│  • DIM_FACILITY (track facility changes)                                     │
-│  • DIM_CLAIM (track claim status changes)                                    │
+│  • dim_veterans (track disability rating changes)                            │
+│  • dim_evaluators (track credential/performance changes)                     │
+│  • dim_facilities (track facility changes)                                   │
+│  • dim_claims (track claim status changes)                                   │
 │                                                                               │
 │  All Type 2 SCDs include:                                                    │
-│  - EFFECTIVE_START_DATE                                                      │
-│  - EFFECTIVE_END_DATE                                                        │
-│  - IS_CURRENT flag                                                           │
+│  - effective_start_date                                                      │
+│  - effective_end_date                                                        │
+│  - is_current flag                                                           │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
@@ -224,20 +227,21 @@
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  1. Evaluation Process:                                                      │
-│     FACT_APPOINTMENT → FACT_EVALUATION → FACT_CLAIM_STATUS                   │
+│     fct_appointments_scheduled → fct_evaluations_completed →                 │
+│     fct_claim_status_changes                                                 │
 │                                                                               │
 │  2. Claim Processing Pipeline:                                               │
 │     Claim Filed → Exam Scheduled → Exam Completed → Decision Made            │
-│     (Tracked in FACT_CLAIM_STATUS)                                           │
+│     (Tracked in fct_claim_status_changes)                                    │
 │                                                                               │
 │  3. Performance Monitoring:                                                  │
-│     Daily aggregation from transaction facts → FACT_DAILY_SNAPSHOT           │
+│     Daily aggregation from transaction facts → fct_daily_facility_snapshot   │
 │                                                                               │
 │  4. Reporting Areas:                                                         │
-│     • Wait Time Analysis (FACT_APPOINTMENT)                                  │
-│     • Evaluation Quality (FACT_EVALUATION)                                   │
-│     • Claim Processing Efficiency (FACT_CLAIM_STATUS)                        │
-│     • Operational KPIs (FACT_DAILY_SNAPSHOT)                                 │
+│     • Wait Time Analysis (fct_appointments_scheduled)                        │
+│     • Evaluation Quality (fct_evaluations_completed)                         │
+│     • Claim Processing Efficiency (fct_claim_status_changes)                 │
+│     • Operational KPIs (fct_daily_facility_snapshot)                         │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -245,17 +249,17 @@
 ## Cardinality
 
 ```
-DIM_VETERAN (100,000s of records)
+dim_veterans (100,000s of records)
     ↓ 1:Many
-FACT_EVALUATION (Millions of records)
+fct_evaluations_completed (Millions of records)
     ↓ Many:1
-DIM_MEDICAL_CONDITION (100s of records)
+dim_medical_conditions (100s of records)
 
-DIM_FACILITY (100s of records)
+dim_facilities (100s of records)
     ↓ 1:Many
-FACT_DAILY_SNAPSHOT (100s of records per day)
+fct_daily_facility_snapshot (100s of records per day)
 
-DIM_DATE (3,650 records for 10 years)
+dim_dates (3,650 records for 10 years)
     ↓ 1:Many
 All FACT tables (referenced in multiple date roles)
 ```
@@ -280,10 +284,10 @@ Snowflake does not use traditional indexes. Instead, the model uses:
 
 All fact tables include clustering keys for optimal query performance:
 
-- `FACT_EVALUATION`: `CLUSTER BY (EVALUATION_DATE_KEY, FACILITY_KEY)`
-- `FACT_CLAIM_STATUS`: `CLUSTER BY (CLAIM_KEY, RATING_DECISION_DATE_KEY)`
-- `FACT_APPOINTMENT`: `CLUSTER BY (APPOINTMENT_DATE_KEY, FACILITY_KEY)`
-- `FACT_DAILY_SNAPSHOT`: `CLUSTER BY (SNAPSHOT_DATE_KEY, FACILITY_KEY)`
+- `fct_evaluations_completed`: `CLUSTER BY (evaluation_date_sk, facility_sk)`
+- `fct_claim_status_changes`: `CLUSTER BY (claim_sk, rating_decision_date_sk)`
+- `fct_appointments_scheduled`: `CLUSTER BY (appointment_date_sk, facility_sk)`
+- `fct_daily_facility_snapshot`: `CLUSTER BY (snapshot_date_sk, facility_sk)`
 
 Clustering organizes micro-partitions for efficient data pruning during queries.
 

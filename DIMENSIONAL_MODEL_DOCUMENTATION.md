@@ -1,3 +1,5 @@
+> **Updated to align with VES Snowflake Naming Conventions v1.0**
+
 # Veteran Evaluation Services - Dimensional Model Documentation
 
 ## Overview
@@ -45,8 +47,7 @@ This dimensional model is designed for reporting and analytics on veteran evalua
 
 ```
 VETERAN_EVALUATION_DW (Database)
-├── DIM (Schema) - Dimension tables
-├── FACT (Schema) - Fact tables
+├── WAREHOUSE (Schema) - Dimension and fact tables
 ├── STG (Schema) - Staging area for ETL
 └── UTIL (Schema) - Utility objects (procedures, functions, sequences)
 ```
@@ -60,11 +61,11 @@ VETERAN_EVALUATION_DW (Database)
 
 ## Dimension Tables
 
-### 1. DIM_DATE
+### 1. dim_dates
 **Type**: Conformed Dimension (Type 1)
 **Purpose**: Standard date dimension for time-based analysis
 **Grain**: One row per day
-**Business Key**: FULL_DATE
+**Business Key**: full_date
 
 **Key Attributes**:
 - Standard calendar attributes (year, quarter, month, week, day)
@@ -78,19 +79,19 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 2. DIM_VETERAN
+### 2. dim_veterans
 **Type**: Slowly Changing Dimension (Type 2)
 **Purpose**: Veteran demographic and service information
 **Grain**: One row per veteran per version
-**Business Key**: VETERAN_ID
-**Surrogate Key**: VETERAN_KEY
+**Business Key**: veteran_id
+**Surrogate Key**: veteran_sk
 
 **Key Attributes**:
 - Personal information (name, DOB, contact)
 - Military service details (branch, era, rank)
 - Disability rating and status
 - VA enrollment and priority group
-- SCD tracking (EFFECTIVE_START_DATE, EFFECTIVE_END_DATE, IS_CURRENT)
+- SCD tracking (effective_start_date, effective_end_date, is_current)
 
 **File**: `snowflake/dimensions/02_dim_veteran.sql`
 
@@ -98,12 +99,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 3. DIM_EVALUATOR
+### 3. dim_evaluators
 **Type**: Slowly Changing Dimension (Type 2)
 **Purpose**: Medical professionals and evaluators
 **Grain**: One row per evaluator per version
-**Business Key**: EVALUATOR_ID
-**Surrogate Key**: EVALUATOR_KEY
+**Business Key**: evaluator_id
+**Surrogate Key**: evaluator_sk
 
 **Key Attributes**:
 - Professional credentials and specialties
@@ -118,12 +119,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 4. DIM_FACILITY
+### 4. dim_facilities
 **Type**: Slowly Changing Dimension (Type 2)
 **Purpose**: VA medical centers and evaluation facilities
 **Grain**: One row per facility per version
-**Business Key**: FACILITY_ID
-**Surrogate Key**: FACILITY_KEY
+**Business Key**: facility_id
+**Surrogate Key**: facility_sk
 
 **Key Attributes**:
 - Facility type and characteristics
@@ -137,12 +138,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 5. DIM_EVALUATION_TYPE
+### 5. dim_evaluation_types
 **Type**: Type 1 Dimension
 **Purpose**: Types of medical evaluations
 **Grain**: One row per evaluation type
-**Business Key**: EVALUATION_TYPE_ID
-**Surrogate Key**: EVALUATION_TYPE_KEY
+**Business Key**: evaluation_type_id
+**Surrogate Key**: evaluation_type_sk
 
 **Key Attributes**:
 - Evaluation category (C&P Exam, IME, etc.)
@@ -154,12 +155,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 6. DIM_MEDICAL_CONDITION
+### 6. dim_medical_conditions
 **Type**: Type 1 Dimension
 **Purpose**: Medical conditions being evaluated
 **Grain**: One row per medical condition
-**Business Key**: MEDICAL_CONDITION_ID
-**Surrogate Key**: MEDICAL_CONDITION_KEY
+**Business Key**: medical_condition_id
+**Surrogate Key**: medical_condition_sk
 
 **Key Attributes**:
 - Condition classification
@@ -172,12 +173,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 7. DIM_CLAIM
+### 7. dim_claims
 **Type**: Slowly Changing Dimension (Type 2)
 **Purpose**: VA disability claims information
 **Grain**: One row per claim per version
-**Business Key**: CLAIM_ID
-**Surrogate Key**: CLAIM_KEY
+**Business Key**: claim_id
+**Surrogate Key**: claim_sk
 
 **Key Attributes**:
 - Claim type and status
@@ -192,12 +193,12 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 8. DIM_APPOINTMENT
+### 8. dim_appointments
 **Type**: Type 1 Dimension
 **Purpose**: Appointment scheduling details
 **Grain**: One row per appointment
-**Business Key**: APPOINTMENT_ID
-**Surrogate Key**: APPOINTMENT_KEY
+**Business Key**: appointment_id
+**Surrogate Key**: appointment_sk
 
 **Key Attributes**:
 - Appointment type and status
@@ -211,21 +212,21 @@ VETERAN_EVALUATION_DW (Database)
 
 ## Fact Tables
 
-### 1. FACT_EVALUATION
+### 1. fct_evaluations_completed
 **Type**: Transaction Fact Table
 **Purpose**: Core fact table for medical evaluations
 **Grain**: One row per evaluation per medical condition
 **File**: `snowflake/facts/01_fact_evaluation.sql`
 
 **Dimensions**:
-- DIM_VETERAN
-- DIM_EVALUATOR
-- DIM_FACILITY
-- DIM_EVALUATION_TYPE
-- DIM_MEDICAL_CONDITION
-- DIM_CLAIM
-- DIM_APPOINTMENT
-- DIM_DATE (multiple role-playing: evaluation, scheduled, claim)
+- dim_veterans
+- dim_evaluators
+- dim_facilities
+- dim_evaluation_types
+- dim_medical_conditions
+- dim_claims
+- dim_appointments
+- dim_dates (multiple role-playing: evaluation, scheduled, claim)
 
 **Key Metrics**:
 - **Duration Metrics**: evaluation_duration_minutes, variance_minutes
@@ -244,17 +245,17 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 2. FACT_CLAIM_STATUS
+### 2. fct_claim_status_changes
 **Type**: Accumulating Snapshot Fact Table
 **Purpose**: Track claim status changes over time
 **Grain**: One row per claim status change
 **File**: `snowflake/facts/02_fact_claim_status.sql`
 
 **Dimensions**:
-- DIM_VETERAN
-- DIM_CLAIM
-- DIM_FACILITY
-- DIM_DATE (multiple milestones: filed, received, review, exam, decision, etc.)
+- dim_veterans
+- dim_claims
+- dim_facilities
+- dim_dates (multiple milestones: filed, received, review, exam, decision, etc.)
 
 **Key Metrics**:
 - **Processing Time Metrics**: days_to_complete, days_claim_to_initial_review
@@ -270,20 +271,20 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 3. FACT_APPOINTMENT
+### 3. fct_appointments_scheduled
 **Type**: Transaction Fact Table
 **Purpose**: Track appointment scheduling and attendance
 **Grain**: One row per appointment
 **File**: `snowflake/facts/03_fact_appointment.sql`
 
 **Dimensions**:
-- DIM_VETERAN
-- DIM_EVALUATOR
-- DIM_FACILITY
-- DIM_EVALUATION_TYPE
-- DIM_APPOINTMENT
-- DIM_CLAIM
-- DIM_DATE (multiple: requested, scheduled, appointment, completed, cancelled)
+- dim_veterans
+- dim_evaluators
+- dim_facilities
+- dim_evaluation_types
+- dim_appointments
+- dim_claims
+- dim_dates (multiple: requested, scheduled, appointment, completed, cancelled)
 
 **Key Metrics**:
 - **Wait Time Metrics**: days_from_request_to_schedule, total_wait_days
@@ -302,15 +303,15 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 4. FACT_DAILY_SNAPSHOT
+### 4. fct_daily_facility_snapshot
 **Type**: Periodic Snapshot Fact Table
 **Purpose**: Daily snapshot of key performance indicators
 **Grain**: One row per facility per date
 **File**: `snowflake/facts/04_fact_daily_snapshot.sql`
 
 **Dimensions**:
-- DIM_FACILITY
-- DIM_DATE (snapshot date)
+- dim_facilities
+- dim_dates (snapshot date)
 
 **Key Metrics**:
 - **Volume Metrics**: evaluations_completed_count, claims_received_count
@@ -335,54 +336,54 @@ VETERAN_EVALUATION_DW (Database)
 ### Star Schema Structure
 
 ```
-                    DIM_DATE
+                    dim_dates
                        |
                        |
-    DIM_VETERAN ------ |------ DIM_EVALUATOR
+    dim_veterans ------ |------ dim_evaluators
            |           |              |
            |           |              |
-           |     FACT_EVALUATION      |
+           |     fct_evaluations_     |
+           |        completed         |
            |           |              |
-           |           |              |
-    DIM_CLAIM -------- |------ DIM_FACILITY
+    dim_claims -------- |------ dim_facilities
                        |
                        |
-              DIM_EVALUATION_TYPE
+              dim_evaluation_types
                        |
-              DIM_MEDICAL_CONDITION
+              dim_medical_conditions
 ```
 
 ### Fact Table Relationships
 
 ```
-FACT_EVALUATION
-    ├── DIM_VETERAN (many-to-one)
-    ├── DIM_EVALUATOR (many-to-one)
-    ├── DIM_FACILITY (many-to-one)
-    ├── DIM_EVALUATION_TYPE (many-to-one)
-    ├── DIM_MEDICAL_CONDITION (many-to-one)
-    ├── DIM_CLAIM (many-to-one)
-    ├── DIM_APPOINTMENT (many-to-one)
-    └── DIM_DATE (many-to-one, multiple roles)
+fct_evaluations_completed
+    ├── dim_veterans (many-to-one)
+    ├── dim_evaluators (many-to-one)
+    ├── dim_facilities (many-to-one)
+    ├── dim_evaluation_types (many-to-one)
+    ├── dim_medical_conditions (many-to-one)
+    ├── dim_claims (many-to-one)
+    ├── dim_appointments (many-to-one)
+    └── dim_dates (many-to-one, multiple roles)
 
-FACT_CLAIM_STATUS
-    ├── DIM_VETERAN (many-to-one)
-    ├── DIM_CLAIM (many-to-one)
-    ├── DIM_FACILITY (many-to-one)
-    └── DIM_DATE (many-to-one, multiple milestones)
+fct_claim_status_changes
+    ├── dim_veterans (many-to-one)
+    ├── dim_claims (many-to-one)
+    ├── dim_facilities (many-to-one)
+    └── dim_dates (many-to-one, multiple milestones)
 
-FACT_APPOINTMENT
-    ├── DIM_VETERAN (many-to-one)
-    ├── DIM_EVALUATOR (many-to-one)
-    ├── DIM_FACILITY (many-to-one)
-    ├── DIM_EVALUATION_TYPE (many-to-one)
-    ├── DIM_APPOINTMENT (many-to-one)
-    ├── DIM_CLAIM (many-to-one)
-    └── DIM_DATE (many-to-one, multiple roles)
+fct_appointments_scheduled
+    ├── dim_veterans (many-to-one)
+    ├── dim_evaluators (many-to-one)
+    ├── dim_facilities (many-to-one)
+    ├── dim_evaluation_types (many-to-one)
+    ├── dim_appointments (many-to-one)
+    ├── dim_claims (many-to-one)
+    └── dim_dates (many-to-one, multiple roles)
 
-FACT_DAILY_SNAPSHOT
-    ├── DIM_FACILITY (many-to-one)
-    └── DIM_DATE (many-to-one)
+fct_daily_facility_snapshot
+    ├── dim_facilities (many-to-one)
+    └── dim_dates (many-to-one)
 ```
 
 ---
@@ -393,38 +394,38 @@ FACT_DAILY_SNAPSHOT
 
 ```sql
 SELECT
-    f.FACILITY_NAME,
-    f.STATE,
-    d.YEAR_MONTH,
-    COUNT(fe.EVALUATION_FACT_KEY) AS total_evaluations,
-    SUM(CASE WHEN fe.EVALUATION_COMPLETED_FLAG = TRUE THEN 1 ELSE 0 END) AS completed_evaluations,
+    f.facility_name,
+    f.state,
+    d.year_month,
+    COUNT(fe.evaluation_fact_sk) AS total_evaluations,
+    SUM(CASE WHEN fe.evaluation_completed_flag = TRUE THEN 1 ELSE 0 END) AS completed_evaluations,
     ROUND(completed_evaluations / NULLIF(total_evaluations, 0) * 100, 2) AS completion_rate_pct
-FROM VETERAN_EVALUATION_DW.FACT.FACT_EVALUATION fe
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_FACILITY f ON fe.FACILITY_KEY = f.FACILITY_KEY
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fe.EVALUATION_DATE_KEY = d.DATE_KEY
-WHERE d.YEAR_NUMBER = 2024
-  AND f.IS_CURRENT = TRUE
-GROUP BY f.FACILITY_NAME, f.STATE, d.YEAR_MONTH
-ORDER BY d.YEAR_MONTH, completion_rate_pct DESC;
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluations_completed fe
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fe.facility_sk = f.facility_sk
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fe.evaluation_date_sk = d.date_sk
+WHERE d.year_number = 2024
+  AND f.is_current = TRUE
+GROUP BY f.facility_name, f.state, d.year_month
+ORDER BY d.year_month, completion_rate_pct DESC;
 ```
 
 ### 2. Average Wait Times by Service Branch
 
 ```sql
 SELECT
-    v.SERVICE_BRANCH,
-    ROUND(AVG(fa.TOTAL_WAIT_DAYS), 1) AS avg_wait_days,
-    ROUND(AVG(fa.DAYS_FROM_REQUEST_TO_SCHEDULE), 1) AS avg_scheduling_days,
-    COUNT(fa.APPOINTMENT_FACT_KEY) AS total_appointments,
-    SUM(CASE WHEN fa.MEETS_VA_WAIT_TIME_GOAL = TRUE THEN 1 ELSE 0 END) AS within_goal,
+    v.service_branch,
+    ROUND(AVG(fa.total_wait_days), 1) AS avg_wait_days,
+    ROUND(AVG(fa.days_from_request_to_schedule), 1) AS avg_scheduling_days,
+    COUNT(fa.appointment_fact_sk) AS total_appointments,
+    SUM(CASE WHEN fa.meets_va_wait_time_goal = TRUE THEN 1 ELSE 0 END) AS within_goal,
     ROUND(within_goal / NULLIF(total_appointments, 0) * 100, 2) AS compliance_rate_pct
-FROM VETERAN_EVALUATION_DW.FACT.FACT_APPOINTMENT fa
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_VETERAN v ON fa.VETERAN_KEY = v.VETERAN_KEY
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fa.APPOINTMENT_DATE_KEY = d.DATE_KEY
-WHERE d.FISCAL_YEAR = 2024
-  AND v.IS_CURRENT = TRUE
-  AND fa.ATTENDED_FLAG = TRUE
-GROUP BY v.SERVICE_BRANCH
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointments_scheduled fa
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans v ON fa.veteran_sk = v.veteran_sk
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fa.appointment_date_sk = d.date_sk
+WHERE d.fiscal_year = 2024
+  AND v.is_current = TRUE
+  AND fa.attended_flag = TRUE
+GROUP BY v.service_branch
 ORDER BY avg_wait_days DESC;
 ```
 
@@ -432,18 +433,18 @@ ORDER BY avg_wait_days DESC;
 
 ```sql
 SELECT
-    fc.CURRENT_STATUS,
-    COUNT(DISTINCT fc.CLAIM_KEY) AS claim_count,
-    ROUND(AVG(fc.TOTAL_DAYS_PENDING), 1) AS avg_days_pending,
-    ROUND(AVG(fc.DAYS_CLAIM_TO_INITIAL_REVIEW), 1) AS avg_days_to_review,
-    ROUND(AVG(fc.DAYS_EXAM_TO_DECISION), 1) AS avg_days_exam_to_decision,
-    SUM(fc.SERVICE_CONNECTED_GRANTED) AS total_granted,
-    SUM(fc.SERVICE_CONNECTED_DENIED) AS total_denied,
+    fc.current_status,
+    COUNT(DISTINCT fc.claim_sk) AS claim_count,
+    ROUND(AVG(fc.total_days_pending), 1) AS avg_days_pending,
+    ROUND(AVG(fc.days_claim_to_initial_review), 1) AS avg_days_to_review,
+    ROUND(AVG(fc.days_exam_to_decision), 1) AS avg_days_exam_to_decision,
+    SUM(fc.service_connected_granted) AS total_granted,
+    SUM(fc.service_connected_denied) AS total_denied,
     ROUND(total_granted / NULLIF(total_granted + total_denied, 0) * 100, 2) AS grant_rate_pct
-FROM VETERAN_EVALUATION_DW.FACT.FACT_CLAIM_STATUS fc
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fc.RATING_DECISION_DATE_KEY = d.DATE_KEY
-WHERE d.FISCAL_YEAR = 2024
-GROUP BY fc.CURRENT_STATUS
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_claim_status_changes fc
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fc.rating_decision_date_sk = d.date_sk
+WHERE d.fiscal_year = 2024
+GROUP BY fc.current_status
 ORDER BY claim_count DESC;
 ```
 
@@ -451,23 +452,23 @@ ORDER BY claim_count DESC;
 
 ```sql
 SELECT
-    e.FULL_NAME,
-    e.SPECIALTY,
-    f.FACILITY_NAME,
-    COUNT(fe.EVALUATION_FACT_KEY) AS total_evaluations,
-    ROUND(AVG(fe.EVALUATION_DURATION_MINUTES), 1) AS avg_duration_minutes,
-    ROUND(AVG(fe.REPORT_COMPLETENESS_SCORE), 2) AS avg_completeness_score,
-    SUM(CASE WHEN fe.SUFFICIENT_EXAM_FLAG = TRUE THEN 1 ELSE 0 END) AS sufficient_exams,
+    e.full_name,
+    e.specialty,
+    f.facility_name,
+    COUNT(fe.evaluation_fact_sk) AS total_evaluations,
+    ROUND(AVG(fe.evaluation_duration_minutes), 1) AS avg_duration_minutes,
+    ROUND(AVG(fe.report_completeness_score), 2) AS avg_completeness_score,
+    SUM(CASE WHEN fe.sufficient_exam_flag = TRUE THEN 1 ELSE 0 END) AS sufficient_exams,
     ROUND(sufficient_exams / NULLIF(total_evaluations, 0) * 100, 2) AS sufficient_exam_rate_pct,
-    ROUND(AVG(fe.REPORT_TIMELINESS_DAYS), 1) AS avg_report_turnaround_days
-FROM VETERAN_EVALUATION_DW.FACT.FACT_EVALUATION fe
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_EVALUATOR e ON fe.EVALUATOR_KEY = e.EVALUATOR_KEY
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_FACILITY f ON fe.FACILITY_KEY = f.FACILITY_KEY
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fe.EVALUATION_DATE_KEY = d.DATE_KEY
-WHERE d.FISCAL_YEAR = 2024
-  AND e.IS_CURRENT = TRUE
-  AND e.ACTIVE_FLAG = TRUE
-GROUP BY e.FULL_NAME, e.SPECIALTY, f.FACILITY_NAME
+    ROUND(AVG(fe.report_timeliness_days), 1) AS avg_report_turnaround_days
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluations_completed fe
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators e ON fe.evaluator_sk = e.evaluator_sk
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fe.facility_sk = f.facility_sk
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fe.evaluation_date_sk = d.date_sk
+WHERE d.fiscal_year = 2024
+  AND e.is_current = TRUE
+  AND e.active_flag = TRUE
+GROUP BY e.full_name, e.specialty, f.facility_name
 HAVING total_evaluations >= 10
 ORDER BY avg_completeness_score DESC, total_evaluations DESC;
 ```
@@ -476,41 +477,41 @@ ORDER BY avg_completeness_score DESC, total_evaluations DESC;
 
 ```sql
 SELECT
-    d.YEAR_MONTH,
-    COUNT(fa.APPOINTMENT_FACT_KEY) AS total_appointments,
-    SUM(CASE WHEN fa.TELEHEALTH_FLAG = TRUE THEN 1 ELSE 0 END) AS telehealth_appointments,
+    d.year_month,
+    COUNT(fa.appointment_fact_sk) AS total_appointments,
+    SUM(CASE WHEN fa.telehealth_flag = TRUE THEN 1 ELSE 0 END) AS telehealth_appointments,
     ROUND(telehealth_appointments / NULLIF(total_appointments, 0) * 100, 2) AS telehealth_rate_pct,
-    AVG(CASE WHEN fa.TELEHEALTH_FLAG = TRUE THEN fa.SATISFACTION_SCORE END) AS telehealth_satisfaction,
-    AVG(CASE WHEN fa.TELEHEALTH_FLAG = FALSE THEN fa.SATISFACTION_SCORE END) AS in_person_satisfaction,
-    SUM(CASE WHEN fa.TELEHEALTH_FLAG = TRUE AND fa.TECHNICAL_ISSUES_FLAG = TRUE THEN 1 ELSE 0 END) AS technical_issues
-FROM VETERAN_EVALUATION_DW.FACT.FACT_APPOINTMENT fa
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fa.APPOINTMENT_DATE_KEY = d.DATE_KEY
-WHERE d.YEAR_NUMBER = 2024
-  AND fa.ATTENDED_FLAG = TRUE
-GROUP BY d.YEAR_MONTH
-ORDER BY d.YEAR_MONTH;
+    AVG(CASE WHEN fa.telehealth_flag = TRUE THEN fa.satisfaction_score END) AS telehealth_satisfaction,
+    AVG(CASE WHEN fa.telehealth_flag = FALSE THEN fa.satisfaction_score END) AS in_person_satisfaction,
+    SUM(CASE WHEN fa.telehealth_flag = TRUE AND fa.technical_issues_flag = TRUE THEN 1 ELSE 0 END) AS technical_issues
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointments_scheduled fa
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fa.appointment_date_sk = d.date_sk
+WHERE d.year_number = 2024
+  AND fa.attended_flag = TRUE
+GROUP BY d.year_month
+ORDER BY d.year_month;
 ```
 
 ### 6. Daily Performance Dashboard
 
 ```sql
 SELECT
-    d.FULL_DATE,
-    f.FACILITY_NAME,
-    fds.EVALUATIONS_COMPLETED_COUNT,
-    fds.EVALUATION_COMPLETION_RATE,
-    fds.AVERAGE_WAIT_TIME_DAYS,
-    fds.WAIT_TIME_COMPLIANCE_RATE,
-    fds.CLAIMS_PENDING_COUNT,
-    fds.EVALUATION_BACKLOG_COUNT,
-    fds.AVERAGE_SATISFACTION_SCORE,
-    fds.TOTAL_EVALUATION_COSTS
-FROM VETERAN_EVALUATION_DW.FACT.FACT_DAILY_SNAPSHOT fds
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_FACILITY f ON fds.FACILITY_KEY = f.FACILITY_KEY
-JOIN VETERAN_EVALUATION_DW.DIM.DIM_DATE d ON fds.SNAPSHOT_DATE_KEY = d.DATE_KEY
-WHERE d.FULL_DATE >= CURRENT_DATE - 30
-  AND f.IS_CURRENT = TRUE
-ORDER BY d.FULL_DATE DESC, f.FACILITY_NAME;
+    d.full_date,
+    f.facility_name,
+    fds.evaluations_completed_count,
+    fds.evaluation_completion_rate,
+    fds.average_wait_time_days,
+    fds.wait_time_compliance_rate,
+    fds.claims_pending_count,
+    fds.evaluation_backlog_count,
+    fds.average_satisfaction_score,
+    fds.total_evaluation_costs
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_daily_facility_snapshot fds
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fds.facility_sk = f.facility_sk
+JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fds.snapshot_date_sk = d.date_sk
+WHERE d.full_date >= CURRENT_DATE - 30
+  AND f.is_current = TRUE
+ORDER BY d.full_date DESC, f.facility_name;
 ```
 
 ---
@@ -520,32 +521,32 @@ ORDER BY d.FULL_DATE DESC, f.FACILITY_NAME;
 ### Loading Sequence
 
 1. **Dimension Tables** (load first)
-   - DIM_DATE (populate using procedure)
-   - DIM_VETERAN (Type 2 SCD)
-   - DIM_EVALUATOR (Type 2 SCD)
-   - DIM_FACILITY (Type 2 SCD)
-   - DIM_EVALUATION_TYPE (Type 1)
-   - DIM_MEDICAL_CONDITION (Type 1)
-   - DIM_CLAIM (Type 2 SCD)
-   - DIM_APPOINTMENT (Type 1)
+   - dim_dates (populate using procedure)
+   - dim_veterans (Type 2 SCD)
+   - dim_evaluators (Type 2 SCD)
+   - dim_facilities (Type 2 SCD)
+   - dim_evaluation_types (Type 1)
+   - dim_medical_conditions (Type 1)
+   - dim_claims (Type 2 SCD)
+   - dim_appointments (Type 1)
 
 2. **Fact Tables** (load after dimensions)
-   - FACT_EVALUATION
-   - FACT_CLAIM_STATUS
-   - FACT_APPOINTMENT
-   - FACT_DAILY_SNAPSHOT (calculated from other facts)
+   - fct_evaluations_completed
+   - fct_claim_status_changes
+   - fct_appointments_scheduled
+   - fct_daily_facility_snapshot (calculated from other facts)
 
 ### Type 2 SCD Logic
 
-For dimensions using Type 2 SCD (VETERAN, EVALUATOR, FACILITY, CLAIM):
+For dimensions using Type 2 SCD (veterans, evaluators, facilities, claims):
 
 ```sql
 -- Check for changes
 -- If changed:
---   1. Update existing row: SET IS_CURRENT = FALSE, EFFECTIVE_END_DATE = CURRENT_TIMESTAMP
---   2. Insert new row: SET IS_CURRENT = TRUE, EFFECTIVE_START_DATE = CURRENT_TIMESTAMP
+--   1. Update existing row: SET is_current = FALSE, effective_end_date = CURRENT_TIMESTAMP
+--   2. Insert new row: SET is_current = TRUE, effective_start_date = CURRENT_TIMESTAMP
 -- If no change:
---   3. No action (or update UPDATED_TIMESTAMP)
+--   3. No action (or update updated_timestamp)
 ```
 
 ### Data Quality Checks
@@ -553,10 +554,10 @@ For dimensions using Type 2 SCD (VETERAN, EVALUATOR, FACILITY, CLAIM):
 Implement these checks in your ETL process:
 
 1. **Referential Integrity**: Verify foreign keys exist in dimension tables
-2. **Date Consistency**: Ensure date keys exist in DIM_DATE
-3. **SCD Validation**: Verify only one IS_CURRENT = TRUE per business key
+2. **Date Consistency**: Ensure date keys exist in dim_dates
+3. **SCD Validation**: Verify only one is_current = TRUE per business key
 4. **Metric Validation**: Check for NULL or negative values in key metrics
-5. **Duplicate Prevention**: Check for duplicate degenerate dimensions (EVALUATION_ID, CLAIM_ID, etc.)
+5. **Duplicate Prevention**: Check for duplicate degenerate dimensions (evaluation_id, claim_id, etc.)
 
 ### Performance Optimization
 
@@ -568,10 +569,10 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
 
    All fact tables are pre-configured with clustering keys optimized for common query patterns:
 
-   - `FACT_EVALUATION`: Clustered by `(EVALUATION_DATE_KEY, FACILITY_KEY)`
-   - `FACT_CLAIM_STATUS`: Clustered by `(CLAIM_KEY, RATING_DECISION_DATE_KEY)`
-   - `FACT_APPOINTMENT`: Clustered by `(APPOINTMENT_DATE_KEY, FACILITY_KEY)`
-   - `FACT_DAILY_SNAPSHOT`: Clustered by `(SNAPSHOT_DATE_KEY, FACILITY_KEY)`
+   - `fct_evaluations_completed`: Clustered by `(evaluation_date_sk, facility_sk)`
+   - `fct_claim_status_changes`: Clustered by `(claim_sk, rating_decision_date_sk)`
+   - `fct_appointments_scheduled`: Clustered by `(appointment_date_sk, facility_sk)`
+   - `fct_daily_facility_snapshot`: Clustered by `(snapshot_date_sk, facility_sk)`
 
    Clustering improves query performance by co-locating similar data in micro-partitions.
 
@@ -592,23 +593,23 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
 
    Create materialized views for frequently accessed aggregations:
    ```sql
-   CREATE MATERIALIZED VIEW MV_MONTHLY_EVAL_SUMMARY AS
+   CREATE MATERIALIZED VIEW mv_monthly_eval_summary AS
    SELECT
-       facility_key,
+       facility_sk,
        DATE_TRUNC('month', d.full_date) AS month,
        COUNT(*) AS eval_count,
        AVG(evaluation_duration_minutes) AS avg_duration
-   FROM FACT_EVALUATION fe
-   JOIN DIM_DATE d ON fe.evaluation_date_key = d.date_key
-   GROUP BY facility_key, DATE_TRUNC('month', d.full_date);
+   FROM fct_evaluations_completed fe
+   JOIN dim_dates d ON fe.evaluation_date_sk = d.date_sk
+   GROUP BY facility_sk, DATE_TRUNC('month', d.full_date);
    ```
 
 5. **Search Optimization Service** (Optional)
 
    For dimension tables with high-cardinality string columns:
    ```sql
-   ALTER TABLE DIM_VETERAN ADD SEARCH OPTIMIZATION ON EQUALITY(VETERAN_ID);
-   ALTER TABLE DIM_EVALUATOR ADD SEARCH OPTIMIZATION ON EQUALITY(EVALUATOR_ID);
+   ALTER TABLE dim_veterans ADD SEARCH OPTIMIZATION ON EQUALITY(veteran_id);
+   ALTER TABLE dim_evaluators ADD SEARCH OPTIMIZATION ON EQUALITY(evaluator_id);
    ```
 
 6. **Incremental Loads**
@@ -637,8 +638,8 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
    Snowflake stores data in columnar format. Select only needed columns to minimize I/O:
    ```sql
    -- Good: Only select needed columns
-   SELECT veteran_key, evaluation_date_key, evaluation_cost_amount
-   FROM FACT_EVALUATION;
+   SELECT veteran_sk, evaluation_date_sk, evaluation_cost_amount
+   FROM fct_evaluations_completed;
 
    -- Avoid: SELECT * reads all columns
    ```
@@ -695,28 +696,26 @@ SELECT
     TABLE_TYPE,
     COMMENT
 FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA IN ('DIM', 'FACT')
+WHERE TABLE_SCHEMA IN ('WAREHOUSE')
 ORDER BY TABLE_SCHEMA, TABLE_NAME;
 
 -- Verify date dimension populated
 SELECT
-    MIN(FULL_DATE) AS min_date,
-    MAX(FULL_DATE) AS max_date,
+    MIN(full_date) AS min_date,
+    MAX(full_date) AS max_date,
     COUNT(*) AS total_rows
-FROM VETERAN_EVALUATION_DW.DIM.DIM_DATE;
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates;
 ```
 
 ### Step 4: Grant Permissions
 
 ```sql
 -- Grant read access to analysts
-GRANT SELECT ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.DIM TO ROLE ANALYST_ROLE;
-GRANT SELECT ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.FACT TO ROLE ANALYST_ROLE;
+GRANT SELECT ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE TO ROLE ANALYST_ROLE;
 
 -- Grant ETL role full access
 GRANT ALL ON SCHEMA VETERAN_EVALUATION_DW.STG TO ROLE ETL_ROLE;
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.DIM TO ROLE ETL_ROLE;
-GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.FACT TO ROLE ETL_ROLE;
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE TO ROLE ETL_ROLE;
 ```
 
 ---
@@ -729,22 +728,22 @@ GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.FACT TO ROLE 
 2. **Weekly**: Review and resolve data quality issues
 3. **Monthly**: Analyze query performance and optimize
 4. **Quarterly**: Review dimension changes and SCD history
-5. **Annually**: Extend DIM_DATE for future years
+5. **Annually**: Extend dim_dates for future years
 
 ### Monitoring Queries
 
 ```sql
 -- Check for orphaned fact records
 SELECT COUNT(*)
-FROM FACT_EVALUATION fe
-LEFT JOIN DIM_VETERAN v ON fe.VETERAN_KEY = v.VETERAN_KEY
-WHERE v.VETERAN_KEY IS NULL;
+FROM fct_evaluations_completed fe
+LEFT JOIN dim_veterans v ON fe.veteran_sk = v.veteran_sk
+WHERE v.veteran_sk IS NULL;
 
 -- Check SCD integrity
-SELECT VETERAN_ID, COUNT(*)
-FROM DIM_VETERAN
-WHERE IS_CURRENT = TRUE
-GROUP BY VETERAN_ID
+SELECT veteran_id, COUNT(*)
+FROM dim_veterans
+WHERE is_current = TRUE
+GROUP BY veteran_id
 HAVING COUNT(*) > 1;
 
 -- Check fact table growth
@@ -753,7 +752,7 @@ SELECT
     ROW_COUNT,
     BYTES / (1024 * 1024 * 1024) AS size_gb
 FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'FACT'
+WHERE TABLE_SCHEMA = 'WAREHOUSE'
 ORDER BY ROW_COUNT DESC;
 ```
 

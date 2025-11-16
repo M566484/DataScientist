@@ -3,6 +3,7 @@
 -- =====================================================
 -- Purpose: Execute all DDL scripts in correct order
 -- Usage: Run this script to deploy the entire dimensional model
+-- Standards: VES Snowflake Naming Conventions v1.0
 
 -- Step 1: Setup Database and Schemas
 !source 00_setup_database.sql
@@ -27,19 +28,35 @@
 !source 01_populate_date_dimension.sql
 
 -- Verify deployment
-USE SCHEMA VETERAN_EVALUATION_DW.DIM;
+USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-SELECT 'Deployment completed successfully' AS STATUS;
+SELECT 'Deployment completed successfully' AS status;
 
 -- Show all tables created
 SELECT
-    TABLE_SCHEMA,
-    TABLE_NAME,
-    TABLE_TYPE,
-    ROW_COUNT,
-    BYTES,
-    CREATED,
-    COMMENT
+    table_schema,
+    table_name,
+    table_type,
+    row_count,
+    bytes,
+    created,
+    comment
 FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA IN ('DIM', 'FACT')
-ORDER BY TABLE_SCHEMA, TABLE_NAME;
+WHERE table_schema = 'WAREHOUSE'
+ORDER BY table_name;
+
+-- Show dimension tables
+SELECT 'Dimension Tables:' AS info;
+SELECT table_name
+FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+WHERE table_schema = 'WAREHOUSE'
+  AND table_name LIKE 'dim_%'
+ORDER BY table_name;
+
+-- Show fact tables
+SELECT 'Fact Tables:' AS info;
+SELECT table_name
+FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+WHERE table_schema = 'WAREHOUSE'
+  AND table_name LIKE 'fct_%'
+ORDER BY table_name;

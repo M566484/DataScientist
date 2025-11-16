@@ -1,158 +1,159 @@
 -- =====================================================
--- FACT_EVALUATION - Evaluation Fact Table
+-- fct_evaluations_completed - Evaluation Fact Table
 -- =====================================================
 -- Purpose: Core fact table for medical evaluations
 -- Grain: One row per evaluation per medical condition
+-- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.FACT;
+USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE FACT_EVALUATION (
-    EVALUATION_FACT_KEY INTEGER AUTOINCREMENT PRIMARY KEY,
+CREATE OR REPLACE TABLE fct_evaluations_completed (
+    evaluation_fact_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
-    VETERAN_KEY INTEGER NOT NULL,
-    EVALUATOR_KEY INTEGER NOT NULL,
-    FACILITY_KEY INTEGER NOT NULL,
-    EVALUATION_TYPE_KEY INTEGER NOT NULL,
-    MEDICAL_CONDITION_KEY INTEGER NOT NULL,
-    CLAIM_KEY INTEGER NOT NULL,
-    APPOINTMENT_KEY INTEGER,
+    veteran_sk INTEGER NOT NULL,
+    evaluator_sk INTEGER NOT NULL,
+    facility_sk INTEGER NOT NULL,
+    evaluation_type_sk INTEGER NOT NULL,
+    medical_condition_sk INTEGER NOT NULL,
+    claim_sk INTEGER NOT NULL,
+    appointment_sk INTEGER,
 
     -- Date Foreign Keys
-    EVALUATION_DATE_KEY INTEGER NOT NULL,
-    SCHEDULED_DATE_KEY INTEGER,
-    CLAIM_DATE_KEY INTEGER,
+    evaluation_date_sk INTEGER NOT NULL,
+    scheduled_date_sk INTEGER,
+    claim_date_sk INTEGER,
 
     -- Degenerate Dimensions (transaction identifiers)
-    EVALUATION_ID VARCHAR(50) NOT NULL UNIQUE,
-    DBQ_FORM_ID VARCHAR(50),
-    EXAM_REQUEST_ID VARCHAR(50),
+    evaluation_id VARCHAR(50) NOT NULL UNIQUE,
+    dbq_form_id VARCHAR(50),
+    exam_request_id VARCHAR(50),
 
     -- Evaluation Metrics
-    EVALUATION_DURATION_MINUTES INTEGER,
-    SCHEDULED_DURATION_MINUTES INTEGER,
-    VARIANCE_MINUTES INTEGER,  -- Actual vs Scheduled
+    evaluation_duration_minutes INTEGER,
+    scheduled_duration_minutes INTEGER,
+    variance_minutes INTEGER,  -- Actual vs Scheduled
 
     -- Attendance Metrics
-    ATTENDED_FLAG BOOLEAN DEFAULT TRUE,
-    NO_SHOW_FLAG BOOLEAN DEFAULT FALSE,
-    CANCELLED_FLAG BOOLEAN DEFAULT FALSE,
-    RESCHEDULED_FLAG BOOLEAN DEFAULT FALSE,
+    attended_flag BOOLEAN DEFAULT TRUE,
+    no_show_flag BOOLEAN DEFAULT FALSE,
+    cancelled_flag BOOLEAN DEFAULT FALSE,
+    rescheduled_flag BOOLEAN DEFAULT FALSE,
 
     -- Wait Time Metrics
-    DAYS_FROM_REQUEST_TO_SCHEDULE INTEGER,
-    DAYS_FROM_SCHEDULE_TO_EVALUATION INTEGER,
-    TOTAL_WAIT_DAYS INTEGER,
+    days_from_request_to_schedule INTEGER,
+    days_from_schedule_to_evaluation INTEGER,
+    total_wait_days INTEGER,
 
     -- Evaluation Results
-    EVALUATION_COMPLETED_FLAG BOOLEAN DEFAULT FALSE,
-    DBQ_SUBMITTED_FLAG BOOLEAN DEFAULT FALSE,
-    DBQ_SUBMISSION_DATE DATE,
-    NEXUS_OPINION_PROVIDED BOOLEAN DEFAULT FALSE,
-    NEXUS_OPINION VARCHAR(50),  -- At Least As Likely As Not, Less Likely, etc.
+    evaluation_completed_flag BOOLEAN DEFAULT FALSE,
+    dbq_submitted_flag BOOLEAN DEFAULT FALSE,
+    dbq_submission_date DATE,
+    nexus_opinion_provided BOOLEAN DEFAULT FALSE,
+    nexus_opinion VARCHAR(50),  -- At Least As Likely As Not, Less Likely, etc.
 
     -- Disability Assessment
-    CURRENT_SEVERITY VARCHAR(50),
-    FUNCTIONAL_IMPACT_SCORE INTEGER,  -- 0-100 scale
-    RECOMMENDED_RATING_PERCENTAGE INTEGER,
+    current_severity VARCHAR(50),
+    functional_impact_score INTEGER,  -- 0-100 scale
+    recommended_rating_percentage INTEGER,
 
     -- Service Connection Assessment
-    SERVICE_CONNECTED_OPINION VARCHAR(50),  -- Yes, No, Possible
-    IN_SERVICE_INCURRENCE_FLAG BOOLEAN,
-    AGGRAVATION_FLAG BOOLEAN,
-    SECONDARY_CONDITION_FLAG BOOLEAN,
+    service_connected_opinion VARCHAR(50),  -- Yes, No, Possible
+    in_service_incurrence_flag BOOLEAN,
+    aggravation_flag BOOLEAN,
+    secondary_condition_flag BOOLEAN,
 
     -- Quality Metrics
-    REPORT_COMPLETENESS_SCORE DECIMAL(5,2),  -- 0-100
-    REPORT_TIMELINESS_DAYS INTEGER,
-    SUFFICIENT_EXAM_FLAG BOOLEAN DEFAULT TRUE,
-    ADDENDUM_REQUIRED_FLAG BOOLEAN DEFAULT FALSE,
+    report_completeness_score DECIMAL(5,2),  -- 0-100
+    report_timeliness_days INTEGER,
+    sufficient_exam_flag BOOLEAN DEFAULT TRUE,
+    addendum_required_flag BOOLEAN DEFAULT FALSE,
 
     -- Financial Metrics
-    EVALUATION_COST_AMOUNT DECIMAL(10,2),
-    CONTRACTOR_PAYMENT_AMOUNT DECIMAL(10,2),
-    TRAVEL_REIMBURSEMENT_AMOUNT DECIMAL(10,2),
+    evaluation_cost_amount DECIMAL(10,2),
+    contractor_payment_amount DECIMAL(10,2),
+    travel_reimbursement_amount DECIMAL(10,2),
 
     -- Administrative
-    REVIEW_REQUIRED_FLAG BOOLEAN DEFAULT FALSE,
-    QA_REVIEWED_FLAG BOOLEAN DEFAULT FALSE,
-    QA_REVIEWER_ID VARCHAR(50),
-    QA_REVIEW_DATE DATE,
+    review_required_flag BOOLEAN DEFAULT FALSE,
+    qa_reviewed_flag BOOLEAN DEFAULT FALSE,
+    qa_reviewer_id VARCHAR(50),
+    qa_review_date DATE,
 
     -- Telehealth Specific
-    TELEHEALTH_FLAG BOOLEAN DEFAULT FALSE,
-    TELEHEALTH_PLATFORM VARCHAR(50),
-    TECHNICAL_ISSUES_FLAG BOOLEAN DEFAULT FALSE,
+    telehealth_flag BOOLEAN DEFAULT FALSE,
+    telehealth_platform VARCHAR(50),
+    technical_issues_flag BOOLEAN DEFAULT FALSE,
 
     -- Metadata
-    SOURCE_SYSTEM VARCHAR(50),
-    CREATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    source_system VARCHAR(50),
+    created_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (VETERAN_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_VETERAN(VETERAN_KEY),
-    FOREIGN KEY (EVALUATOR_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_EVALUATOR(EVALUATOR_KEY),
-    FOREIGN KEY (FACILITY_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_FACILITY(FACILITY_KEY),
-    FOREIGN KEY (EVALUATION_TYPE_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_EVALUATION_TYPE(EVALUATION_TYPE_KEY),
-    FOREIGN KEY (MEDICAL_CONDITION_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_MEDICAL_CONDITION(MEDICAL_CONDITION_KEY),
-    FOREIGN KEY (CLAIM_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_CLAIM(CLAIM_KEY),
-    FOREIGN KEY (APPOINTMENT_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_APPOINTMENT(APPOINTMENT_KEY),
-    FOREIGN KEY (EVALUATION_DATE_KEY) REFERENCES VETERAN_EVALUATION_DW.DIM.DIM_DATE(DATE_KEY)
+    FOREIGN KEY (veteran_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans(veteran_sk),
+    FOREIGN KEY (evaluator_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators(evaluator_sk),
+    FOREIGN KEY (facility_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities(facility_sk),
+    FOREIGN KEY (evaluation_type_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluation_types(evaluation_type_sk),
+    FOREIGN KEY (medical_condition_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_medical_conditions(medical_condition_sk),
+    FOREIGN KEY (claim_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_claims(claim_sk),
+    FOREIGN KEY (appointment_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_appointments(appointment_sk),
+    FOREIGN KEY (evaluation_date_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates(date_sk)
 )
 COMMENT = 'Transaction fact table for medical evaluations at the evaluation-condition grain'
-CLUSTER BY (EVALUATION_DATE_KEY, FACILITY_KEY);
+CLUSTER BY (evaluation_date_sk, facility_sk);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_FACT_KEY IS 'Surrogate primary key for the evaluation fact';
-COMMENT ON COLUMN FACT_EVALUATION.VETERAN_KEY IS 'Foreign key to DIM_VETERAN dimension';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATOR_KEY IS 'Foreign key to DIM_EVALUATOR dimension';
-COMMENT ON COLUMN FACT_EVALUATION.FACILITY_KEY IS 'Foreign key to DIM_FACILITY dimension';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_TYPE_KEY IS 'Foreign key to DIM_EVALUATION_TYPE dimension';
-COMMENT ON COLUMN FACT_EVALUATION.MEDICAL_CONDITION_KEY IS 'Foreign key to DIM_MEDICAL_CONDITION dimension';
-COMMENT ON COLUMN FACT_EVALUATION.CLAIM_KEY IS 'Foreign key to DIM_CLAIM dimension';
-COMMENT ON COLUMN FACT_EVALUATION.APPOINTMENT_KEY IS 'Foreign key to DIM_APPOINTMENT dimension';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_DATE_KEY IS 'Foreign key to DIM_DATE - date evaluation was performed';
-COMMENT ON COLUMN FACT_EVALUATION.SCHEDULED_DATE_KEY IS 'Foreign key to DIM_DATE - date evaluation was originally scheduled';
-COMMENT ON COLUMN FACT_EVALUATION.CLAIM_DATE_KEY IS 'Foreign key to DIM_DATE - date claim was filed';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_ID IS 'Unique evaluation identifier (degenerate dimension)';
-COMMENT ON COLUMN FACT_EVALUATION.DBQ_FORM_ID IS 'Disability Benefits Questionnaire form identifier';
-COMMENT ON COLUMN FACT_EVALUATION.EXAM_REQUEST_ID IS 'Exam request identifier';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_DURATION_MINUTES IS 'Actual duration of evaluation in minutes';
-COMMENT ON COLUMN FACT_EVALUATION.SCHEDULED_DURATION_MINUTES IS 'Originally scheduled duration in minutes';
-COMMENT ON COLUMN FACT_EVALUATION.VARIANCE_MINUTES IS 'Difference between actual and scheduled duration (positive = over time)';
-COMMENT ON COLUMN FACT_EVALUATION.ATTENDED_FLAG IS 'TRUE if veteran attended the evaluation';
-COMMENT ON COLUMN FACT_EVALUATION.NO_SHOW_FLAG IS 'TRUE if veteran did not show up';
-COMMENT ON COLUMN FACT_EVALUATION.CANCELLED_FLAG IS 'TRUE if evaluation was cancelled';
-COMMENT ON COLUMN FACT_EVALUATION.RESCHEDULED_FLAG IS 'TRUE if evaluation was rescheduled';
-COMMENT ON COLUMN FACT_EVALUATION.DAYS_FROM_REQUEST_TO_SCHEDULE IS 'Days between exam request and scheduled date';
-COMMENT ON COLUMN FACT_EVALUATION.DAYS_FROM_SCHEDULE_TO_EVALUATION IS 'Days between scheduled date and actual evaluation';
-COMMENT ON COLUMN FACT_EVALUATION.TOTAL_WAIT_DAYS IS 'Total days from request to evaluation';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_COMPLETED_FLAG IS 'TRUE if evaluation was completed';
-COMMENT ON COLUMN FACT_EVALUATION.DBQ_SUBMITTED_FLAG IS 'TRUE if DBQ form was submitted';
-COMMENT ON COLUMN FACT_EVALUATION.DBQ_SUBMISSION_DATE IS 'Date DBQ was submitted';
-COMMENT ON COLUMN FACT_EVALUATION.NEXUS_OPINION_PROVIDED IS 'TRUE if medical nexus opinion was provided';
-COMMENT ON COLUMN FACT_EVALUATION.NEXUS_OPINION IS 'Nexus opinion (At Least As Likely As Not, Less Likely, etc.)';
-COMMENT ON COLUMN FACT_EVALUATION.CURRENT_SEVERITY IS 'Current severity assessment';
-COMMENT ON COLUMN FACT_EVALUATION.FUNCTIONAL_IMPACT_SCORE IS 'Functional impact score (0-100 scale)';
-COMMENT ON COLUMN FACT_EVALUATION.RECOMMENDED_RATING_PERCENTAGE IS 'Evaluator recommended disability rating percentage';
-COMMENT ON COLUMN FACT_EVALUATION.SERVICE_CONNECTED_OPINION IS 'Service connection opinion (Yes, No, Possible)';
-COMMENT ON COLUMN FACT_EVALUATION.IN_SERVICE_INCURRENCE_FLAG IS 'TRUE if condition incurred during service';
-COMMENT ON COLUMN FACT_EVALUATION.AGGRAVATION_FLAG IS 'TRUE if service aggravated pre-existing condition';
-COMMENT ON COLUMN FACT_EVALUATION.SECONDARY_CONDITION_FLAG IS 'TRUE if this is a secondary condition';
-COMMENT ON COLUMN FACT_EVALUATION.REPORT_COMPLETENESS_SCORE IS 'Quality score for report completeness (0-100)';
-COMMENT ON COLUMN FACT_EVALUATION.REPORT_TIMELINESS_DAYS IS 'Days from evaluation to report submission';
-COMMENT ON COLUMN FACT_EVALUATION.SUFFICIENT_EXAM_FLAG IS 'TRUE if exam was sufficient for rating decision';
-COMMENT ON COLUMN FACT_EVALUATION.ADDENDUM_REQUIRED_FLAG IS 'TRUE if addendum to report was required';
-COMMENT ON COLUMN FACT_EVALUATION.EVALUATION_COST_AMOUNT IS 'Cost of the evaluation';
-COMMENT ON COLUMN FACT_EVALUATION.CONTRACTOR_PAYMENT_AMOUNT IS 'Amount paid to contractor evaluator';
-COMMENT ON COLUMN FACT_EVALUATION.TRAVEL_REIMBURSEMENT_AMOUNT IS 'Travel reimbursement paid to veteran';
-COMMENT ON COLUMN FACT_EVALUATION.REVIEW_REQUIRED_FLAG IS 'TRUE if quality review is required';
-COMMENT ON COLUMN FACT_EVALUATION.QA_REVIEWED_FLAG IS 'TRUE if QA review was completed';
-COMMENT ON COLUMN FACT_EVALUATION.QA_REVIEWER_ID IS 'ID of quality assurance reviewer';
-COMMENT ON COLUMN FACT_EVALUATION.QA_REVIEW_DATE IS 'Date of QA review';
-COMMENT ON COLUMN FACT_EVALUATION.TELEHEALTH_FLAG IS 'TRUE if evaluation was conducted via telehealth';
-COMMENT ON COLUMN FACT_EVALUATION.TELEHEALTH_PLATFORM IS 'Telehealth platform used (Zoom, Teams, etc.)';
-COMMENT ON COLUMN FACT_EVALUATION.TECHNICAL_ISSUES_FLAG IS 'TRUE if technical issues occurred during telehealth';
-COMMENT ON COLUMN FACT_EVALUATION.SOURCE_SYSTEM IS 'Source system that provided this data';
-COMMENT ON COLUMN FACT_EVALUATION.CREATED_TIMESTAMP IS 'Timestamp when record was created';
-COMMENT ON COLUMN FACT_EVALUATION.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_fact_sk IS 'Surrogate primary key for the evaluation fact';
+COMMENT ON COLUMN fct_evaluations_completed.veteran_sk IS 'Foreign key to dim_veterans dimension';
+COMMENT ON COLUMN fct_evaluations_completed.evaluator_sk IS 'Foreign key to dim_evaluators dimension';
+COMMENT ON COLUMN fct_evaluations_completed.facility_sk IS 'Foreign key to dim_facilities dimension';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_type_sk IS 'Foreign key to dim_evaluation_types dimension';
+COMMENT ON COLUMN fct_evaluations_completed.medical_condition_sk IS 'Foreign key to dim_medical_conditions dimension';
+COMMENT ON COLUMN fct_evaluations_completed.claim_sk IS 'Foreign key to dim_claims dimension';
+COMMENT ON COLUMN fct_evaluations_completed.appointment_sk IS 'Foreign key to dim_appointments dimension';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_date_sk IS 'Foreign key to dim_dates - date evaluation was performed';
+COMMENT ON COLUMN fct_evaluations_completed.scheduled_date_sk IS 'Foreign key to dim_dates - date evaluation was originally scheduled';
+COMMENT ON COLUMN fct_evaluations_completed.claim_date_sk IS 'Foreign key to dim_dates - date claim was filed';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_id IS 'Unique evaluation identifier (degenerate dimension)';
+COMMENT ON COLUMN fct_evaluations_completed.dbq_form_id IS 'Disability Benefits Questionnaire form identifier';
+COMMENT ON COLUMN fct_evaluations_completed.exam_request_id IS 'Exam request identifier';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_duration_minutes IS 'Actual duration of evaluation in minutes';
+COMMENT ON COLUMN fct_evaluations_completed.scheduled_duration_minutes IS 'Originally scheduled duration in minutes';
+COMMENT ON COLUMN fct_evaluations_completed.variance_minutes IS 'Difference between actual and scheduled duration (positive = over time)';
+COMMENT ON COLUMN fct_evaluations_completed.attended_flag IS 'TRUE if veteran attended the evaluation';
+COMMENT ON COLUMN fct_evaluations_completed.no_show_flag IS 'TRUE if veteran did not show up';
+COMMENT ON COLUMN fct_evaluations_completed.cancelled_flag IS 'TRUE if evaluation was cancelled';
+COMMENT ON COLUMN fct_evaluations_completed.rescheduled_flag IS 'TRUE if evaluation was rescheduled';
+COMMENT ON COLUMN fct_evaluations_completed.days_from_request_to_schedule IS 'Days between exam request and scheduled date';
+COMMENT ON COLUMN fct_evaluations_completed.days_from_schedule_to_evaluation IS 'Days between scheduled date and actual evaluation';
+COMMENT ON COLUMN fct_evaluations_completed.total_wait_days IS 'Total days from request to evaluation';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_completed_flag IS 'TRUE if evaluation was completed';
+COMMENT ON COLUMN fct_evaluations_completed.dbq_submitted_flag IS 'TRUE if DBQ form was submitted';
+COMMENT ON COLUMN fct_evaluations_completed.dbq_submission_date IS 'Date DBQ was submitted';
+COMMENT ON COLUMN fct_evaluations_completed.nexus_opinion_provided IS 'TRUE if medical nexus opinion was provided';
+COMMENT ON COLUMN fct_evaluations_completed.nexus_opinion IS 'Nexus opinion (At Least As Likely As Not, Less Likely, etc.)';
+COMMENT ON COLUMN fct_evaluations_completed.current_severity IS 'Current severity assessment';
+COMMENT ON COLUMN fct_evaluations_completed.functional_impact_score IS 'Functional impact score (0-100 scale)';
+COMMENT ON COLUMN fct_evaluations_completed.recommended_rating_percentage IS 'Evaluator recommended disability rating percentage';
+COMMENT ON COLUMN fct_evaluations_completed.service_connected_opinion IS 'Service connection opinion (Yes, No, Possible)';
+COMMENT ON COLUMN fct_evaluations_completed.in_service_incurrence_flag IS 'TRUE if condition incurred during service';
+COMMENT ON COLUMN fct_evaluations_completed.aggravation_flag IS 'TRUE if service aggravated pre-existing condition';
+COMMENT ON COLUMN fct_evaluations_completed.secondary_condition_flag IS 'TRUE if this is a secondary condition';
+COMMENT ON COLUMN fct_evaluations_completed.report_completeness_score IS 'Quality score for report completeness (0-100)';
+COMMENT ON COLUMN fct_evaluations_completed.report_timeliness_days IS 'Days from evaluation to report submission';
+COMMENT ON COLUMN fct_evaluations_completed.sufficient_exam_flag IS 'TRUE if exam was sufficient for rating decision';
+COMMENT ON COLUMN fct_evaluations_completed.addendum_required_flag IS 'TRUE if addendum to report was required';
+COMMENT ON COLUMN fct_evaluations_completed.evaluation_cost_amount IS 'Cost of the evaluation';
+COMMENT ON COLUMN fct_evaluations_completed.contractor_payment_amount IS 'Amount paid to contractor evaluator';
+COMMENT ON COLUMN fct_evaluations_completed.travel_reimbursement_amount IS 'Travel reimbursement paid to veteran';
+COMMENT ON COLUMN fct_evaluations_completed.review_required_flag IS 'TRUE if quality review is required';
+COMMENT ON COLUMN fct_evaluations_completed.qa_reviewed_flag IS 'TRUE if QA review was completed';
+COMMENT ON COLUMN fct_evaluations_completed.qa_reviewer_id IS 'ID of quality assurance reviewer';
+COMMENT ON COLUMN fct_evaluations_completed.qa_review_date IS 'Date of QA review';
+COMMENT ON COLUMN fct_evaluations_completed.telehealth_flag IS 'TRUE if evaluation was conducted via telehealth';
+COMMENT ON COLUMN fct_evaluations_completed.telehealth_platform IS 'Telehealth platform used (Zoom, Teams, etc.)';
+COMMENT ON COLUMN fct_evaluations_completed.technical_issues_flag IS 'TRUE if technical issues occurred during telehealth';
+COMMENT ON COLUMN fct_evaluations_completed.source_system IS 'Source system that provided this data';
+COMMENT ON COLUMN fct_evaluations_completed.created_timestamp IS 'Timestamp when record was created';
+COMMENT ON COLUMN fct_evaluations_completed.updated_timestamp IS 'Timestamp when record was last updated';
