@@ -2,7 +2,7 @@
 -- DIM_APPOINTMENT - Appointment Dimension
 -- =====================================================
 -- Purpose: Appointment scheduling details
--- SCD Type: Type 1 (degenerate dimension, can also be in fact)
+-- SCD Type: Type 1 dimension for appointment details
 
 USE SCHEMA VETERAN_EVALUATION_DW.DIM;
 
