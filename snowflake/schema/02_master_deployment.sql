@@ -17,6 +17,7 @@
 !source ../dimensions/06_dim_medical_condition.sql
 !source ../dimensions/07_dim_claim.sql
 !source ../dimensions/08_dim_appointment.sql
+!source ../dimensions/09_dim_exam_request_types.sql
 
 -- Step 3: Create Fact Tables
 !source ../facts/01_fact_evaluation.sql
@@ -25,6 +26,8 @@
 !source ../facts/04_fact_daily_snapshot.sql
 !source ../facts/05_fact_appointment_events.sql
 !source ../facts/06_fact_evaluation_qa_events.sql
+!source ../facts/07_fact_exam_requests.sql
+!source ../facts/08_fact_examiner_assignments.sql
 
 -- Step 4: Populate Date Dimension
 !source 01_populate_date_dimension.sql
