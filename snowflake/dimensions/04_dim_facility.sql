@@ -59,3 +59,39 @@ CREATE OR REPLACE TABLE DIM_FACILITY (
     UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 )
 COMMENT = 'Type 2 SCD dimension for VA facilities and medical centers';
+
+-- Column comments for data dictionary
+COMMENT ON COLUMN DIM_FACILITY.FACILITY_KEY IS 'Surrogate primary key for the facility dimension';
+COMMENT ON COLUMN DIM_FACILITY.FACILITY_ID IS 'Business key - Unique facility identifier (Station Number)';
+COMMENT ON COLUMN DIM_FACILITY.FACILITY_NAME IS 'Official facility name';
+COMMENT ON COLUMN DIM_FACILITY.FACILITY_TYPE IS 'Facility type (VAMC, CBOC, Vet Center, Contract Facility)';
+COMMENT ON COLUMN DIM_FACILITY.STATION_NUMBER IS 'VA Station Number (official facility identifier)';
+COMMENT ON COLUMN DIM_FACILITY.ADDRESS_LINE1 IS 'Street address line 1';
+COMMENT ON COLUMN DIM_FACILITY.ADDRESS_LINE2 IS 'Street address line 2';
+COMMENT ON COLUMN DIM_FACILITY.CITY IS 'City';
+COMMENT ON COLUMN DIM_FACILITY.STATE IS 'Two-letter state code';
+COMMENT ON COLUMN DIM_FACILITY.ZIP_CODE IS 'ZIP code';
+COMMENT ON COLUMN DIM_FACILITY.COUNTY IS 'County name';
+COMMENT ON COLUMN DIM_FACILITY.REGION IS 'VISN region name';
+COMMENT ON COLUMN DIM_FACILITY.VISN_NUMBER IS 'Veterans Integrated Service Network number (1-23)';
+COMMENT ON COLUMN DIM_FACILITY.PHONE IS 'Main phone number';
+COMMENT ON COLUMN DIM_FACILITY.FAX IS 'Fax number';
+COMMENT ON COLUMN DIM_FACILITY.EMAIL IS 'General email address';
+COMMENT ON COLUMN DIM_FACILITY.WEBSITE IS 'Facility website URL';
+COMMENT ON COLUMN DIM_FACILITY.BED_COUNT IS 'Number of inpatient beds';
+COMMENT ON COLUMN DIM_FACILITY.SPECIALTY_SERVICES IS 'JSON array of specialty services offered';
+COMMENT ON COLUMN DIM_FACILITY.TRAUMA_LEVEL IS 'Trauma center level designation';
+COMMENT ON COLUMN DIM_FACILITY.TEACHING_FACILITY_FLAG IS 'TRUE if academic teaching facility';
+COMMENT ON COLUMN DIM_FACILITY.ACCREDITED_FLAG IS 'TRUE if currently accredited';
+COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_BODY IS 'Accrediting organization name (e.g., Joint Commission)';
+COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_DATE IS 'Date of current accreditation';
+COMMENT ON COLUMN DIM_FACILITY.ACCREDITATION_EXPIRATION IS 'Accreditation expiration date';
+COMMENT ON COLUMN DIM_FACILITY.ACTIVE_FLAG IS 'TRUE if facility is currently operational';
+COMMENT ON COLUMN DIM_FACILITY.OPENED_DATE IS 'Date facility opened';
+COMMENT ON COLUMN DIM_FACILITY.CLOSED_DATE IS 'Date facility closed (if applicable)';
+COMMENT ON COLUMN DIM_FACILITY.EFFECTIVE_START_DATE IS 'Start date when this version of the record became effective';
+COMMENT ON COLUMN DIM_FACILITY.EFFECTIVE_END_DATE IS 'End date when this version of the record became obsolete (9999-12-31 if current)';
+COMMENT ON COLUMN DIM_FACILITY.IS_CURRENT IS 'TRUE if this is the current active version of the record';
+COMMENT ON COLUMN DIM_FACILITY.SOURCE_SYSTEM IS 'Source system that provided this data';
+COMMENT ON COLUMN DIM_FACILITY.CREATED_TIMESTAMP IS 'Timestamp when record was created';
+COMMENT ON COLUMN DIM_FACILITY.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';

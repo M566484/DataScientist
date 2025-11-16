@@ -39,3 +39,23 @@ CREATE OR REPLACE TABLE DIM_APPOINTMENT (
     UPDATED_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 )
 COMMENT = 'Type 1 dimension for appointment details';
+
+-- Column comments for data dictionary
+COMMENT ON COLUMN DIM_APPOINTMENT.APPOINTMENT_KEY IS 'Surrogate primary key for the appointment dimension';
+COMMENT ON COLUMN DIM_APPOINTMENT.APPOINTMENT_ID IS 'Business key - Unique appointment identifier';
+COMMENT ON COLUMN DIM_APPOINTMENT.APPOINTMENT_TYPE IS 'Appointment type (In-Person, Telehealth, Phone)';
+COMMENT ON COLUMN DIM_APPOINTMENT.VISIT_TYPE IS 'Visit type (C&P Exam, Follow-up, Consultation)';
+COMMENT ON COLUMN DIM_APPOINTMENT.SCHEDULED_DURATION_MINUTES IS 'Scheduled appointment duration in minutes';
+COMMENT ON COLUMN DIM_APPOINTMENT.BUFFER_TIME_MINUTES IS 'Buffer time between appointments in minutes';
+COMMENT ON COLUMN DIM_APPOINTMENT.APPOINTMENT_STATUS IS 'Appointment status (Scheduled, Confirmed, Completed, Cancelled, No-Show)';
+COMMENT ON COLUMN DIM_APPOINTMENT.CANCELLATION_REASON IS 'Reason for cancellation if applicable';
+COMMENT ON COLUMN DIM_APPOINTMENT.RESCHEDULED_FLAG IS 'TRUE if appointment has been rescheduled';
+COMMENT ON COLUMN DIM_APPOINTMENT.RESCHEDULED_COUNT IS 'Number of times this appointment has been rescheduled';
+COMMENT ON COLUMN DIM_APPOINTMENT.REMINDER_SENT_FLAG IS 'TRUE if appointment reminder was sent';
+COMMENT ON COLUMN DIM_APPOINTMENT.REMINDER_SENT_DATE IS 'Date reminder was sent';
+COMMENT ON COLUMN DIM_APPOINTMENT.CONFIRMATION_RECEIVED_FLAG IS 'TRUE if veteran confirmed appointment';
+COMMENT ON COLUMN DIM_APPOINTMENT.DAYS_UNTIL_APPOINTMENT IS 'Number of days from scheduling to appointment';
+COMMENT ON COLUMN DIM_APPOINTMENT.SCHEDULING_TIER IS 'Wait time tier (Within 20 days, 21-30 days, Over 30 days)';
+COMMENT ON COLUMN DIM_APPOINTMENT.SOURCE_SYSTEM IS 'Source system that provided this data';
+COMMENT ON COLUMN DIM_APPOINTMENT.CREATED_TIMESTAMP IS 'Timestamp when record was created';
+COMMENT ON COLUMN DIM_APPOINTMENT.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';

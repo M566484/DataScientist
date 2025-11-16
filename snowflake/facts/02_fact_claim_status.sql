@@ -92,3 +92,57 @@ CREATE OR REPLACE TABLE FACT_CLAIM_STATUS (
 )
 COMMENT = 'Accumulating snapshot fact table for claim status and processing milestones'
 CLUSTER BY (CLAIM_KEY, RATING_DECISION_DATE_KEY);
+
+-- Column comments for data dictionary
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CLAIM_STATUS_FACT_KEY IS 'Surrogate primary key for the claim status fact';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.VETERAN_KEY IS 'Foreign key to DIM_VETERAN dimension';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CLAIM_KEY IS 'Foreign key to DIM_CLAIM dimension';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.FACILITY_KEY IS 'Foreign key to DIM_FACILITY dimension';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CLAIM_FILED_DATE_KEY IS 'Foreign key to DIM_DATE - claim filed milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CLAIM_RECEIVED_DATE_KEY IS 'Foreign key to DIM_DATE - claim received milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.INITIAL_REVIEW_DATE_KEY IS 'Foreign key to DIM_DATE - initial review milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EVIDENCE_REQUEST_DATE_KEY IS 'Foreign key to DIM_DATE - evidence requested milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EVIDENCE_RECEIVED_DATE_KEY IS 'Foreign key to DIM_DATE - evidence received milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EXAM_SCHEDULED_DATE_KEY IS 'Foreign key to DIM_DATE - exam scheduled milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EXAM_COMPLETED_DATE_KEY IS 'Foreign key to DIM_DATE - exam completed milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.RATING_DECISION_DATE_KEY IS 'Foreign key to DIM_DATE - rating decision made milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.NOTIFICATION_SENT_DATE_KEY IS 'Foreign key to DIM_DATE - decision notification sent milestone';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CLAIM_ID IS 'Unique claim identifier (degenerate dimension)';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.STATUS_CHANGE_ID IS 'Unique status change event identifier';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.PREVIOUS_STATUS IS 'Previous claim status before this change';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CURRENT_STATUS IS 'Current claim status';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.STATUS_CHANGE_REASON IS 'Reason for status change';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_IN_PREVIOUS_STATUS IS 'Number of days claim was in previous status';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.TOTAL_DAYS_PENDING IS 'Total days claim has been pending';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_TO_COMPLETE IS 'Total days from filing to completion';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EVIDENCE_REQUESTED IS 'TRUE if evidence was requested from veteran';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EVIDENCE_RECEIVED IS 'TRUE if requested evidence was received';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EXAM_REQUESTED IS 'TRUE if medical exam was requested';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.EXAM_COMPLETED IS 'TRUE if medical exam was completed';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DECISION_MADE IS 'TRUE if rating decision has been made';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.NOTIFICATION_SENT IS 'TRUE if decision notification was sent to veteran';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_CLAIM_TO_INITIAL_REVIEW IS 'Days from claim filed to initial review';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_REVIEW_TO_EVIDENCE_REQUEST IS 'Days from initial review to evidence request';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_EVIDENCE_REQUEST_TO_RECEIPT IS 'Days from evidence request to receipt';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_EVIDENCE_TO_EXAM_SCHEDULE IS 'Days from evidence receipt to exam scheduled';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_EXAM_SCHEDULE_TO_COMPLETE IS 'Days from exam scheduled to exam completed';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_EXAM_TO_DECISION IS 'Days from exam completed to rating decision';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DAYS_DECISION_TO_NOTIFICATION IS 'Days from decision to notification sent';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.NUMBER_OF_CONTENTIONS IS 'Number of contentions in the claim';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.NUMBER_OF_EXAMS_REQUIRED IS 'Number of medical exams required';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.NUMBER_OF_EXAMS_COMPLETED IS 'Number of medical exams completed';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.FULLY_DEVELOPED_CLAIM_FLAG IS 'TRUE if Fully Developed Claim (FDC) program';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.RATING_PERCENTAGE_GRANTED IS 'Total disability rating percentage granted';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.SERVICE_CONNECTED_GRANTED IS 'Count of conditions granted service connection';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.SERVICE_CONNECTED_DENIED IS 'Count of conditions denied service connection';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.DEFERRED_CONDITIONS IS 'Count of conditions deferred for additional development';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.SUFFICIENT_EVIDENCE_FLAG IS 'TRUE if sufficient evidence exists for decision';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.REMAND_FLAG IS 'TRUE if claim was remanded (sent back) for additional work';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.REMAND_REASON IS 'Reason claim was remanded';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.ADDITIONAL_DEVELOPMENT_NEEDED IS 'TRUE if additional development is needed';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.ASSIGNED_SPECIALIST IS 'Name of assigned rating specialist';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.REGIONAL_OFFICE_CODE IS 'Regional office code processing the claim';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.PRIORITY_PROCESSING_FLAG IS 'TRUE if claim has priority processing';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.SOURCE_SYSTEM IS 'Source system that provided this data';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.CREATED_TIMESTAMP IS 'Timestamp when record was created';
+COMMENT ON COLUMN FACT_CLAIM_STATUS.UPDATED_TIMESTAMP IS 'Timestamp when record was last updated';
