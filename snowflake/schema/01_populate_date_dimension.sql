@@ -81,8 +81,8 @@ BEGIN
         TO_CHAR(full_date, 'DY') AS day_abbr,
 
         -- Weekend/Weekday flags
-        CASE WHEN DAYOFWEEK(full_date) IN (0, 6) THEN TRUE ELSE FALSE END AS is_weekend,
-        CASE WHEN DAYOFWEEK(full_date) IN (0, 6) THEN FALSE ELSE TRUE END AS is_weekday,
+        CASE WHEN DAYOFWEEK(full_date) IN (5, 6) THEN TRUE ELSE FALSE END AS is_weekend,
+        CASE WHEN DAYOFWEEK(full_date) IN (5, 6) THEN FALSE ELSE TRUE END AS is_weekday,
 
         -- VA Fiscal Year (starts October 1)
         CASE
