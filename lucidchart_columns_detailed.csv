@@ -1,0 +1,100 @@
+table_name,column_name,data_type,is_primary_key,is_foreign_key,is_business_key,is_scd_attribute,is_measure,column_order,description
+dim_dates,date_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Primary key in YYYYMMDD format
+dim_dates,full_date,DATE,FALSE,FALSE,FALSE,FALSE,FALSE,2,Actual calendar date
+dim_dates,year_number,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,3,Four-digit year
+dim_dates,fiscal_year,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,4,VA fiscal year (starts Oct 1)
+dim_dates,fiscal_quarter,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,5,VA fiscal quarter (1-4)
+dim_dates,is_weekend,BOOLEAN,FALSE,FALSE,FALSE,FALSE,FALSE,6,TRUE if Saturday or Sunday
+dim_dates,is_holiday,BOOLEAN,FALSE,FALSE,FALSE,FALSE,FALSE,7,TRUE if federal holiday
+dim_veterans,veteran_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_veterans,veteran_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key - Unique veteran identifier
+dim_veterans,full_name,VARCHAR(255),FALSE,FALSE,FALSE,FALSE,FALSE,3,Veteran full name
+dim_veterans,service_branch,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,4,Military branch
+dim_veterans,current_disability_rating,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,5,Current VA disability rating percentage
+dim_veterans,effective_start_date,TIMESTAMP_NTZ,FALSE,FALSE,FALSE,TRUE,FALSE,6,Start date when this version became effective
+dim_veterans,effective_end_date,TIMESTAMP_NTZ,FALSE,FALSE,FALSE,TRUE,FALSE,7,End date when this version became obsolete
+dim_veterans,is_current,BOOLEAN,FALSE,FALSE,FALSE,TRUE,FALSE,8,TRUE if this is the current active version
+dim_evaluators,evaluator_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_evaluators,evaluator_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key - Unique evaluator identifier
+dim_evaluators,full_name,VARCHAR(255),FALSE,FALSE,FALSE,FALSE,FALSE,3,Evaluator full name
+dim_evaluators,specialty,VARCHAR(100),FALSE,FALSE,FALSE,FALSE,FALSE,4,Medical specialty
+dim_evaluators,credentials,VARCHAR(100),FALSE,FALSE,FALSE,FALSE,FALSE,5,Professional credentials (MD DO PhD etc)
+dim_evaluators,npi_number,VARCHAR(10),FALSE,FALSE,FALSE,FALSE,FALSE,6,National Provider Identifier
+dim_evaluators,effective_start_date,TIMESTAMP_NTZ,FALSE,FALSE,FALSE,TRUE,FALSE,7,Start date when this version became effective
+dim_evaluators,is_current,BOOLEAN,FALSE,FALSE,FALSE,TRUE,FALSE,8,TRUE if this is the current active version
+dim_facilities,facility_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_facilities,facility_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key - Unique facility identifier
+dim_facilities,facility_name,VARCHAR(255),FALSE,FALSE,FALSE,FALSE,FALSE,3,Facility name
+dim_facilities,station_number,VARCHAR(10),FALSE,FALSE,FALSE,FALSE,FALSE,4,VA station number
+dim_facilities,visn_number,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,5,Veterans Integrated Service Network number
+dim_facilities,facility_type,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,6,Type of facility
+dim_facilities,effective_start_date,TIMESTAMP_NTZ,FALSE,FALSE,FALSE,TRUE,FALSE,7,Start date when this version became effective
+dim_facilities,is_current,BOOLEAN,FALSE,FALSE,FALSE,TRUE,FALSE,8,TRUE if this is the current active version
+dim_evaluation_types,evaluation_type_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_evaluation_types,evaluation_type_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key
+dim_evaluation_types,evaluation_type_name,VARCHAR(255),FALSE,FALSE,FALSE,FALSE,FALSE,3,Evaluation type name
+dim_evaluation_types,evaluation_category,VARCHAR(100),FALSE,FALSE,FALSE,FALSE,FALSE,4,Category of evaluation
+dim_evaluation_types,typical_duration_minutes,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,5,Typical duration in minutes
+dim_evaluation_types,requires_specialist,BOOLEAN,FALSE,FALSE,FALSE,FALSE,FALSE,6,TRUE if requires specialist
+dim_medical_conditions,medical_condition_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_medical_conditions,medical_condition_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key
+dim_medical_conditions,condition_name,VARCHAR(255),FALSE,FALSE,FALSE,FALSE,FALSE,3,Medical condition name
+dim_medical_conditions,icd10_code,VARCHAR(10),FALSE,FALSE,FALSE,FALSE,FALSE,4,ICD-10 diagnosis code
+dim_medical_conditions,body_system,VARCHAR(100),FALSE,FALSE,FALSE,FALSE,FALSE,5,Affected body system
+dim_medical_conditions,dbq_form_number,VARCHAR(20),FALSE,FALSE,FALSE,FALSE,FALSE,6,DBQ form number
+dim_claims,claim_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_claims,claim_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key
+dim_claims,claim_number,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,3,Claim number
+dim_claims,claim_type,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,4,Type of claim
+dim_claims,claim_status,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,5,Current claim status
+dim_claims,effective_start_date,TIMESTAMP_NTZ,FALSE,FALSE,FALSE,TRUE,FALSE,6,Start date when this version became effective
+dim_claims,is_current,BOOLEAN,FALSE,FALSE,FALSE,TRUE,FALSE,7,TRUE if this is the current active version
+dim_appointments,appointment_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Surrogate primary key
+dim_appointments,appointment_id,VARCHAR(50),FALSE,FALSE,TRUE,FALSE,FALSE,2,Business key
+dim_appointments,appointment_type,VARCHAR(100),FALSE,FALSE,FALSE,FALSE,FALSE,3,Type of appointment
+dim_appointments,visit_type,VARCHAR(50),FALSE,FALSE,FALSE,FALSE,FALSE,4,Visit type (in-person telehealth)
+dim_appointments,scheduled_duration_minutes,INTEGER,FALSE,FALSE,FALSE,FALSE,FALSE,5,Scheduled duration in minutes
+fct_evaluations_completed,evaluation_fact_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Fact table primary key
+fct_evaluations_completed,veteran_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,2,Foreign key to dim_veterans
+fct_evaluations_completed,evaluator_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,3,Foreign key to dim_evaluators
+fct_evaluations_completed,facility_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,4,Foreign key to dim_facilities
+fct_evaluations_completed,evaluation_type_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,5,Foreign key to dim_evaluation_types
+fct_evaluations_completed,medical_condition_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,6,Foreign key to dim_medical_conditions
+fct_evaluations_completed,claim_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,7,Foreign key to dim_claims
+fct_evaluations_completed,appointment_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,8,Foreign key to dim_appointments
+fct_evaluations_completed,evaluation_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,9,Foreign key to dim_dates
+fct_evaluations_completed,evaluation_duration_minutes,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,10,Actual evaluation duration
+fct_evaluations_completed,report_completeness_score,DECIMAL(5,2),FALSE,FALSE,FALSE,FALSE,TRUE,11,Report quality score (0-100)
+fct_evaluations_completed,disability_rating_percentage,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,12,Recommended disability rating
+fct_evaluations_completed,evaluation_cost,DECIMAL(10,2),FALSE,FALSE,FALSE,FALSE,TRUE,13,Cost of evaluation
+fct_claim_status_changes,claim_status_fact_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Fact table primary key
+fct_claim_status_changes,veteran_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,2,Foreign key to dim_veterans
+fct_claim_status_changes,claim_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,3,Foreign key to dim_claims
+fct_claim_status_changes,facility_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,4,Foreign key to dim_facilities
+fct_claim_status_changes,claim_received_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,5,Foreign key to dim_dates
+fct_claim_status_changes,exam_scheduled_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,6,Foreign key to dim_dates
+fct_claim_status_changes,exam_completed_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,7,Foreign key to dim_dates
+fct_claim_status_changes,rating_decision_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,8,Foreign key to dim_dates
+fct_claim_status_changes,days_to_schedule,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,9,Days from receipt to scheduled
+fct_claim_status_changes,days_to_complete_exam,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,10,Days from scheduled to completed
+fct_claim_status_changes,total_cycle_time_days,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,11,Total days from receipt to decision
+fct_appointments_scheduled,appointment_fact_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Fact table primary key
+fct_appointments_scheduled,veteran_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,2,Foreign key to dim_veterans
+fct_appointments_scheduled,evaluator_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,3,Foreign key to dim_evaluators
+fct_appointments_scheduled,facility_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,4,Foreign key to dim_facilities
+fct_appointments_scheduled,evaluation_type_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,5,Foreign key to dim_evaluation_types
+fct_appointments_scheduled,appointment_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,6,Foreign key to dim_appointments
+fct_appointments_scheduled,claim_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,7,Foreign key to dim_claims
+fct_appointments_scheduled,appointment_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,8,Foreign key to dim_dates
+fct_appointments_scheduled,actual_duration_minutes,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,9,Actual appointment duration
+fct_appointments_scheduled,wait_time_days,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,10,Days between request and appointment
+fct_appointments_scheduled,veteran_satisfaction_score,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,11,Veteran satisfaction rating (1-5)
+fct_appointments_scheduled,travel_distance_miles,DECIMAL(8,2),FALSE,FALSE,FALSE,FALSE,TRUE,12,Distance traveled to appointment
+fct_daily_facility_snapshot,daily_snapshot_sk,INTEGER,TRUE,FALSE,FALSE,FALSE,FALSE,1,Fact table primary key
+fct_daily_facility_snapshot,facility_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,2,Foreign key to dim_facilities
+fct_daily_facility_snapshot,snapshot_date_sk,INTEGER,FALSE,TRUE,FALSE,FALSE,FALSE,3,Foreign key to dim_dates
+fct_daily_facility_snapshot,scheduled_appointments_count,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,4,Number of scheduled appointments
+fct_daily_facility_snapshot,completed_evaluations_count,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,5,Number of completed evaluations
+fct_daily_facility_snapshot,cancelled_appointments_count,INTEGER,FALSE,FALSE,FALSE,FALSE,TRUE,6,Number of cancelled appointments
+fct_daily_facility_snapshot,average_wait_time_days,DECIMAL(8,2),FALSE,FALSE,FALSE,FALSE,TRUE,7,Average wait time in days
+fct_daily_facility_snapshot,facility_utilization_rate,DECIMAL(5,2),FALSE,FALSE,FALSE,FALSE,TRUE,8,Utilization rate percentage

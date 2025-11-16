@@ -1,0 +1,13 @@
+table_name,table_type,schema,primary_key,business_key,scd_type,description,color_hex,total_columns
+dim_dates,Dimension,WAREHOUSE,date_sk,,Type 1,Time dimension for analysis,E1BEE7,27
+dim_veterans,Dimension,WAREHOUSE,veteran_sk,veteran_id,Type 2,Veteran demographic and service information,BBDEFB,38
+dim_evaluators,Dimension,WAREHOUSE,evaluator_sk,evaluator_id,Type 2,Medical professionals performing evaluations,C8E6C9,29
+dim_facilities,Dimension,WAREHOUSE,facility_sk,facility_id,Type 2,VA facilities and medical centers,B2EBF2,34
+dim_evaluation_types,Dimension,WAREHOUSE,evaluation_type_sk,evaluation_type_id,Type 1,Types of medical evaluations,FFF9C4,23
+dim_medical_conditions,Dimension,WAREHOUSE,medical_condition_sk,medical_condition_id,Type 1,Medical conditions and diagnoses,F8BBD0,25
+dim_claims,Dimension,WAREHOUSE,claim_sk,claim_id,Type 2,VA disability claims,FFCCBC,28
+dim_appointments,Dimension,WAREHOUSE,appointment_sk,appointment_id,Type 1,Appointment details,E6EE9C,18
+fct_evaluations_completed,Fact,WAREHOUSE,evaluation_fact_sk,,Transaction,Medical evaluations at evaluation-condition grain,FFE0B2,64
+fct_claim_status_changes,Fact,WAREHOUSE,claim_status_fact_sk,,Accumulating Snapshot,Claim processing milestones,FFAB91,52
+fct_appointments_scheduled,Fact,WAREHOUSE,appointment_fact_sk,,Transaction,Appointment scheduling and outcomes,FFE082,99
+fct_daily_facility_snapshot,Fact,WAREHOUSE,daily_snapshot_sk,,Periodic Snapshot,Daily facility metrics and KPIs,FFF59D,67
