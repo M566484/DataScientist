@@ -1,15 +1,15 @@
 -- =====================================================
--- fct_evaluation_qa_events - Evaluation QA Lifecycle Events
+-- fact_evaluation_qa_events - Evaluation QA Lifecycle Events
 -- =====================================================
 -- Purpose: Track complete history of quality assurance review process for evaluations
 -- Grain: One row per QA event (submission, review, clarification request, clarification submission, approval, rejection)
 -- Type: Transaction Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
--- Complements: fct_evaluations_completed (accumulating snapshot)
+-- Complements: fact_evaluations_completed (accumulating snapshot)
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_evaluation_qa_events (
+CREATE OR REPLACE TABLE fact_evaluation_qa_events (
     qa_event_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -181,52 +181,52 @@ COMMENT = 'Transaction fact table capturing complete QA lifecycle for evaluation
 CLUSTER BY (event_date_sk, evaluation_id);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_event_sk IS 'Surrogate primary key for the QA event fact';
-COMMENT ON COLUMN fct_evaluation_qa_events.evaluation_id IS 'Evaluation identifier - can have multiple QA events per evaluation';
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_event_id IS 'Unique QA event identifier';
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_cycle_id IS 'Groups all events in the same QA review cycle';
-COMMENT ON COLUMN fct_evaluation_qa_events.event_type IS 'Type of QA event: INITIAL_SUBMISSION, QA_REVIEW_STARTED, QA_REVIEW_COMPLETED, CLARIFICATION_REQUESTED, CLARIFICATION_SUBMITTED, APPROVED, REJECTED, SENT_TO_VA';
-COMMENT ON COLUMN fct_evaluation_qa_events.event_status IS 'Status of event: IN_PROGRESS, COMPLETED, CANCELLED';
-COMMENT ON COLUMN fct_evaluation_qa_events.event_sequence_number IS 'Sequential number for this evaluation (1=first event, 2=second event, etc.)';
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_cycle_number IS 'Which QA review cycle: 1=initial review, 2=after first clarification, 3=after second clarification, etc.';
-COMMENT ON COLUMN fct_evaluation_qa_events.review_outcome IS 'Outcome of QA review: APPROVED, NEEDS_CLARIFICATION, REJECTED, INSUFFICIENT, RETURNED_TO_EXAMINER';
-COMMENT ON COLUMN fct_evaluation_qa_events.deficiency_found_flag IS 'TRUE if deficiencies were found during QA review';
-COMMENT ON COLUMN fct_evaluation_qa_events.deficiency_count IS 'Number of deficiencies identified in this review';
-COMMENT ON COLUMN fct_evaluation_qa_events.deficiency_severity IS 'Severity of deficiencies: MINOR, MODERATE, MAJOR, CRITICAL';
-COMMENT ON COLUMN fct_evaluation_qa_events.deficiency_category IS 'Category of deficiency: INCOMPLETE_EXAM, MISSING_NEXUS, INSUFFICIENT_RATIONALE, MISSING_DBQ_ITEMS, etc.';
-COMMENT ON COLUMN fct_evaluation_qa_events.clarification_type IS 'Type of clarification requested: ADDITIONAL_TESTING, NEXUS_EXPLANATION, DBQ_COMPLETION, RATIONALE_EXPANSION, etc.';
-COMMENT ON COLUMN fct_evaluation_qa_events.clarification_due_date IS 'Date by which clarification is due';
-COMMENT ON COLUMN fct_evaluation_qa_events.clarification_priority IS 'Priority of clarification request: ROUTINE, URGENT, CRITICAL';
-COMMENT ON COLUMN fct_evaluation_qa_events.specific_dbq_items_flagged IS 'Comma-separated list of specific DBQ item numbers that need clarification';
-COMMENT ON COLUMN fct_evaluation_qa_events.clarification_response_method IS 'How examiner provided clarification: ADDENDUM, REVISED_DBQ, PHONE_CONSULT, ADDITIONAL_EXAM';
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_reviewer_sk IS 'Foreign key to dim_evaluators for QA reviewer (different from original examiner)';
-COMMENT ON COLUMN fct_evaluation_qa_events.qa_team IS 'Which QA team reviewed: Medical, Psych, Orthopedic, etc.';
-COMMENT ON COLUMN fct_evaluation_qa_events.review_duration_minutes IS 'Time spent on this QA review';
-COMMENT ON COLUMN fct_evaluation_qa_events.turnaround_time_hours IS 'Time from submission to QA outcome';
-COMMENT ON COLUMN fct_evaluation_qa_events.completeness_score IS 'Score for completeness of evaluation report (0-100)';
-COMMENT ON COLUMN fct_evaluation_qa_events.accuracy_score IS 'Score for accuracy of medical findings (0-100)';
-COMMENT ON COLUMN fct_evaluation_qa_events.clarity_score IS 'Score for clarity of writing and rationale (0-100)';
-COMMENT ON COLUMN fct_evaluation_qa_events.nexus_quality_score IS 'Score for quality of nexus opinion (0-100)';
-COMMENT ON COLUMN fct_evaluation_qa_events.overall_quality_score IS 'Overall quality score - weighted average of component scores (0-100)';
-COMMENT ON COLUMN fct_evaluation_qa_events.all_dbq_items_completed IS 'TRUE if all DBQ items were completed';
-COMMENT ON COLUMN fct_evaluation_qa_events.nexus_opinion_provided IS 'TRUE if nexus opinion was provided';
-COMMENT ON COLUMN fct_evaluation_qa_events.medical_rationale_adequate IS 'TRUE if medical rationale was adequate';
-COMMENT ON COLUMN fct_evaluation_qa_events.diagnostic_criteria_met IS 'TRUE if diagnostic criteria were met';
-COMMENT ON COLUMN fct_evaluation_qa_events.functional_assessment_complete IS 'TRUE if functional assessment was complete';
-COMMENT ON COLUMN fct_evaluation_qa_events.document_version_number IS 'Version number of the evaluation report';
-COMMENT ON COLUMN fct_evaluation_qa_events.escalated_flag IS 'TRUE if case was escalated to senior QA staff or management';
-COMMENT ON COLUMN fct_evaluation_qa_events.escalation_reason IS 'Reason for escalation';
-COMMENT ON COLUMN fct_evaluation_qa_events.is_final_approval IS 'TRUE if this is the final approval before sending to VA';
-COMMENT ON COLUMN fct_evaluation_qa_events.sent_to_va_flag IS 'TRUE if evaluation was sent to VA after this event';
-COMMENT ON COLUMN fct_evaluation_qa_events.first_pass_approval_flag IS 'TRUE if approved on first QA review without any clarifications';
-COMMENT ON COLUMN fct_evaluation_qa_events.total_qa_cycles_at_event IS 'Number of QA review cycles completed at time of this event';
-COMMENT ON COLUMN fct_evaluation_qa_events.days_in_qa_process IS 'Total days evaluation has been in QA process at time of this event';
-COMMENT ON COLUMN fct_evaluation_qa_events.sla_met_flag IS 'TRUE if SLA was met for this QA process';
-COMMENT ON COLUMN fct_evaluation_qa_events.sla_variance_days IS 'Days early (positive) or late (negative) compared to SLA';
-COMMENT ON COLUMN fct_evaluation_qa_events.automated_checks_run_flag IS 'TRUE if automated QA checks were run';
-COMMENT ON COLUMN fct_evaluation_qa_events.automated_checks_passed IS 'Number of automated checks that passed';
-COMMENT ON COLUMN fct_evaluation_qa_events.automated_checks_failed IS 'Number of automated checks that failed';
-COMMENT ON COLUMN fct_evaluation_qa_events.exam_complexity_level IS 'Complexity level of the examination: ROUTINE, MODERATE, COMPLEX, HIGH_COMPLEXITY';
-COMMENT ON COLUMN fct_evaluation_qa_events.examiner_quality_tier IS 'Examiner quality tier based on historical performance';
-COMMENT ON COLUMN fct_evaluation_qa_events.risk_adjusted_review_flag IS 'TRUE if this received enhanced scrutiny due to risk factors';
-COMMENT ON COLUMN fct_evaluation_qa_events.created_timestamp IS 'Timestamp when QA event record was created in data warehouse';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_event_sk IS 'Surrogate primary key for the QA event fact';
+COMMENT ON COLUMN fact_evaluation_qa_events.evaluation_id IS 'Evaluation identifier - can have multiple QA events per evaluation';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_event_id IS 'Unique QA event identifier';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_cycle_id IS 'Groups all events in the same QA review cycle';
+COMMENT ON COLUMN fact_evaluation_qa_events.event_type IS 'Type of QA event: INITIAL_SUBMISSION, QA_REVIEW_STARTED, QA_REVIEW_COMPLETED, CLARIFICATION_REQUESTED, CLARIFICATION_SUBMITTED, APPROVED, REJECTED, SENT_TO_VA';
+COMMENT ON COLUMN fact_evaluation_qa_events.event_status IS 'Status of event: IN_PROGRESS, COMPLETED, CANCELLED';
+COMMENT ON COLUMN fact_evaluation_qa_events.event_sequence_number IS 'Sequential number for this evaluation (1=first event, 2=second event, etc.)';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_cycle_number IS 'Which QA review cycle: 1=initial review, 2=after first clarification, 3=after second clarification, etc.';
+COMMENT ON COLUMN fact_evaluation_qa_events.review_outcome IS 'Outcome of QA review: APPROVED, NEEDS_CLARIFICATION, REJECTED, INSUFFICIENT, RETURNED_TO_EXAMINER';
+COMMENT ON COLUMN fact_evaluation_qa_events.deficiency_found_flag IS 'TRUE if deficiencies were found during QA review';
+COMMENT ON COLUMN fact_evaluation_qa_events.deficiency_count IS 'Number of deficiencies identified in this review';
+COMMENT ON COLUMN fact_evaluation_qa_events.deficiency_severity IS 'Severity of deficiencies: MINOR, MODERATE, MAJOR, CRITICAL';
+COMMENT ON COLUMN fact_evaluation_qa_events.deficiency_category IS 'Category of deficiency: INCOMPLETE_EXAM, MISSING_NEXUS, INSUFFICIENT_RATIONALE, MISSING_DBQ_ITEMS, etc.';
+COMMENT ON COLUMN fact_evaluation_qa_events.clarification_type IS 'Type of clarification requested: ADDITIONAL_TESTING, NEXUS_EXPLANATION, DBQ_COMPLETION, RATIONALE_EXPANSION, etc.';
+COMMENT ON COLUMN fact_evaluation_qa_events.clarification_due_date IS 'Date by which clarification is due';
+COMMENT ON COLUMN fact_evaluation_qa_events.clarification_priority IS 'Priority of clarification request: ROUTINE, URGENT, CRITICAL';
+COMMENT ON COLUMN fact_evaluation_qa_events.specific_dbq_items_flagged IS 'Comma-separated list of specific DBQ item numbers that need clarification';
+COMMENT ON COLUMN fact_evaluation_qa_events.clarification_response_method IS 'How examiner provided clarification: ADDENDUM, REVISED_DBQ, PHONE_CONSULT, ADDITIONAL_EXAM';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_reviewer_sk IS 'Foreign key to dim_evaluators for QA reviewer (different from original examiner)';
+COMMENT ON COLUMN fact_evaluation_qa_events.qa_team IS 'Which QA team reviewed: Medical, Psych, Orthopedic, etc.';
+COMMENT ON COLUMN fact_evaluation_qa_events.review_duration_minutes IS 'Time spent on this QA review';
+COMMENT ON COLUMN fact_evaluation_qa_events.turnaround_time_hours IS 'Time from submission to QA outcome';
+COMMENT ON COLUMN fact_evaluation_qa_events.completeness_score IS 'Score for completeness of evaluation report (0-100)';
+COMMENT ON COLUMN fact_evaluation_qa_events.accuracy_score IS 'Score for accuracy of medical findings (0-100)';
+COMMENT ON COLUMN fact_evaluation_qa_events.clarity_score IS 'Score for clarity of writing and rationale (0-100)';
+COMMENT ON COLUMN fact_evaluation_qa_events.nexus_quality_score IS 'Score for quality of nexus opinion (0-100)';
+COMMENT ON COLUMN fact_evaluation_qa_events.overall_quality_score IS 'Overall quality score - weighted average of component scores (0-100)';
+COMMENT ON COLUMN fact_evaluation_qa_events.all_dbq_items_completed IS 'TRUE if all DBQ items were completed';
+COMMENT ON COLUMN fact_evaluation_qa_events.nexus_opinion_provided IS 'TRUE if nexus opinion was provided';
+COMMENT ON COLUMN fact_evaluation_qa_events.medical_rationale_adequate IS 'TRUE if medical rationale was adequate';
+COMMENT ON COLUMN fact_evaluation_qa_events.diagnostic_criteria_met IS 'TRUE if diagnostic criteria were met';
+COMMENT ON COLUMN fact_evaluation_qa_events.functional_assessment_complete IS 'TRUE if functional assessment was complete';
+COMMENT ON COLUMN fact_evaluation_qa_events.document_version_number IS 'Version number of the evaluation report';
+COMMENT ON COLUMN fact_evaluation_qa_events.escalated_flag IS 'TRUE if case was escalated to senior QA staff or management';
+COMMENT ON COLUMN fact_evaluation_qa_events.escalation_reason IS 'Reason for escalation';
+COMMENT ON COLUMN fact_evaluation_qa_events.is_final_approval IS 'TRUE if this is the final approval before sending to VA';
+COMMENT ON COLUMN fact_evaluation_qa_events.sent_to_va_flag IS 'TRUE if evaluation was sent to VA after this event';
+COMMENT ON COLUMN fact_evaluation_qa_events.first_pass_approval_flag IS 'TRUE if approved on first QA review without any clarifications';
+COMMENT ON COLUMN fact_evaluation_qa_events.total_qa_cycles_at_event IS 'Number of QA review cycles completed at time of this event';
+COMMENT ON COLUMN fact_evaluation_qa_events.days_in_qa_process IS 'Total days evaluation has been in QA process at time of this event';
+COMMENT ON COLUMN fact_evaluation_qa_events.sla_met_flag IS 'TRUE if SLA was met for this QA process';
+COMMENT ON COLUMN fact_evaluation_qa_events.sla_variance_days IS 'Days early (positive) or late (negative) compared to SLA';
+COMMENT ON COLUMN fact_evaluation_qa_events.automated_checks_run_flag IS 'TRUE if automated QA checks were run';
+COMMENT ON COLUMN fact_evaluation_qa_events.automated_checks_passed IS 'Number of automated checks that passed';
+COMMENT ON COLUMN fact_evaluation_qa_events.automated_checks_failed IS 'Number of automated checks that failed';
+COMMENT ON COLUMN fact_evaluation_qa_events.exam_complexity_level IS 'Complexity level of the examination: ROUTINE, MODERATE, COMPLEX, HIGH_COMPLEXITY';
+COMMENT ON COLUMN fact_evaluation_qa_events.examiner_quality_tier IS 'Examiner quality tier based on historical performance';
+COMMENT ON COLUMN fact_evaluation_qa_events.risk_adjusted_review_flag IS 'TRUE if this received enhanced scrutiny due to risk factors';
+COMMENT ON COLUMN fact_evaluation_qa_events.created_timestamp IS 'Timestamp when QA event record was created in data warehouse';

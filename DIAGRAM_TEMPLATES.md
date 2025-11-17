@@ -26,7 +26,7 @@
                                 │ evaluation_date_sk
                                 ↓
 ┌───────────────────┐    ┌──────────────────────────────────┐    ┌────────────────────┐
-│ dim_veterans      │    │  fct_evaluations_completed       │    │ dim_evaluators     │
+│ dim_veterans      │    │  fact_evaluations_completed       │    │ dim_evaluators     │
 │  (SCD Type 2)     │    │    (Transaction Fact)            │    │  (SCD Type 2)      │
 ├───────────────────┤    ├──────────────────────────────────┤    ├────────────────────┤
 │ 🔑 veteran_sk    │───→│ 🔑 evaluation_fact_sk           │←───│ 🔑 evaluator_sk   │
@@ -102,7 +102,7 @@ Legend:
                                 │ appointment_date_sk
                                 ↓
 ┌───────────────────┐    ┌──────────────────────────────────┐    ┌────────────────────┐
-│ dim_veterans      │    │  fct_appointments_scheduled      │    │ dim_evaluators     │
+│ dim_veterans      │    │  fact_appointments_scheduled      │    │ dim_evaluators     │
 ├───────────────────┤    │    (Transaction Fact)            │    ├────────────────────┤
 │ 🔑 veteran_sk    │───→│ 🔑 appointment_fact_sk          │←───│ 🔑 evaluator_sk   │
 │ ⭐ veteran_id    │    │ 🔗 veteran_sk                   │    │ ⭐ evaluator_id   │
@@ -155,7 +155,7 @@ Legend:
                              └─────────── claim_received_date_sk
                                     ↓
 ┌───────────────────┐    ┌──────────────────────────────────┐    ┌────────────────────┐
-│ dim_veterans      │    │  fct_claim_status_changes        │    │ dim_facilities     │
+│ dim_veterans      │    │  fact_claim_status_changes        │    │ dim_facilities     │
 ├───────────────────┤    │   (Accumulating Snapshot)        │    ├────────────────────┤
 │ 🔑 veteran_sk    │───→│ 🔑 claim_status_fact_sk         │←───│ 🔑 facility_sk    │
 │ ⭐ veteran_id    │    │ 🔗 veteran_sk                   │    │ ⭐ facility_id    │
@@ -204,7 +204,7 @@ Legend:
                     │ snapshot_date_sk
                     ↓
         ┌──────────────────────────────────┐
-        │  fct_daily_facility_snapshot     │
+        │  fact_daily_facility_snapshot     │
         │    (Periodic Snapshot)           │
         ├──────────────────────────────────┤
         │ 🔑 daily_snapshot_sk            │
@@ -284,10 +284,10 @@ Each row represents one facility's metrics for one day.
 │  └── dim_appointments (18 columns) - Type 1                             │
 │                                                                          │
 │  Facts (4 tables):                                                      │
-│  ├── fct_evaluations_completed (64 columns) - Transaction               │
-│  ├── fct_claim_status_changes (52 columns) - Accumulating Snapshot      │
-│  ├── fct_appointments_scheduled (99 columns) - Transaction              │
-│  └── fct_daily_facility_snapshot (67 columns) - Periodic Snapshot       │
+│  ├── fact_evaluations_completed (64 columns) - Transaction               │
+│  ├── fact_claim_status_changes (52 columns) - Accumulating Snapshot      │
+│  ├── fact_appointments_scheduled (99 columns) - Transaction              │
+│  └── fact_daily_facility_snapshot (67 columns) - Periodic Snapshot       │
 └─────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -373,7 +373,7 @@ Each row represents one facility's metrics for one day.
 
 ```
 ┌───────────────────────────────────────────────┐
-│ fct_evaluations_completed                     │ ← Header: 12pt Bold, Orange bg
+│ fact_evaluations_completed                     │ ← Header: 12pt Bold, Orange bg
 ├───────────────────────────────────────────────┤
 │ 🔑 evaluation_fact_sk : INTEGER              │ ← PK: 11pt Bold
 │ 🔗 veteran_sk : INTEGER                      │ ← FK: 10pt Blue
@@ -413,10 +413,10 @@ dim_appointments        → #E6EE9C (Light Lime)
 ### Fact Table Colors (Warm Tones)
 
 ```
-fct_evaluations_completed    → #FFE0B2 (Light Orange)
-fct_claim_status_changes     → #FFAB91 (Deep Orange)
-fct_appointments_scheduled   → #FFE082 (Amber)
-fct_daily_facility_snapshot  → #FFF59D (Yellow)
+fact_evaluations_completed    → #FFE0B2 (Light Orange)
+fact_claim_status_changes     → #FFAB91 (Deep Orange)
+fact_appointments_scheduled   → #FFE082 (Amber)
+fact_daily_facility_snapshot  → #FFF59D (Yellow)
 ```
 
 ### Border Colors

@@ -14,7 +14,7 @@ The current dimensional model has several deviations from the official **VES Sno
 1. **Schema organization** (should use WAREHOUSE instead of separate DIM/FACT schemas)
 2. **Object name casing** (should use lowercase snake_case, not UPPERCASE)
 3. **Surrogate key patterns** (should use `*_sk` suffix, not `*_KEY`)
-4. **Fact table naming** (should use `fct_` prefix with event names)
+4. **Fact table naming** (should use `fact_` prefix with event names)
 5. **Source system identification** (missing staging layer pattern)
 
 **Recommendation**: Refactor the model to align with VES standards before production deployment to ensure consistency across the enterprise data warehouse and avoid technical debt.
@@ -93,10 +93,10 @@ dim_medical_conditions
 dim_claims
 dim_appointments
 
-fct_evaluations_completed
-fct_claim_status_changes
-fct_appointments_scheduled
-fct_daily_facility_snapshot
+fact_evaluations_completed
+fact_claim_status_changes
+fact_appointments_scheduled
+fact_daily_facility_snapshot
 ```
 
 **VES Convention**:
@@ -178,20 +178,20 @@ FACT_DAILY_SNAPSHOT      -- Snapshot noun
 
 **Required per VES Standards:**
 ```sql
-fct_evaluations_completed        -- Business event (past tense)
-fct_claim_status_changes         -- Business event
-fct_appointments_scheduled       -- Business event (past tense)
-fct_daily_facility_snapshot      -- Specific snapshot
+fact_evaluations_completed        -- Business event (past tense)
+fact_claim_status_changes         -- Business event
+fact_appointments_scheduled       -- Business event (past tense)
+fact_daily_facility_snapshot      -- Specific snapshot
 ```
 
 **VES Convention**:
 > "Use past tense verbs or nouns that describe completed actions... Represent the 'action' or 'granularity' of business processes."
 
 **Examples from VES docs**:
-- `fct_exams_completed`
-- `fct_appointments_scheduled`
-- `fct_claims_submitted`
-- `fct_exam_requests_received`
+- `fact_exams_completed`
+- `fact_appointments_scheduled`
+- `fact_claims_submitted`
+- `fact_exam_requests_received`
 
 **Impact**: Medium - Affects clarity and alignment with business processes
 
@@ -254,7 +254,7 @@ dim_dates  (plural)
 | Table name case | UPPERCASE | lowercase snake_case | ❌ | High |
 | Column name case | UPPERCASE | lowercase snake_case | ❌ | High |
 | Surrogate keys | `*_KEY` | `*_sk` | ❌ | High |
-| Fact table naming | `FACT_[NOUN]` | `fct_[event]` | ❌ | Medium |
+| Fact table naming | `FACT_[NOUN]` | `fact_[event]` | ❌ | Medium |
 | Dimension plural | Mixed | Plural | ⚠️ | Low |
 | Staging pattern | Not implemented | `stg_[source]_[domain]__[table]` | ❌ | High |
 | Column comments | ✅ Comprehensive | ✅ Required | ✅ | N/A |
@@ -396,11 +396,11 @@ All existing SQL queries will break due to:
 
 ### Phase 4: Fact Table Refactoring (6 hours)
 1. For each fact table:
-   - Rename with `fct_` prefix and event name:
-     - `FACT_EVALUATION` → `fct_evaluations_completed`
-     - `FACT_CLAIM_STATUS` → `fct_claim_status_changes`
-     - `FACT_APPOINTMENT` → `fct_appointments_scheduled`
-     - `FACT_DAILY_SNAPSHOT` → `fct_daily_facility_snapshot`
+   - Rename with `fact_` prefix and event name:
+     - `FACT_EVALUATION` → `fact_evaluations_completed`
+     - `FACT_CLAIM_STATUS` → `fact_claim_status_changes`
+     - `FACT_APPOINTMENT` → `fact_appointments_scheduled`
+     - `FACT_DAILY_SNAPSHOT` → `fact_daily_facility_snapshot`
    - Convert all column names to lowercase
    - Change `*_KEY` → `*_sk` for all keys
    - Update all foreign key references
@@ -459,10 +459,10 @@ All existing SQL queries will break due to:
 
 | Current Name | New Name | Schema Change | Notes |
 |--------------|----------|---------------|-------|
-| `FACT.FACT_EVALUATION` | `WAREHOUSE.fct_evaluations_completed` | FACT → WAREHOUSE | Event-based naming |
-| `FACT.FACT_CLAIM_STATUS` | `WAREHOUSE.fct_claim_status_changes` | FACT → WAREHOUSE | Event-based naming |
-| `FACT.FACT_APPOINTMENT` | `WAREHOUSE.fct_appointments_scheduled` | FACT → WAREHOUSE | Event-based naming |
-| `FACT.FACT_DAILY_SNAPSHOT` | `WAREHOUSE.fct_daily_facility_snapshot` | FACT → WAREHOUSE | Clarified granularity |
+| `FACT.FACT_EVALUATION` | `WAREHOUSE.fact_evaluations_completed` | FACT → WAREHOUSE | Event-based naming |
+| `FACT.FACT_CLAIM_STATUS` | `WAREHOUSE.fact_claim_status_changes` | FACT → WAREHOUSE | Event-based naming |
+| `FACT.FACT_APPOINTMENT` | `WAREHOUSE.fact_appointments_scheduled` | FACT → WAREHOUSE | Event-based naming |
+| `FACT.FACT_DAILY_SNAPSHOT` | `WAREHOUSE.fact_daily_facility_snapshot` | FACT → WAREHOUSE | Clarified granularity |
 
 ### Key Column Examples
 
@@ -509,7 +509,7 @@ SELECT
     e.evaluation_duration_minutes,
     e.report_completeness_score,
     d.full_date
-FROM VESDW_PRD.WAREHOUSE.fct_evaluations_completed e
+FROM VESDW_PRD.WAREHOUSE.fact_evaluations_completed e
 JOIN VESDW_PRD.WAREHOUSE.dim_veterans v
     ON e.veteran_sk = v.veteran_sk
 JOIN VESDW_PRD.WAREHOUSE.dim_dates d

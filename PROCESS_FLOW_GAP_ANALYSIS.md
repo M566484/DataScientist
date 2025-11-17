@@ -56,12 +56,12 @@ Based on the process flow diagram, I can identify the following major workflow s
 
 | Process Stage | Current Fact Tables | Coverage Level |
 |---------------|-------------------|----------------|
-| **Appointment Scheduling** | `fct_appointments_scheduled` | ✅ Excellent |
-| **Appointment Lifecycle** | `fct_appointment_events` | ✅ Excellent |
-| **Medical Evaluations** | `fct_evaluations_completed` | ✅ Good |
-| **QA Review Process** | `fct_evaluation_qa_events` | ✅ Excellent |
-| **Claim Status Tracking** | `fct_claim_status_changes` | ✅ Good |
-| **Daily Metrics** | `fct_daily_facility_snapshot` | ✅ Good |
+| **Appointment Scheduling** | `fact_appointments_scheduled` | ✅ Excellent |
+| **Appointment Lifecycle** | `fact_appointment_events` | ✅ Excellent |
+| **Medical Evaluations** | `fact_evaluations_completed` | ✅ Good |
+| **QA Review Process** | `fact_evaluation_qa_events` | ✅ Excellent |
+| **Claim Status Tracking** | `fact_claim_status_changes` | ✅ Good |
+| **Daily Metrics** | `fact_daily_facility_snapshot` | ✅ Good |
 
 ### ❌ Identified Gaps
 
@@ -70,7 +70,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 #### 1. **Exam Request/Referral Tracking** ⚠️ CRITICAL GAP
 - **Process Stage**: Initial request → Exam assignment
 - **Business Need**: Track exam requests from VA to VES
-- **Current State**: Partially tracked in `fct_claim_status_changes`
+- **Current State**: Partially tracked in `fact_claim_status_changes`
 - **Gap**: No dedicated fact for request intake, routing, assignment
 - **Impact**: Cannot analyze request volume, assignment efficiency, queue times
 
@@ -131,7 +131,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 1.1 Exam Request Tracking Fact
 
-**New Table**: `fct_exam_requests`
+**New Table**: `fact_exam_requests`
 
 **Purpose**: Track the complete lifecycle of exam requests from VA to VES
 
@@ -156,7 +156,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 1.2 Examiner Assignment Events Fact
 
-**New Table**: `fct_examiner_assignments`
+**New Table**: `fact_examiner_assignments`
 
 **Purpose**: Track examiner work assignments and capacity management
 
@@ -182,7 +182,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 2.1 Document Lifecycle Tracking Fact
 
-**New Table**: `fct_document_events`
+**New Table**: `fact_document_events`
 
 **Purpose**: Track DBQ forms, medical records, and other documents
 
@@ -205,7 +205,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 2.2 Payment Transaction Fact
 
-**New Table**: `fct_payments`
+**New Table**: `fact_payments`
 
 **Purpose**: Track all financial transactions (examiner payments, travel reimbursement, etc.)
 
@@ -231,7 +231,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 3.1 Communication Events Fact
 
-**New Table**: `fct_communication_events`
+**New Table**: `fact_communication_events`
 
 **Purpose**: Track all veteran communications
 
@@ -254,7 +254,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 3.2 Error/Exception Events Fact
 
-**New Table**: `fct_exception_events`
+**New Table**: `fact_exception_events`
 
 **Purpose**: Track process failures and exceptions
 
@@ -280,7 +280,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 4.1 System Integration Events
 
-**New Table**: `fct_integration_events`
+**New Table**: `fact_integration_events`
 
 **Purpose**: Track data exchanges between systems
 
@@ -290,7 +290,7 @@ Based on the process flow, the following areas lack comprehensive tracking:
 
 #### 4.2 Compliance Audit Events
 
-**New Table**: `fct_compliance_events`
+**New Table**: `fact_compliance_events`
 
 **Purpose**: Track regulatory compliance activities
 
@@ -385,24 +385,24 @@ NEW Dimensions (4):
 └── dim_communication_templates ⭐ NEW
 
 Existing Facts (6):
-├── fct_evaluations_completed
-├── fct_claim_status_changes
-├── fct_appointments_scheduled
-├── fct_daily_facility_snapshot
-├── fct_appointment_events
-└── fct_evaluation_qa_events
+├── fact_evaluations_completed
+├── fact_claim_status_changes
+├── fact_appointments_scheduled
+├── fact_daily_facility_snapshot
+├── fact_appointment_events
+└── fact_evaluation_qa_events
 
 NEW Priority 1 Facts (2):
-├── fct_exam_requests ⭐ NEW - CRITICAL
-└── fct_examiner_assignments ⭐ NEW - CRITICAL
+├── fact_exam_requests ⭐ NEW - CRITICAL
+└── fact_examiner_assignments ⭐ NEW - CRITICAL
 
 NEW Priority 2 Facts (2):
-├── fct_document_events ⭐ NEW - SIGNIFICANT
-└── fct_payments ⭐ NEW - SIGNIFICANT
+├── fact_document_events ⭐ NEW - SIGNIFICANT
+└── fact_payments ⭐ NEW - SIGNIFICANT
 
 NEW Priority 3 Facts (2):
-├── fct_communication_events ⭐ NEW - MODERATE
-└── fct_exception_events ⭐ NEW - MODERATE
+├── fact_communication_events ⭐ NEW - MODERATE
+└── fact_exception_events ⭐ NEW - MODERATE
 
 Total Enhanced Model:
 - 12 Dimensions (8 existing + 4 new)
@@ -415,8 +415,8 @@ Total Enhanced Model:
 
 ### Phase 1: Critical Gaps (2-3 weeks)
 1. ✅ Create `dim_exam_request_types` dimension
-2. ✅ Create `fct_exam_requests` fact
-3. ✅ Create `fct_examiner_assignments` fact
+2. ✅ Create `fact_exam_requests` fact
+3. ✅ Create `fact_examiner_assignments` fact
 4. ✅ Update ETL processes
 5. ✅ Build initial reports
 
@@ -427,8 +427,8 @@ Total Enhanced Model:
 ### Phase 2: Significant Gaps (3-4 weeks)
 1. ✅ Create `dim_document_types` dimension
 2. ✅ Create `dim_payment_types` dimension
-3. ✅ Create `fct_document_events` fact
-4. ✅ Create `fct_payments` fact
+3. ✅ Create `fact_document_events` fact
+4. ✅ Create `fact_payments` fact
 5. ✅ Update ETL processes
 6. ✅ Build financial and document reports
 
@@ -438,8 +438,8 @@ Total Enhanced Model:
 
 ### Phase 3: Moderate Gaps (2-3 weeks)
 1. ✅ Create `dim_communication_templates` dimension
-2. ✅ Create `fct_communication_events` fact
-3. ✅ Create `fct_exception_events` fact
+2. ✅ Create `fact_communication_events` fact
+3. ✅ Create `fact_exception_events` fact
 4. ✅ Update ETL processes
 5. ✅ Build communication and error analytics
 

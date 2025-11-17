@@ -11,8 +11,8 @@
 
 The VES dimensional model uses a **dual-table approach** to comprehensively track appointment lifecycles:
 
-1. **`fct_appointments_scheduled`** - Accumulating snapshot (current state)
-2. **`fct_appointment_events`** - Transaction fact (complete history)
+1. **`fact_appointments_scheduled`** - Accumulating snapshot (current state)
+2. **`fact_appointment_events`** - Transaction fact (complete history)
 
 This design addresses the complex lifecycle where appointments can be:
 - Scheduled → Confirmed → Completed ✅
@@ -24,7 +24,7 @@ This design addresses the complex lifecycle where appointments can be:
 
 ## Two-Table Architecture
 
-### Table 1: `fct_appointments_scheduled` (Accumulating Snapshot)
+### Table 1: `fact_appointments_scheduled` (Accumulating Snapshot)
 
 **Purpose**: Track the **current state** and overall metrics for each appointment
 **Grain**: One row per appointment (updated as appointment progresses)
@@ -47,7 +47,7 @@ This design addresses the complex lifecycle where appointments can be:
 
 ---
 
-### Table 2: `fct_appointment_events` (Transaction Fact) ⭐ NEW
+### Table 2: `fact_appointment_events` (Transaction Fact) ⭐ NEW
 
 **Purpose**: Capture **complete history** of all appointment lifecycle events
 **Grain**: One row per event (scheduled, confirmed, rescheduled, cancelled, completed, no-show, etc.)
@@ -81,7 +81,7 @@ Day 3:  System schedules appointment for Day 15
 Day 10: Veteran confirms attendance
 Day 15: Veteran arrives and completes appointment
 
-Data in fct_appointment_events (4 rows):
+Data in fact_appointment_events (4 rows):
 ┌─────────────────┬──────────────┬──────────┬────────────┐
 │ appointment_id  │ event_type   │ event_date│ sequence_# │
 ├─────────────────┼──────────────┼──────────┼────────────┤
@@ -90,7 +90,7 @@ Data in fct_appointment_events (4 rows):
 │ APPT-12345      │ COMPLETED    │ Day 15   │ 3          │
 └─────────────────┴──────────────┴──────────┴────────────┘
 
-Data in fct_appointments_scheduled (1 row, updated 3 times):
+Data in fact_appointments_scheduled (1 row, updated 3 times):
 ┌─────────────────┬──────────────┬──────────────┬───────────────┬──────────┐
 │ appointment_id  │ scheduled_   │ confirmed_   │ completed_    │ cancelled_│
 │                 │ date_sk      │ flag         │ date_sk       │ flag      │
@@ -111,7 +111,7 @@ Day 8:  Veteran cancels due to conflict
 Day 8:  System creates new appointment APPT-12346 for Day 22
 Day 20: Veteran arrives late but completes APPT-12346
 
-Data in fct_appointment_events (5 rows):
+Data in fact_appointment_events (5 rows):
 ┌─────────────────┬──────────────┬──────────┬────────┬──────────────────┬──────────────────┐
 │ appointment_id  │ event_type   │ event_   │ seq_#  │ previous_appt_id │ new_appt_id      │
 │                 │              │ date     │        │                  │                  │
@@ -123,7 +123,7 @@ Data in fct_appointment_events (5 rows):
 │ APPT-12346      │ COMPLETED    │ Day 20   │ 3      │ NULL             │ NULL             │
 └─────────────────┴──────────────┴──────────┴────────┴──────────────────┴──────────────────┘
 
-Data in fct_appointments_scheduled (2 rows):
+Data in fact_appointments_scheduled (2 rows):
 
 Row 1 (Original - Cancelled):
 ┌─────────────────┬──────────────┬──────────────┬──────────┬─────────────┐
@@ -155,7 +155,7 @@ Day 25: Veteran no-show
 Day 26: APPT-103 created for Day 35
 Day 35: Completed successfully
 
-Data in fct_appointment_events (9 rows):
+Data in fact_appointment_events (9 rows):
 ┌─────────────────┬──────────────┬──────────┬────────┬──────────────────┬──────────────────┐
 │ appointment_id  │ event_type   │ event_   │ seq_#  │ previous_appt_id │ new_appt_id      │
 │                 │              │ date     │        │                  │                  │
@@ -191,7 +191,7 @@ WITH appointment_funnel AS (
     event_type,
     COUNT(DISTINCT appointment_id) AS appointment_count,
     COUNT(*) AS event_count
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events
   WHERE event_date_sk >= 20250101
   GROUP BY event_type
 )
@@ -230,7 +230,7 @@ WITH reschedule_chain AS (
     previous_appointment_id,
     event_type,
     event_sequence_number
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events
   WHERE event_type IN ('RESCHEDULED', 'COMPLETED')
 ),
 completed_appointments AS (
@@ -289,7 +289,7 @@ SELECT
   e.cancelled_by,
   COUNT(*) AS cancellation_count,
   AVG(e.advance_notice_hours) AS avg_notice_hours
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events e
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events e
 WHERE e.event_type = 'CANCELLED'
   AND e.event_date_sk >= 20250101
 GROUP BY 1, 2
@@ -332,7 +332,7 @@ WITH RECURSIVE appointment_chain AS (
     e.cancellation_reason_description,
     1 AS chain_level,
     CAST(e.appointment_id AS VARCHAR(1000)) AS appointment_lineage
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events e
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events e
   WHERE e.appointment_id = 'APPT-12345'
     AND e.event_sequence_number = 1  -- Start with first event
 
@@ -351,7 +351,7 @@ WITH RECURSIVE appointment_chain AS (
     e.cancellation_reason_description,
     ac.chain_level + 1,
     ac.appointment_lineage || ' → ' || e.appointment_id
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events e
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events e
   INNER JOIN appointment_chain ac
     ON e.appointment_id = ac.new_appointment_id  -- Follow reschedules forward
     OR e.previous_appointment_id = ac.appointment_id  -- Follow reschedules backward
@@ -409,8 +409,8 @@ SELECT
   evt.cancelled_by,
   evt.cancellation_reason_description
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointments_scheduled appt
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointment_events evt
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointments_scheduled appt
+LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events evt
   ON appt.appointment_id = evt.appointment_id
 
 WHERE appt.appointment_id = 'APPT-12345'
@@ -425,7 +425,7 @@ ORDER BY evt.event_timestamp;
 
 ```sql
 -- Step 1: Insert event record
-INSERT INTO fct_appointment_events (
+INSERT INTO fact_appointment_events (
   appointment_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number,
   veteran_sk, facility_sk, scheduled_appointment_date, ...
@@ -437,7 +437,7 @@ VALUES (
 );
 
 -- Step 2: Insert accumulating snapshot record
-INSERT INTO fct_appointments_scheduled (
+INSERT INTO fact_appointments_scheduled (
   appointment_id, veteran_sk, facility_sk,
   scheduled_date_sk, scheduled_flag, ...
 )
@@ -453,7 +453,7 @@ VALUES (
 
 ```sql
 -- Step 1: Insert cancellation event
-INSERT INTO fct_appointment_events (
+INSERT INTO fact_appointment_events (
   appointment_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number,
   cancelled_by, cancellation_reason_code,
@@ -467,7 +467,7 @@ VALUES (
 );
 
 -- Step 2: Update original appointment snapshot
-UPDATE fct_appointments_scheduled
+UPDATE fact_appointments_scheduled
 SET
   cancelled_flag = TRUE,
   cancelled_date_sk = 20250108,
@@ -478,7 +478,7 @@ SET
 WHERE appointment_id = 'APPT-12345';
 
 -- Step 3: Insert reschedule event for new appointment
-INSERT INTO fct_appointment_events (
+INSERT INTO fact_appointment_events (
   appointment_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number,
   previous_appointment_id,
@@ -492,7 +492,7 @@ VALUES (
 );
 
 -- Step 4: Insert new appointment snapshot
-INSERT INTO fct_appointments_scheduled (
+INSERT INTO fact_appointments_scheduled (
   appointment_id, veteran_sk, facility_sk,
   scheduled_date_sk, reschedule_count,
   rescheduled_flag, ...
@@ -510,7 +510,7 @@ VALUES (
 
 ```sql
 -- Step 1: Insert completion event
-INSERT INTO fct_appointment_events (
+INSERT INTO fact_appointment_events (
   appointment_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number,
   actual_start_time, actual_end_time,
@@ -524,7 +524,7 @@ VALUES (
 );
 
 -- Step 2: Update appointment snapshot with completion details
-UPDATE fct_appointments_scheduled
+UPDATE fact_appointments_scheduled
 SET
   completed_flag = TRUE,
   completed_date_sk = 20250122,
@@ -546,8 +546,8 @@ WHERE appointment_id = 'APPT-12346';
 - **Event sequencing** for understanding temporal order
 
 ### ✅ Flexible Analysis
-- **Current state queries**: Use `fct_appointments_scheduled`
-- **Historical pattern analysis**: Use `fct_appointment_events`
+- **Current state queries**: Use `fact_appointments_scheduled`
+- **Historical pattern analysis**: Use `fact_appointment_events`
 - **Combined views**: Join both tables
 
 ### ✅ Business Intelligence
@@ -579,7 +579,7 @@ WHERE appointment_id = 'APPT-12346';
 CLUSTER BY (event_date_sk, appointment_id);
 
 -- Recommended search optimization
-ALTER TABLE fct_appointment_events
+ALTER TABLE fact_appointment_events
   ADD SEARCH OPTIMIZATION ON EQUALITY(appointment_id, event_type);
 
 -- Snapshot table clustering (already defined)
@@ -591,7 +591,7 @@ CLUSTER BY (appointment_date_sk, facility_sk);
 ```sql
 -- Always filter on event_date_sk for partition pruning
 SELECT *
-FROM fct_appointment_events
+FROM fact_appointment_events
 WHERE event_date_sk >= 20250101  -- Enables partition pruning
   AND appointment_id = 'APPT-12345';
 ```
@@ -609,7 +609,7 @@ WHERE event_date_sk >= 20250101  -- Enables partition pruning
 ```sql
 -- Extract historical events from snapshot table or source systems
 -- Transform into event format
--- Load into fct_appointment_events
+-- Load into fact_appointment_events
 ```
 
 ### Step 3: Update ETL Processes
@@ -628,8 +628,8 @@ WHERE event_date_sk >= 20250101  -- Enables partition pruning
 
 The **dual-table approach** provides:
 
-1. **Simplicity** for "what's happening now" queries → Use `fct_appointments_scheduled`
-2. **Depth** for "how did we get here" analysis → Use `fct_appointment_events`
+1. **Simplicity** for "what's happening now" queries → Use `fact_appointments_scheduled`
+2. **Depth** for "how did we get here" analysis → Use `fact_appointment_events`
 3. **Flexibility** for complex lifecycle analysis → Join both tables
 
 This design fully addresses the appointment lifecycle challenge:
@@ -642,7 +642,7 @@ This design fully addresses the appointment lifecycle challenge:
 ---
 
 **Next Steps**:
-1. Review and approve `fct_appointment_events` schema
+1. Review and approve `fact_appointment_events` schema
 2. Deploy to development environment
 3. Test with sample data
 4. Update ETL processes

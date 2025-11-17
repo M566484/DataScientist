@@ -60,7 +60,7 @@
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                     fct_evaluations_completed                                 │
+│                     fact_evaluations_completed                                 │
 │                    (Transaction Fact Table)                                   │
 │            Grain: One row per evaluation per condition                        │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -98,7 +98,7 @@
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                      fct_claim_status_changes                                 │
+│                      fact_claim_status_changes                                 │
 │                 (Accumulating Snapshot Fact Table)                            │
 │                Grain: One row per claim status change                         │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -131,7 +131,7 @@
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                       fct_appointments_scheduled                              │
+│                       fact_appointments_scheduled                              │
 │                    (Transaction Fact Table)                                   │
 │                 Grain: One row per appointment                                │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -165,7 +165,7 @@
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                     fct_daily_facility_snapshot                               │
+│                     fact_daily_facility_snapshot                               │
 │                 (Periodic Snapshot Fact Table)                                │
 │              Grain: One row per facility per date                             │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -227,21 +227,21 @@
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  1. Evaluation Process:                                                      │
-│     fct_appointments_scheduled → fct_evaluations_completed →                 │
-│     fct_claim_status_changes                                                 │
+│     fact_appointments_scheduled → fact_evaluations_completed →                 │
+│     fact_claim_status_changes                                                 │
 │                                                                               │
 │  2. Claim Processing Pipeline:                                               │
 │     Claim Filed → Exam Scheduled → Exam Completed → Decision Made            │
-│     (Tracked in fct_claim_status_changes)                                    │
+│     (Tracked in fact_claim_status_changes)                                    │
 │                                                                               │
 │  3. Performance Monitoring:                                                  │
-│     Daily aggregation from transaction facts → fct_daily_facility_snapshot   │
+│     Daily aggregation from transaction facts → fact_daily_facility_snapshot   │
 │                                                                               │
 │  4. Reporting Areas:                                                         │
-│     • Wait Time Analysis (fct_appointments_scheduled)                        │
-│     • Evaluation Quality (fct_evaluations_completed)                         │
-│     • Claim Processing Efficiency (fct_claim_status_changes)                 │
-│     • Operational KPIs (fct_daily_facility_snapshot)                         │
+│     • Wait Time Analysis (fact_appointments_scheduled)                        │
+│     • Evaluation Quality (fact_evaluations_completed)                         │
+│     • Claim Processing Efficiency (fact_claim_status_changes)                 │
+│     • Operational KPIs (fact_daily_facility_snapshot)                         │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -251,13 +251,13 @@
 ```
 dim_veterans (100,000s of records)
     ↓ 1:Many
-fct_evaluations_completed (Millions of records)
+fact_evaluations_completed (Millions of records)
     ↓ Many:1
 dim_medical_conditions (100s of records)
 
 dim_facilities (100s of records)
     ↓ 1:Many
-fct_daily_facility_snapshot (100s of records per day)
+fact_daily_facility_snapshot (100s of records per day)
 
 dim_dates (3,650 records for 10 years)
     ↓ 1:Many
@@ -284,10 +284,10 @@ Snowflake does not use traditional indexes. Instead, the model uses:
 
 All fact tables include clustering keys for optimal query performance:
 
-- `fct_evaluations_completed`: `CLUSTER BY (evaluation_date_sk, facility_sk)`
-- `fct_claim_status_changes`: `CLUSTER BY (claim_sk, rating_decision_date_sk)`
-- `fct_appointments_scheduled`: `CLUSTER BY (appointment_date_sk, facility_sk)`
-- `fct_daily_facility_snapshot`: `CLUSTER BY (snapshot_date_sk, facility_sk)`
+- `fact_evaluations_completed`: `CLUSTER BY (evaluation_date_sk, facility_sk)`
+- `fact_claim_status_changes`: `CLUSTER BY (claim_sk, rating_decision_date_sk)`
+- `fact_appointments_scheduled`: `CLUSTER BY (appointment_date_sk, facility_sk)`
+- `fact_daily_facility_snapshot`: `CLUSTER BY (snapshot_date_sk, facility_sk)`
 
 Clustering organizes micro-partitions for efficient data pruning during queries.
 

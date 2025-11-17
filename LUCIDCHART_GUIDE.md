@@ -140,7 +140,7 @@
 
 **3.2 Configure Table Header**:
 - Double-click header
-- Enter table name (e.g., `fct_evaluations_completed`)
+- Enter table name (e.g., `fact_evaluations_completed`)
 - Format: **Bold, 12pt, Dark Orange (#E65100)**
 
 **3.3 Add Primary Key**:
@@ -215,7 +215,7 @@
                     dim_evaluation_types
                             |
                             |
-    dim_veterans -------- fct_evaluations_completed -------- dim_evaluators
+    dim_veterans -------- fact_evaluations_completed -------- dim_evaluators
                             |
                             |
                       dim_facilities
@@ -235,10 +235,10 @@
 ```
 [Dimensions Column - Left]          [Facts Column - Right]
 
-dim_dates                           fct_evaluations_completed
-dim_veterans                        fct_claim_status_changes
-dim_evaluators                      fct_appointments_scheduled
-dim_facilities                      fct_daily_facility_snapshot
+dim_dates                           fact_evaluations_completed
+dim_veterans                        fact_claim_status_changes
+dim_evaluators                      fact_appointments_scheduled
+dim_facilities                      fact_daily_facility_snapshot
 dim_evaluation_types
 dim_medical_conditions
 dim_claims
@@ -448,7 +448,7 @@ dim_appointments
 
 ### Fact Tables (WAREHOUSE Schema)
 
-#### 1. fct_evaluations_completed
+#### 1. fact_evaluations_completed
 **Type**: Transaction Fact Table
 **Grain**: One row per evaluation per condition
 **Primary Key**: `evaluation_fact_sk` (INTEGER AUTOINCREMENT)
@@ -475,7 +475,7 @@ dim_appointments
 
 ---
 
-#### 2. fct_claim_status_changes
+#### 2. fact_claim_status_changes
 **Type**: Accumulating Snapshot Fact
 **Grain**: One row per claim (updated as claim progresses)
 **Primary Key**: `claim_status_fact_sk` (INTEGER AUTOINCREMENT)
@@ -498,7 +498,7 @@ dim_appointments
 
 ---
 
-#### 3. fct_appointments_scheduled
+#### 3. fact_appointments_scheduled
 **Type**: Transaction Fact Table
 **Grain**: One row per appointment
 **Primary Key**: `appointment_fact_sk` (INTEGER AUTOINCREMENT)
@@ -524,7 +524,7 @@ dim_appointments
 
 ---
 
-#### 4. fct_daily_facility_snapshot
+#### 4. fact_daily_facility_snapshot
 **Type**: Periodic Snapshot Fact
 **Grain**: One row per facility per day
 **Primary Key**: `daily_snapshot_sk` (INTEGER AUTOINCREMENT)
@@ -553,48 +553,48 @@ dim_appointments
 
 | From Table | To Table | Foreign Key Column | Relationship Type | Label |
 |------------|----------|-------------------|-------------------|-------|
-| dim_dates | fct_evaluations_completed | evaluation_date_sk | 1:M | occurred on |
-| dim_dates | fct_claim_status_changes | claim_received_date_sk | 1:M | received on |
-| dim_dates | fct_claim_status_changes | exam_scheduled_date_sk | 1:M | scheduled on |
-| dim_dates | fct_appointments_scheduled | appointment_date_sk | 1:M | scheduled for |
-| dim_dates | fct_daily_facility_snapshot | snapshot_date_sk | 1:M | snapshot date |
+| dim_dates | fact_evaluations_completed | evaluation_date_sk | 1:M | occurred on |
+| dim_dates | fact_claim_status_changes | claim_received_date_sk | 1:M | received on |
+| dim_dates | fact_claim_status_changes | exam_scheduled_date_sk | 1:M | scheduled on |
+| dim_dates | fact_appointments_scheduled | appointment_date_sk | 1:M | scheduled for |
+| dim_dates | fact_daily_facility_snapshot | snapshot_date_sk | 1:M | snapshot date |
 
 ### Relationships from dim_veterans
 
 | From Table | To Table | Foreign Key Column | Relationship Type | Label |
 |------------|----------|-------------------|-------------------|-------|
-| dim_veterans | fct_evaluations_completed | veteran_sk | 1:M | has evaluations |
-| dim_veterans | fct_claim_status_changes | veteran_sk | 1:M | filed claims |
-| dim_veterans | fct_appointments_scheduled | veteran_sk | 1:M | has appointments |
+| dim_veterans | fact_evaluations_completed | veteran_sk | 1:M | has evaluations |
+| dim_veterans | fact_claim_status_changes | veteran_sk | 1:M | filed claims |
+| dim_veterans | fact_appointments_scheduled | veteran_sk | 1:M | has appointments |
 
 ### Relationships from dim_evaluators
 
 | From Table | To Table | Foreign Key Column | Relationship Type | Label |
 |------------|----------|-------------------|-------------------|-------|
-| dim_evaluators | fct_evaluations_completed | evaluator_sk | 1:M | performed by |
-| dim_evaluators | fct_appointments_scheduled | evaluator_sk | 1:M | assigned to |
+| dim_evaluators | fact_evaluations_completed | evaluator_sk | 1:M | performed by |
+| dim_evaluators | fact_appointments_scheduled | evaluator_sk | 1:M | assigned to |
 
 ### Relationships from dim_facilities
 
 | From Table | To Table | Foreign Key Column | Relationship Type | Label |
 |------------|----------|-------------------|-------------------|-------|
-| dim_facilities | fct_evaluations_completed | facility_sk | 1:M | conducted at |
-| dim_facilities | fct_claim_status_changes | facility_sk | 1:M | processed at |
-| dim_facilities | fct_appointments_scheduled | facility_sk | 1:M | located at |
-| dim_facilities | fct_daily_facility_snapshot | facility_sk | 1:M | metrics for |
+| dim_facilities | fact_evaluations_completed | facility_sk | 1:M | conducted at |
+| dim_facilities | fact_claim_status_changes | facility_sk | 1:M | processed at |
+| dim_facilities | fact_appointments_scheduled | facility_sk | 1:M | located at |
+| dim_facilities | fact_daily_facility_snapshot | facility_sk | 1:M | metrics for |
 
 ### Relationships from Other Dimensions
 
 | From Table | To Table | Foreign Key Column | Relationship Type | Label |
 |------------|----------|-------------------|-------------------|-------|
-| dim_evaluation_types | fct_evaluations_completed | evaluation_type_sk | 1:M | type of |
-| dim_evaluation_types | fct_appointments_scheduled | evaluation_type_sk | 1:M | scheduled type |
-| dim_medical_conditions | fct_evaluations_completed | medical_condition_sk | 1:M | evaluates |
-| dim_claims | fct_evaluations_completed | claim_sk | 1:M | supports |
-| dim_claims | fct_claim_status_changes | claim_sk | 1:M | tracks |
-| dim_claims | fct_appointments_scheduled | claim_sk | 1:M | related to |
-| dim_appointments | fct_evaluations_completed | appointment_sk | 1:M | via appointment |
-| dim_appointments | fct_appointments_scheduled | appointment_sk | 1:M | appointment details |
+| dim_evaluation_types | fact_evaluations_completed | evaluation_type_sk | 1:M | type of |
+| dim_evaluation_types | fact_appointments_scheduled | evaluation_type_sk | 1:M | scheduled type |
+| dim_medical_conditions | fact_evaluations_completed | medical_condition_sk | 1:M | evaluates |
+| dim_claims | fact_evaluations_completed | claim_sk | 1:M | supports |
+| dim_claims | fact_claim_status_changes | claim_sk | 1:M | tracks |
+| dim_claims | fact_appointments_scheduled | claim_sk | 1:M | related to |
+| dim_appointments | fact_evaluations_completed | appointment_sk | 1:M | via appointment |
+| dim_appointments | fact_appointments_scheduled | appointment_sk | 1:M | appointment details |
 
 ---
 

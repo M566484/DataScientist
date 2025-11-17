@@ -1,5 +1,5 @@
 -- =====================================================
--- fct_examiner_assignments - Examiner Assignment Events
+-- fact_examiner_assignments - Examiner Assignment Events
 -- =====================================================
 -- Purpose: Track examiner work assignments and capacity management
 -- Grain: One row per assignment event (assigned, accepted, rejected, transferred, completed)
@@ -8,7 +8,7 @@
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_examiner_assignments (
+CREATE OR REPLACE TABLE fact_examiner_assignments (
     assignment_event_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -248,86 +248,86 @@ COMMENT = 'Transaction fact table tracking examiner assignment events - supports
 CLUSTER BY (assignment_event_date_sk, evaluator_sk, event_type);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_examiner_assignments.assignment_event_sk IS 'Surrogate primary key for the assignment event';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_event_id IS 'Unique identifier for this specific assignment event';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_id IS 'Assignment identifier - can have multiple events per assignment';
-COMMENT ON COLUMN fct_examiner_assignments.exam_request_id IS 'Links to the exam request being assigned';
-COMMENT ON COLUMN fct_examiner_assignments.evaluation_id IS 'Links to eventual evaluation record if completed';
-COMMENT ON COLUMN fct_examiner_assignments.evaluator_sk IS 'Foreign key to examiner being assigned work';
-COMMENT ON COLUMN fct_examiner_assignments.assigned_by_evaluator_sk IS 'Foreign key to person/system that made assignment';
-COMMENT ON COLUMN fct_examiner_assignments.transferred_to_evaluator_sk IS 'If transferred, foreign key to receiving examiner';
-COMMENT ON COLUMN fct_examiner_assignments.transferred_from_evaluator_sk IS 'If received via transfer, foreign key to sending examiner';
-COMMENT ON COLUMN fct_examiner_assignments.event_type IS 'Type of assignment event: ASSIGNED, ACCEPTED, REJECTED, TRANSFERRED_OUT, TRANSFERRED_IN, REASSIGNED, CANCELLED, COMPLETED, RETURNED';
-COMMENT ON COLUMN fct_examiner_assignments.event_status IS 'Status of event: PENDING, COMPLETED, CANCELLED';
-COMMENT ON COLUMN fct_examiner_assignments.event_timestamp IS 'Timestamp when assignment event occurred';
-COMMENT ON COLUMN fct_examiner_assignments.event_sequence_number IS 'Sequential number for events on this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_method IS 'How assignment was made: AUTO_ASSIGNMENT, MANUAL_ASSIGNMENT, PREFERRED_EXAMINER, SPECIALIST_REQUIRED, EMERGENCY_ASSIGNMENT';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_algorithm_version IS 'Version of auto-assignment algorithm used';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_rule_applied IS 'Business rule that triggered this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_priority_score IS 'Algorithm priority score for this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_current_workload IS 'Number of active cases examiner had at time of assignment';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_available_capacity IS 'Number of available slots examiner had';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_utilization_percentage IS 'Percentage of capacity utilized at time of assignment';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_acceptance_rate IS 'Historical acceptance rate for this examiner';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_completion_rate IS 'On-time completion rate for this examiner';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_quality_score IS 'Recent quality score for this examiner';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_specialty_match_score IS 'How well examiner specialty matches case requirements';
-COMMENT ON COLUMN fct_examiner_assignments.is_acceptance IS 'TRUE if this event is an acceptance';
-COMMENT ON COLUMN fct_examiner_assignments.is_rejection IS 'TRUE if this event is a rejection';
-COMMENT ON COLUMN fct_examiner_assignments.time_to_response_hours IS 'Hours between assignment and examiner response (accept/reject)';
-COMMENT ON COLUMN fct_examiner_assignments.rejection_reason_code IS 'Coded reason for rejection';
-COMMENT ON COLUMN fct_examiner_assignments.rejection_category IS 'Category of rejection: SCHEDULING_CONFLICT, CAPACITY, SPECIALTY_MISMATCH, GEOGRAPHY, PERSONAL';
-COMMENT ON COLUMN fct_examiner_assignments.is_transfer_out IS 'TRUE if this event is transferring work to another examiner';
-COMMENT ON COLUMN fct_examiner_assignments.is_transfer_in IS 'TRUE if this event is receiving work from another examiner';
-COMMENT ON COLUMN fct_examiner_assignments.transfer_reason_code IS 'Coded reason for transfer';
-COMMENT ON COLUMN fct_examiner_assignments.transfer_initiated_by IS 'Who initiated transfer: EXAMINER, SUPERVISOR, SYSTEM, QA_TEAM';
-COMMENT ON COLUMN fct_examiner_assignments.travel_distance_miles IS 'Distance from examiner to exam location';
-COMMENT ON COLUMN fct_examiner_assignments.location_preference_match IS 'TRUE if assignment matches examiner location preferences';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_next_available_date IS 'Next available date examiner has open slots';
-COMMENT ON COLUMN fct_examiner_assignments.scheduling_conflict_flag IS 'TRUE if examiner has scheduling conflicts';
-COMMENT ON COLUMN fct_examiner_assignments.case_complexity_level IS 'Complexity level: ROUTINE, MODERATE, COMPLEX, HIGH_COMPLEXITY';
-COMMENT ON COLUMN fct_examiner_assignments.specialty_required IS 'Medical specialty required for this case';
-COMMENT ON COLUMN fct_examiner_assignments.specialty_match_flag IS 'TRUE if examiner specialty matches requirement';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_certified_for_specialty IS 'TRUE if examiner is certified for required specialty';
-COMMENT ON COLUMN fct_examiner_assignments.exam_request_sla_days IS 'SLA days allowed for this exam request';
-COMMENT ON COLUMN fct_examiner_assignments.days_since_request_received IS 'Days elapsed since exam request was received';
-COMMENT ON COLUMN fct_examiner_assignments.days_until_sla_breach IS 'Days remaining until SLA breach';
-COMMENT ON COLUMN fct_examiner_assignments.sla_risk_level IS 'Risk of SLA breach: LOW, MEDIUM, HIGH, CRITICAL';
-COMMENT ON COLUMN fct_examiner_assignments.at_risk_flag IS 'TRUE if at risk of missing SLA';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_priority IS 'Priority level: ROUTINE, PRIORITY, URGENT, EXPEDITE';
-COMMENT ON COLUMN fct_examiner_assignments.priority_score IS 'Numeric priority score (higher = more urgent)';
-COMMENT ON COLUMN fct_examiner_assignments.source_queue IS 'Which work queue this assignment came from';
-COMMENT ON COLUMN fct_examiner_assignments.queue_position IS 'Position in queue before assignment';
-COMMENT ON COLUMN fct_examiner_assignments.time_in_queue_hours IS 'Hours spent in queue before assignment';
-COMMENT ON COLUMN fct_examiner_assignments.workload_balanced_flag IS 'TRUE if assignment was made for workload balancing';
-COMMENT ON COLUMN fct_examiner_assignments.workload_balance_score IS 'Score indicating how well this balances workload';
-COMMENT ON COLUMN fct_examiner_assignments.facility_capacity_percentage IS 'Facility capacity utilization at time of assignment';
-COMMENT ON COLUMN fct_examiner_assignments.alternative_examiners_available IS 'Number of alternative examiners who could take this case';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_successful_flag IS 'TRUE if assignment ultimately resulted in completed exam';
-COMMENT ON COLUMN fct_examiner_assignments.exam_scheduled_flag IS 'TRUE if exam was scheduled following this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.exam_completed_flag IS 'TRUE if exam was completed following this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.days_to_scheduling IS 'Days from assignment to exam scheduled';
-COMMENT ON COLUMN fct_examiner_assignments.days_to_completion IS 'Days from assignment to exam completed';
-COMMENT ON COLUMN fct_examiner_assignments.is_reassignment IS 'TRUE if this is a reassignment (not initial assignment)';
-COMMENT ON COLUMN fct_examiner_assignments.reassignment_number IS 'Number of times this case has been reassigned';
-COMMENT ON COLUMN fct_examiner_assignments.original_assignment_id IS 'Assignment ID of the first assignment in reassignment chain';
-COMMENT ON COLUMN fct_examiner_assignments.previous_assignment_id IS 'Assignment ID of immediate previous assignment';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_delay_flag IS 'TRUE if assignment was delayed vs optimal timing';
-COMMENT ON COLUMN fct_examiner_assignments.optimal_assignment_flag IS 'TRUE if this was the optimal assignment choice';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_efficiency_score IS 'Score indicating efficiency of this assignment';
-COMMENT ON COLUMN fct_examiner_assignments.estimated_payment_amount IS 'Estimated payment to examiner for this exam';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_notified_flag IS 'TRUE if examiner was notified of assignment';
-COMMENT ON COLUMN fct_examiner_assignments.notification_method IS 'How examiner was notified: EMAIL, SMS, PORTAL, PHONE';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_viewed_assignment IS 'TRUE if examiner viewed assignment in system';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_batch_id IS 'Batch ID if this was part of bulk assignment';
-COMMENT ON COLUMN fct_examiner_assignments.bulk_assignment_flag IS 'TRUE if part of bulk assignment process';
-COMMENT ON COLUMN fct_examiner_assignments.manual_intervention_required IS 'TRUE if assignment required manual intervention';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_previous_assignment_count IS 'Total historical assignments for this examiner';
-COMMENT ON COLUMN fct_examiner_assignments.examiner_assignments_last_30_days IS 'Assignments examiner received in last 30 days';
-COMMENT ON COLUMN fct_examiner_assignments.repeat_examiner_flag IS 'TRUE if same examiner as previous exam for this veteran';
-COMMENT ON COLUMN fct_examiner_assignments.assignment_score IS 'Overall assignment quality score';
-COMMENT ON COLUMN fct_examiner_assignments.geographic_optimization_score IS 'Score for geographic optimization';
-COMMENT ON COLUMN fct_examiner_assignments.capacity_optimization_score IS 'Score for capacity optimization';
-COMMENT ON COLUMN fct_examiner_assignments.specialty_optimization_score IS 'Score for specialty matching optimization';
-COMMENT ON COLUMN fct_examiner_assignments.timeliness_optimization_score IS 'Score for timeliness optimization';
-COMMENT ON COLUMN fct_examiner_assignments.created_timestamp IS 'Timestamp when assignment event record was created in data warehouse';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_event_sk IS 'Surrogate primary key for the assignment event';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_event_id IS 'Unique identifier for this specific assignment event';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_id IS 'Assignment identifier - can have multiple events per assignment';
+COMMENT ON COLUMN fact_examiner_assignments.exam_request_id IS 'Links to the exam request being assigned';
+COMMENT ON COLUMN fact_examiner_assignments.evaluation_id IS 'Links to eventual evaluation record if completed';
+COMMENT ON COLUMN fact_examiner_assignments.evaluator_sk IS 'Foreign key to examiner being assigned work';
+COMMENT ON COLUMN fact_examiner_assignments.assigned_by_evaluator_sk IS 'Foreign key to person/system that made assignment';
+COMMENT ON COLUMN fact_examiner_assignments.transferred_to_evaluator_sk IS 'If transferred, foreign key to receiving examiner';
+COMMENT ON COLUMN fact_examiner_assignments.transferred_from_evaluator_sk IS 'If received via transfer, foreign key to sending examiner';
+COMMENT ON COLUMN fact_examiner_assignments.event_type IS 'Type of assignment event: ASSIGNED, ACCEPTED, REJECTED, TRANSFERRED_OUT, TRANSFERRED_IN, REASSIGNED, CANCELLED, COMPLETED, RETURNED';
+COMMENT ON COLUMN fact_examiner_assignments.event_status IS 'Status of event: PENDING, COMPLETED, CANCELLED';
+COMMENT ON COLUMN fact_examiner_assignments.event_timestamp IS 'Timestamp when assignment event occurred';
+COMMENT ON COLUMN fact_examiner_assignments.event_sequence_number IS 'Sequential number for events on this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_method IS 'How assignment was made: AUTO_ASSIGNMENT, MANUAL_ASSIGNMENT, PREFERRED_EXAMINER, SPECIALIST_REQUIRED, EMERGENCY_ASSIGNMENT';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_algorithm_version IS 'Version of auto-assignment algorithm used';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_rule_applied IS 'Business rule that triggered this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_priority_score IS 'Algorithm priority score for this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_current_workload IS 'Number of active cases examiner had at time of assignment';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_available_capacity IS 'Number of available slots examiner had';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_utilization_percentage IS 'Percentage of capacity utilized at time of assignment';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_acceptance_rate IS 'Historical acceptance rate for this examiner';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_completion_rate IS 'On-time completion rate for this examiner';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_quality_score IS 'Recent quality score for this examiner';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_specialty_match_score IS 'How well examiner specialty matches case requirements';
+COMMENT ON COLUMN fact_examiner_assignments.is_acceptance IS 'TRUE if this event is an acceptance';
+COMMENT ON COLUMN fact_examiner_assignments.is_rejection IS 'TRUE if this event is a rejection';
+COMMENT ON COLUMN fact_examiner_assignments.time_to_response_hours IS 'Hours between assignment and examiner response (accept/reject)';
+COMMENT ON COLUMN fact_examiner_assignments.rejection_reason_code IS 'Coded reason for rejection';
+COMMENT ON COLUMN fact_examiner_assignments.rejection_category IS 'Category of rejection: SCHEDULING_CONFLICT, CAPACITY, SPECIALTY_MISMATCH, GEOGRAPHY, PERSONAL';
+COMMENT ON COLUMN fact_examiner_assignments.is_transfer_out IS 'TRUE if this event is transferring work to another examiner';
+COMMENT ON COLUMN fact_examiner_assignments.is_transfer_in IS 'TRUE if this event is receiving work from another examiner';
+COMMENT ON COLUMN fact_examiner_assignments.transfer_reason_code IS 'Coded reason for transfer';
+COMMENT ON COLUMN fact_examiner_assignments.transfer_initiated_by IS 'Who initiated transfer: EXAMINER, SUPERVISOR, SYSTEM, QA_TEAM';
+COMMENT ON COLUMN fact_examiner_assignments.travel_distance_miles IS 'Distance from examiner to exam location';
+COMMENT ON COLUMN fact_examiner_assignments.location_preference_match IS 'TRUE if assignment matches examiner location preferences';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_next_available_date IS 'Next available date examiner has open slots';
+COMMENT ON COLUMN fact_examiner_assignments.scheduling_conflict_flag IS 'TRUE if examiner has scheduling conflicts';
+COMMENT ON COLUMN fact_examiner_assignments.case_complexity_level IS 'Complexity level: ROUTINE, MODERATE, COMPLEX, HIGH_COMPLEXITY';
+COMMENT ON COLUMN fact_examiner_assignments.specialty_required IS 'Medical specialty required for this case';
+COMMENT ON COLUMN fact_examiner_assignments.specialty_match_flag IS 'TRUE if examiner specialty matches requirement';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_certified_for_specialty IS 'TRUE if examiner is certified for required specialty';
+COMMENT ON COLUMN fact_examiner_assignments.exam_request_sla_days IS 'SLA days allowed for this exam request';
+COMMENT ON COLUMN fact_examiner_assignments.days_since_request_received IS 'Days elapsed since exam request was received';
+COMMENT ON COLUMN fact_examiner_assignments.days_until_sla_breach IS 'Days remaining until SLA breach';
+COMMENT ON COLUMN fact_examiner_assignments.sla_risk_level IS 'Risk of SLA breach: LOW, MEDIUM, HIGH, CRITICAL';
+COMMENT ON COLUMN fact_examiner_assignments.at_risk_flag IS 'TRUE if at risk of missing SLA';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_priority IS 'Priority level: ROUTINE, PRIORITY, URGENT, EXPEDITE';
+COMMENT ON COLUMN fact_examiner_assignments.priority_score IS 'Numeric priority score (higher = more urgent)';
+COMMENT ON COLUMN fact_examiner_assignments.source_queue IS 'Which work queue this assignment came from';
+COMMENT ON COLUMN fact_examiner_assignments.queue_position IS 'Position in queue before assignment';
+COMMENT ON COLUMN fact_examiner_assignments.time_in_queue_hours IS 'Hours spent in queue before assignment';
+COMMENT ON COLUMN fact_examiner_assignments.workload_balanced_flag IS 'TRUE if assignment was made for workload balancing';
+COMMENT ON COLUMN fact_examiner_assignments.workload_balance_score IS 'Score indicating how well this balances workload';
+COMMENT ON COLUMN fact_examiner_assignments.facility_capacity_percentage IS 'Facility capacity utilization at time of assignment';
+COMMENT ON COLUMN fact_examiner_assignments.alternative_examiners_available IS 'Number of alternative examiners who could take this case';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_successful_flag IS 'TRUE if assignment ultimately resulted in completed exam';
+COMMENT ON COLUMN fact_examiner_assignments.exam_scheduled_flag IS 'TRUE if exam was scheduled following this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.exam_completed_flag IS 'TRUE if exam was completed following this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.days_to_scheduling IS 'Days from assignment to exam scheduled';
+COMMENT ON COLUMN fact_examiner_assignments.days_to_completion IS 'Days from assignment to exam completed';
+COMMENT ON COLUMN fact_examiner_assignments.is_reassignment IS 'TRUE if this is a reassignment (not initial assignment)';
+COMMENT ON COLUMN fact_examiner_assignments.reassignment_number IS 'Number of times this case has been reassigned';
+COMMENT ON COLUMN fact_examiner_assignments.original_assignment_id IS 'Assignment ID of the first assignment in reassignment chain';
+COMMENT ON COLUMN fact_examiner_assignments.previous_assignment_id IS 'Assignment ID of immediate previous assignment';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_delay_flag IS 'TRUE if assignment was delayed vs optimal timing';
+COMMENT ON COLUMN fact_examiner_assignments.optimal_assignment_flag IS 'TRUE if this was the optimal assignment choice';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_efficiency_score IS 'Score indicating efficiency of this assignment';
+COMMENT ON COLUMN fact_examiner_assignments.estimated_payment_amount IS 'Estimated payment to examiner for this exam';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_notified_flag IS 'TRUE if examiner was notified of assignment';
+COMMENT ON COLUMN fact_examiner_assignments.notification_method IS 'How examiner was notified: EMAIL, SMS, PORTAL, PHONE';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_viewed_assignment IS 'TRUE if examiner viewed assignment in system';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_batch_id IS 'Batch ID if this was part of bulk assignment';
+COMMENT ON COLUMN fact_examiner_assignments.bulk_assignment_flag IS 'TRUE if part of bulk assignment process';
+COMMENT ON COLUMN fact_examiner_assignments.manual_intervention_required IS 'TRUE if assignment required manual intervention';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_previous_assignment_count IS 'Total historical assignments for this examiner';
+COMMENT ON COLUMN fact_examiner_assignments.examiner_assignments_last_30_days IS 'Assignments examiner received in last 30 days';
+COMMENT ON COLUMN fact_examiner_assignments.repeat_examiner_flag IS 'TRUE if same examiner as previous exam for this veteran';
+COMMENT ON COLUMN fact_examiner_assignments.assignment_score IS 'Overall assignment quality score';
+COMMENT ON COLUMN fact_examiner_assignments.geographic_optimization_score IS 'Score for geographic optimization';
+COMMENT ON COLUMN fact_examiner_assignments.capacity_optimization_score IS 'Score for capacity optimization';
+COMMENT ON COLUMN fact_examiner_assignments.specialty_optimization_score IS 'Score for specialty matching optimization';
+COMMENT ON COLUMN fact_examiner_assignments.timeliness_optimization_score IS 'Score for timeliness optimization';
+COMMENT ON COLUMN fact_examiner_assignments.created_timestamp IS 'Timestamp when assignment event record was created in data warehouse';

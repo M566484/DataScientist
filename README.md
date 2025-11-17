@@ -82,10 +82,10 @@ WHERE TABLE_SCHEMA = 'WAREHOUSE';
 - **dim_appointments**: Appointment scheduling details
 
 ### Fact Tables (4 tables)
-- **fct_evaluations_completed**: Transaction fact for evaluations (grain: evaluation per condition)
-- **fct_claim_status_changes**: Accumulating snapshot for claim processing
-- **fct_appointments_scheduled**: Transaction fact for appointments
-- **fct_daily_facility_snapshot**: Periodic snapshot for daily KPIs
+- **fact_evaluations_completed**: Transaction fact for evaluations (grain: evaluation per condition)
+- **fact_claim_status_changes**: Accumulating snapshot for claim processing
+- **fact_appointments_scheduled**: Transaction fact for appointments
+- **fact_daily_facility_snapshot**: Periodic snapshot for daily KPIs
 
 ### Special Features
 - Slowly Changing Dimensions (Type 2) for tracking historical changes
@@ -109,7 +109,7 @@ SELECT
     f.facility_name,
     AVG(fa.total_wait_days) AS avg_wait_days,
     SUM(CASE WHEN fa.meets_va_wait_time_goal = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS compliance_pct
-FROM fct_appointments_scheduled fa
+FROM fact_appointments_scheduled fa
 JOIN dim_facilities f ON fa.facility_sk = f.facility_sk
 GROUP BY f.facility_name;
 ```
@@ -120,7 +120,7 @@ SELECT
     e.specialty,
     AVG(fe.report_completeness_score) AS avg_completeness,
     SUM(CASE WHEN fe.sufficient_exam_flag = TRUE THEN 1 ELSE 0 END) / COUNT(*) * 100 AS sufficient_rate_pct
-FROM fct_evaluations_completed fe
+FROM fact_evaluations_completed fe
 JOIN dim_evaluators e ON fe.evaluator_sk = e.evaluator_sk
 WHERE e.is_current = TRUE
 GROUP BY e.specialty;

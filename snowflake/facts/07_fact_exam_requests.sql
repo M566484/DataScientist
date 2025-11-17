@@ -1,5 +1,5 @@
 -- =====================================================
--- fct_exam_requests - Exam Request Tracking
+-- fact_exam_requests - Exam Request Tracking
 -- =====================================================
 -- Purpose: Track exam requests from VA to VES through complete lifecycle
 -- Grain: One row per exam request (updated as request progresses)
@@ -8,7 +8,7 @@
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_exam_requests (
+CREATE OR REPLACE TABLE fact_exam_requests (
     exam_request_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -170,44 +170,44 @@ COMMENT = 'Accumulating snapshot fact table for exam requests from VA to VES - t
 CLUSTER BY (request_received_date_sk, assignment_status);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_exam_requests.exam_request_sk IS 'Surrogate primary key for exam request';
-COMMENT ON COLUMN fct_exam_requests.exam_request_id IS 'Unique exam request identifier';
-COMMENT ON COLUMN fct_exam_requests.va_request_number IS 'VA-provided request number';
-COMMENT ON COLUMN fct_exam_requests.vba_claim_number IS 'VBA claim number associated with request';
-COMMENT ON COLUMN fct_exam_requests.va_regional_office IS 'VA Regional Office originating the request';
-COMMENT ON COLUMN fct_exam_requests.request_received_date_sk IS 'Date request was received from VA';
-COMMENT ON COLUMN fct_exam_requests.examiner_assigned_date_sk IS 'Date examiner was assigned';
-COMMENT ON COLUMN fct_exam_requests.exam_completed_date_sk IS 'Date exam was completed';
-COMMENT ON COLUMN fct_exam_requests.request_source_system IS 'Source system: VBA, Appeals, Supplemental';
-COMMENT ON COLUMN fct_exam_requests.request_priority IS 'Priority level: ROUTINE, PRIORITY, URGENT, EXPEDITE';
-COMMENT ON COLUMN fct_exam_requests.expedite_reason IS 'Reason if expedited processing requested';
-COMMENT ON COLUMN fct_exam_requests.requested_conditions IS 'List of medical conditions to evaluate';
-COMMENT ON COLUMN fct_exam_requests.requested_conditions_count IS 'Number of conditions in request';
-COMMENT ON COLUMN fct_exam_requests.eligibility_status IS 'Eligibility status: ELIGIBLE, NOT_ELIGIBLE, PENDING_VERIFICATION';
-COMMENT ON COLUMN fct_exam_requests.missing_information_flag IS 'TRUE if missing required information';
-COMMENT ON COLUMN fct_exam_requests.assignment_status IS 'Assignment status: UNASSIGNED, IN_QUEUE, ASSIGNED, ACCEPTED, REJECTED';
-COMMENT ON COLUMN fct_exam_requests.assignment_method IS 'How assigned: AUTO_ASSIGNMENT, MANUAL, PREFERRED_EXAMINER';
-COMMENT ON COLUMN fct_exam_requests.assignment_attempts IS 'Number of assignment attempts';
-COMMENT ON COLUMN fct_exam_requests.assignment_rejections IS 'Number of times examiner rejected assignment';
-COMMENT ON COLUMN fct_exam_requests.sla_days_allowed IS 'SLA turnaround time in days';
-COMMENT ON COLUMN fct_exam_requests.sla_due_date IS 'Date by which request must be completed per SLA';
-COMMENT ON COLUMN fct_exam_requests.days_to_assignment IS 'Days from request to examiner assignment';
-COMMENT ON COLUMN fct_exam_requests.total_cycle_time_days IS 'Total days from request to completion';
-COMMENT ON COLUMN fct_exam_requests.sla_met_flag IS 'TRUE if SLA was met';
-COMMENT ON COLUMN fct_exam_requests.sla_variance_days IS 'Days early (positive) or late (negative) vs SLA';
-COMMENT ON COLUMN fct_exam_requests.at_risk_flag IS 'TRUE if at risk of missing SLA';
-COMMENT ON COLUMN fct_exam_requests.examiner_workload_at_assignment IS 'Examiner active case count at time of assignment';
-COMMENT ON COLUMN fct_exam_requests.facility_capacity_at_request IS 'Facility utilization percentage at time of request';
-COMMENT ON COLUMN fct_exam_requests.cancelled_by IS 'Who cancelled: Veteran, VA, VES, System';
-COMMENT ON COLUMN fct_exam_requests.cancellation_reason_code IS 'Coded cancellation reason';
-COMMENT ON COLUMN fct_exam_requests.medical_records_requested IS 'TRUE if medical records were requested';
-COMMENT ON COLUMN fct_exam_requests.medical_records_received IS 'TRUE if medical records were received';
-COMMENT ON COLUMN fct_exam_requests.estimated_cost IS 'Estimated cost for this exam request';
-COMMENT ON COLUMN fct_exam_requests.routing_rule_applied IS 'Business rule used for routing/assignment';
-COMMENT ON COLUMN fct_exam_requests.auto_assignment_eligible IS 'TRUE if eligible for automatic assignment';
-COMMENT ON COLUMN fct_exam_requests.manual_intervention_required IS 'TRUE if requires manual intervention';
-COMMENT ON COLUMN fct_exam_requests.exception_flag IS 'TRUE if exception occurred during processing';
-COMMENT ON COLUMN fct_exam_requests.time_in_queue_hours IS 'Time spent in assignment queue';
-COMMENT ON COLUMN fct_exam_requests.previous_exam_flag IS 'TRUE if veteran had previous exam for same condition';
-COMMENT ON COLUMN fct_exam_requests.re_exam_reason IS 'Reason if this is a re-examination';
-COMMENT ON COLUMN fct_exam_requests.updated_timestamp IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN fact_exam_requests.exam_request_sk IS 'Surrogate primary key for exam request';
+COMMENT ON COLUMN fact_exam_requests.exam_request_id IS 'Unique exam request identifier';
+COMMENT ON COLUMN fact_exam_requests.va_request_number IS 'VA-provided request number';
+COMMENT ON COLUMN fact_exam_requests.vba_claim_number IS 'VBA claim number associated with request';
+COMMENT ON COLUMN fact_exam_requests.va_regional_office IS 'VA Regional Office originating the request';
+COMMENT ON COLUMN fact_exam_requests.request_received_date_sk IS 'Date request was received from VA';
+COMMENT ON COLUMN fact_exam_requests.examiner_assigned_date_sk IS 'Date examiner was assigned';
+COMMENT ON COLUMN fact_exam_requests.exam_completed_date_sk IS 'Date exam was completed';
+COMMENT ON COLUMN fact_exam_requests.request_source_system IS 'Source system: VBA, Appeals, Supplemental';
+COMMENT ON COLUMN fact_exam_requests.request_priority IS 'Priority level: ROUTINE, PRIORITY, URGENT, EXPEDITE';
+COMMENT ON COLUMN fact_exam_requests.expedite_reason IS 'Reason if expedited processing requested';
+COMMENT ON COLUMN fact_exam_requests.requested_conditions IS 'List of medical conditions to evaluate';
+COMMENT ON COLUMN fact_exam_requests.requested_conditions_count IS 'Number of conditions in request';
+COMMENT ON COLUMN fact_exam_requests.eligibility_status IS 'Eligibility status: ELIGIBLE, NOT_ELIGIBLE, PENDING_VERIFICATION';
+COMMENT ON COLUMN fact_exam_requests.missing_information_flag IS 'TRUE if missing required information';
+COMMENT ON COLUMN fact_exam_requests.assignment_status IS 'Assignment status: UNASSIGNED, IN_QUEUE, ASSIGNED, ACCEPTED, REJECTED';
+COMMENT ON COLUMN fact_exam_requests.assignment_method IS 'How assigned: AUTO_ASSIGNMENT, MANUAL, PREFERRED_EXAMINER';
+COMMENT ON COLUMN fact_exam_requests.assignment_attempts IS 'Number of assignment attempts';
+COMMENT ON COLUMN fact_exam_requests.assignment_rejections IS 'Number of times examiner rejected assignment';
+COMMENT ON COLUMN fact_exam_requests.sla_days_allowed IS 'SLA turnaround time in days';
+COMMENT ON COLUMN fact_exam_requests.sla_due_date IS 'Date by which request must be completed per SLA';
+COMMENT ON COLUMN fact_exam_requests.days_to_assignment IS 'Days from request to examiner assignment';
+COMMENT ON COLUMN fact_exam_requests.total_cycle_time_days IS 'Total days from request to completion';
+COMMENT ON COLUMN fact_exam_requests.sla_met_flag IS 'TRUE if SLA was met';
+COMMENT ON COLUMN fact_exam_requests.sla_variance_days IS 'Days early (positive) or late (negative) vs SLA';
+COMMENT ON COLUMN fact_exam_requests.at_risk_flag IS 'TRUE if at risk of missing SLA';
+COMMENT ON COLUMN fact_exam_requests.examiner_workload_at_assignment IS 'Examiner active case count at time of assignment';
+COMMENT ON COLUMN fact_exam_requests.facility_capacity_at_request IS 'Facility utilization percentage at time of request';
+COMMENT ON COLUMN fact_exam_requests.cancelled_by IS 'Who cancelled: Veteran, VA, VES, System';
+COMMENT ON COLUMN fact_exam_requests.cancellation_reason_code IS 'Coded cancellation reason';
+COMMENT ON COLUMN fact_exam_requests.medical_records_requested IS 'TRUE if medical records were requested';
+COMMENT ON COLUMN fact_exam_requests.medical_records_received IS 'TRUE if medical records were received';
+COMMENT ON COLUMN fact_exam_requests.estimated_cost IS 'Estimated cost for this exam request';
+COMMENT ON COLUMN fact_exam_requests.routing_rule_applied IS 'Business rule used for routing/assignment';
+COMMENT ON COLUMN fact_exam_requests.auto_assignment_eligible IS 'TRUE if eligible for automatic assignment';
+COMMENT ON COLUMN fact_exam_requests.manual_intervention_required IS 'TRUE if requires manual intervention';
+COMMENT ON COLUMN fact_exam_requests.exception_flag IS 'TRUE if exception occurred during processing';
+COMMENT ON COLUMN fact_exam_requests.time_in_queue_hours IS 'Time spent in assignment queue';
+COMMENT ON COLUMN fact_exam_requests.previous_exam_flag IS 'TRUE if veteran had previous exam for same condition';
+COMMENT ON COLUMN fact_exam_requests.re_exam_reason IS 'Reason if this is a re-examination';
+COMMENT ON COLUMN fact_exam_requests.updated_timestamp IS 'Timestamp when record was last updated';

@@ -11,8 +11,8 @@
 
 The VES dimensional model uses a **dual-table approach** to comprehensively track evaluation quality assurance lifecycles:
 
-1. **`fct_evaluations_completed`** - Accumulating snapshot (current state of evaluation)
-2. **`fct_evaluation_qa_events`** - Transaction fact (complete QA history)
+1. **`fact_evaluations_completed`** - Accumulating snapshot (current state of evaluation)
+2. **`fact_evaluation_qa_events`** - Transaction fact (complete QA history)
 
 This design addresses the complex QA workflow where evaluations go through:
 - Examiner submits findings → QA Review → Needs clarification
@@ -84,7 +84,7 @@ LOOP: Stages 2-4 can repeat multiple times until approval
 
 ## Two-Table Architecture
 
-### Table 1: `fct_evaluations_completed` (Accumulating Snapshot)
+### Table 1: `fact_evaluations_completed` (Accumulating Snapshot)
 
 **Purpose**: Track the **current state** of evaluation including final QA status
 **Grain**: One row per evaluation per medical condition
@@ -120,7 +120,7 @@ qa_overall_quality_score INTEGER
 
 ---
 
-### Table 2: `fct_evaluation_qa_events` (Transaction Fact) ⭐ NEW
+### Table 2: `fact_evaluation_qa_events` (Transaction Fact) ⭐ NEW
 
 **Purpose**: Capture **complete history** of all QA review cycles and events
 **Grain**: One row per QA event (submission, review, clarification, approval, etc.)
@@ -158,7 +158,7 @@ Day 3:  QA review completed - ALL CHECKS PASS
 Day 3:  Evaluation APPROVED on first review
 Day 4:  Report sent to VA
 
-Data in fct_evaluation_qa_events (4 rows):
+Data in fact_evaluation_qa_events (4 rows):
 ┌───────────────┬────────────────────────┬──────────┬──────┬──────────┬────────────────┐
 │ evaluation_id │ event_type             │ event_   │ seq# │ qa_cycle │ review_outcome │
 │               │                        │ date     │      │ _number  │                │
@@ -193,7 +193,7 @@ Day 6:  QA Review 2 - ALL CHECKS PASS
 Day 6:  Evaluation APPROVED
 Day 7:  Report sent to VA
 
-Data in fct_evaluation_qa_events (7 rows):
+Data in fact_evaluation_qa_events (7 rows):
 ┌───────────────┬────────────────────────┬──────────┬──────┬──────────┬────────────────┬──────────────┐
 │ evaluation_id │ event_type             │ event_   │ seq# │ qa_cycle │ review_outcome │ deficiency_  │
 │               │                        │ date     │      │ _number  │                │ category     │
@@ -236,7 +236,7 @@ Day 11: QA Review 3 - ALL CHECKS PASS
 Day 11: Evaluation APPROVED
 Day 12: Report sent to VA
 
-Data in fct_evaluation_qa_events (11 rows):
+Data in fact_evaluation_qa_events (11 rows):
 ┌───────────────┬────────────────────────┬──────────┬──────┬──────────┬────────────────┬─────────────────┬────────────┐
 │ evaluation_id │ event_type             │ event_   │ seq# │ qa_cycle │ review_outcome │ deficiency_     │ escalated_ │
 │               │                        │ date     │      │ _number  │                │ count           │ flag       │
@@ -324,7 +324,7 @@ WITH first_reviews AS (
     review_outcome,
     qa_cycle_number,
     first_pass_approval_flag
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events
   WHERE event_type = 'QA_REVIEW_COMPLETED'
     AND qa_cycle_number = 1
     AND event_date_sk >= 20250101
@@ -372,7 +372,7 @@ WITH final_events AS (
     et.evaluation_type_name,
     MAX(e.qa_cycle_number) AS total_qa_cycles,
     MAX(e.event_sequence_number) AS total_events
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events e
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events e
   INNER JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluation_types et
     ON e.evaluation_type_sk = et.evaluation_type_sk
   WHERE e.event_date_sk >= 20250101
@@ -417,7 +417,7 @@ SELECT
   COUNT(DISTINCT evaluation_id) AS evaluations_affected,
   AVG(deficiency_count) AS avg_deficiencies_per_occurrence,
   ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS percentage_of_total
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events
 WHERE event_type = 'CLARIFICATION_REQUESTED'
   AND event_date_sk >= 20250101
   AND deficiency_found_flag = TRUE
@@ -457,7 +457,7 @@ WITH examiner_qa_metrics AS (
     AVG(e.overall_quality_score) AS avg_quality_score,
     SUM(e.total_clarifications_requested) AS total_clarifications,
     AVG(e.days_in_qa_process) AS avg_days_in_qa
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events e
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events e
   INNER JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators ev
     ON e.evaluator_sk = ev.evaluator_sk
   WHERE e.event_type = 'SENT_TO_VA'
@@ -514,7 +514,7 @@ WITH qa_timeline AS (
     MAX(CASE WHEN event_type = 'SENT_TO_VA' THEN event_timestamp END) AS va_delivery_time,
     MAX(qa_cycle_number) AS total_qa_cycles,
     MAX(total_clarifications_requested) AS total_clarifications
-  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events
+  FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events
   WHERE event_date_sk >= 20250101
   GROUP BY evaluation_id
   HAVING submission_time IS NOT NULL AND va_delivery_time IS NOT NULL
@@ -565,7 +565,7 @@ SELECT
   overall_quality_score,
   days_in_qa_process,
   event_notes
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluation_qa_events
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events
 WHERE evaluation_id = 'EVAL-67892'
 ORDER BY event_sequence_number;
 
@@ -598,7 +598,7 @@ Expected Output (11 rows for complex case):
 
 ```sql
 -- Step 1: Insert initial submission event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   veteran_sk, evaluator_sk, facility_sk,
@@ -614,7 +614,7 @@ VALUES (
 );
 
 -- Step 2: Update evaluation fact table (optional - if adding summary fields)
-UPDATE fct_evaluations_completed
+UPDATE fact_evaluations_completed
 SET
   qa_in_progress_flag = TRUE,
   qa_submission_date = '2025-01-02',
@@ -628,7 +628,7 @@ WHERE evaluation_id = 'EVAL-67890';
 
 ```sql
 -- Step 1: Insert QA review completed event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   review_outcome, deficiency_found_flag, deficiency_count,
@@ -647,7 +647,7 @@ VALUES (
 );
 
 -- Step 2: Insert clarification request event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   is_clarification_request, clarification_type,
@@ -668,7 +668,7 @@ VALUES (
 );
 
 -- Step 3: Update evaluation fact table
-UPDATE fct_evaluations_completed
+UPDATE fact_evaluations_completed
 SET
   qa_reviewed_flag = TRUE,
   qa_clarification_requested = TRUE,
@@ -683,7 +683,7 @@ WHERE evaluation_id = 'EVAL-67891';
 
 ```sql
 -- Insert clarification submission event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   is_clarification_response, clarification_response_text,
@@ -707,7 +707,7 @@ VALUES (
 
 ```sql
 -- Step 1: Insert approval event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   is_final_approval, approved_by, approved_timestamp,
@@ -725,7 +725,7 @@ VALUES (
 );
 
 -- Step 2: Insert sent to VA event
-INSERT INTO fct_evaluation_qa_events (
+INSERT INTO fact_evaluation_qa_events (
   evaluation_id, event_type, event_date_sk,
   event_timestamp, event_sequence_number, qa_cycle_number,
   sent_to_va_flag, sent_to_va_timestamp,
@@ -739,7 +739,7 @@ VALUES (
 );
 
 -- Step 3: Update evaluation fact table with final QA summary
-UPDATE fct_evaluations_completed
+UPDATE fact_evaluations_completed
 SET
   qa_reviewed_flag = TRUE,
   qa_final_approval_date = '2025-01-06',
@@ -781,8 +781,8 @@ WHERE evaluation_id = 'EVAL-67891';
 - **Recognition opportunities**: Identify high performers
 
 ### ✅ Flexible Reporting
-- **Current state**: Use `fct_evaluations_completed` for snapshots
-- **Historical analysis**: Use `fct_evaluation_qa_events` for trends
+- **Current state**: Use `fact_evaluations_completed` for snapshots
+- **Historical analysis**: Use `fact_evaluation_qa_events` for trends
 - **Combined views**: Join both for complete picture
 
 ---
@@ -796,7 +796,7 @@ WHERE evaluation_id = 'EVAL-67891';
 CLUSTER BY (event_date_sk, evaluation_id);
 
 -- Recommended search optimization
-ALTER TABLE fct_evaluation_qa_events
+ALTER TABLE fact_evaluation_qa_events
   ADD SEARCH OPTIMIZATION ON EQUALITY(evaluation_id, event_type, qa_cycle_number);
 ```
 
@@ -805,7 +805,7 @@ ALTER TABLE fct_evaluation_qa_events
 ```sql
 -- Always filter on event_date_sk for partition pruning
 SELECT *
-FROM fct_evaluation_qa_events
+FROM fact_evaluation_qa_events
 WHERE event_date_sk >= 20250101  -- Enables partition pruning
   AND evaluation_id = 'EVAL-67890';
 
@@ -816,37 +816,37 @@ SELECT
   COUNT(DISTINCT evaluation_id) AS evaluations_reviewed,
   AVG(overall_quality_score) AS avg_quality_score,
   SUM(CASE WHEN first_pass_approval_flag = TRUE THEN 1 ELSE 0 END) AS first_pass_approvals
-FROM fct_evaluation_qa_events
+FROM fact_evaluation_qa_events
 WHERE event_type = 'QA_REVIEW_COMPLETED'
 GROUP BY event_date_sk;
 ```
 
 ---
 
-## Recommended Enhancements to fct_evaluations_completed
+## Recommended Enhancements to fact_evaluations_completed
 
 Add these summary columns to the accumulating snapshot:
 
 ```sql
--- Add to fct_evaluations_completed table
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_cycles_total INTEGER;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_first_pass_approval_flag BOOLEAN;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_final_approval_date DATE;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_sent_to_va_date DATE;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_total_clarifications_requested INTEGER;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_days_in_review INTEGER;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_overall_quality_score INTEGER;
-ALTER TABLE fct_evaluations_completed ADD COLUMN qa_deficiency_count_total INTEGER;
+-- Add to fact_evaluations_completed table
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_cycles_total INTEGER;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_first_pass_approval_flag BOOLEAN;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_final_approval_date DATE;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_sent_to_va_date DATE;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_total_clarifications_requested INTEGER;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_days_in_review INTEGER;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_overall_quality_score INTEGER;
+ALTER TABLE fact_evaluations_completed ADD COLUMN qa_deficiency_count_total INTEGER;
 
 -- Add column comments
-COMMENT ON COLUMN fct_evaluations_completed.qa_cycles_total IS 'Total number of QA review cycles before approval';
-COMMENT ON COLUMN fct_evaluations_completed.qa_first_pass_approval_flag IS 'TRUE if approved on first QA review without clarifications';
-COMMENT ON COLUMN fct_evaluations_completed.qa_final_approval_date IS 'Date of final QA approval';
-COMMENT ON COLUMN fct_evaluations_completed.qa_sent_to_va_date IS 'Date report was sent to VA';
-COMMENT ON COLUMN fct_evaluations_completed.qa_total_clarifications_requested IS 'Total number of clarification requests';
-COMMENT ON COLUMN fct_evaluations_completed.qa_days_in_review IS 'Total days in QA review process';
-COMMENT ON COLUMN fct_evaluations_completed.qa_overall_quality_score IS 'Final overall quality score from QA';
-COMMENT ON COLUMN fct_evaluations_completed.qa_deficiency_count_total IS 'Total deficiencies found across all QA cycles';
+COMMENT ON COLUMN fact_evaluations_completed.qa_cycles_total IS 'Total number of QA review cycles before approval';
+COMMENT ON COLUMN fact_evaluations_completed.qa_first_pass_approval_flag IS 'TRUE if approved on first QA review without clarifications';
+COMMENT ON COLUMN fact_evaluations_completed.qa_final_approval_date IS 'Date of final QA approval';
+COMMENT ON COLUMN fact_evaluations_completed.qa_sent_to_va_date IS 'Date report was sent to VA';
+COMMENT ON COLUMN fact_evaluations_completed.qa_total_clarifications_requested IS 'Total number of clarification requests';
+COMMENT ON COLUMN fact_evaluations_completed.qa_days_in_review IS 'Total days in QA review process';
+COMMENT ON COLUMN fact_evaluations_completed.qa_overall_quality_score IS 'Final overall quality score from QA';
+COMMENT ON COLUMN fact_evaluations_completed.qa_deficiency_count_total IS 'Total deficiencies found across all QA cycles';
 ```
 
 ---
@@ -873,8 +873,8 @@ This addresses your QA workflow:
 ---
 
 **Next Steps**:
-1. Review and approve `fct_evaluation_qa_events` schema
-2. Consider adding summary columns to `fct_evaluations_completed`
+1. Review and approve `fact_evaluation_qa_events` schema
+2. Consider adding summary columns to `fact_evaluations_completed`
 3. Deploy to development environment
 4. Test with sample QA workflow data
 5. Update ETL processes to capture QA events

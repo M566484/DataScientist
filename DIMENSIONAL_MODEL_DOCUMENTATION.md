@@ -212,7 +212,7 @@ VETERAN_EVALUATION_DW (Database)
 
 ## Fact Tables
 
-### 1. fct_evaluations_completed
+### 1. fact_evaluations_completed
 **Type**: Transaction Fact Table
 **Purpose**: Core fact table for medical evaluations
 **Grain**: One row per evaluation per medical condition
@@ -245,7 +245,7 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 2. fct_claim_status_changes
+### 2. fact_claim_status_changes
 **Type**: Accumulating Snapshot Fact Table
 **Purpose**: Track claim status changes over time
 **Grain**: One row per claim status change
@@ -271,7 +271,7 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 3. fct_appointments_scheduled
+### 3. fact_appointments_scheduled
 **Type**: Transaction Fact Table
 **Purpose**: Track appointment scheduling and attendance
 **Grain**: One row per appointment
@@ -303,7 +303,7 @@ VETERAN_EVALUATION_DW (Database)
 
 ---
 
-### 4. fct_daily_facility_snapshot
+### 4. fact_daily_facility_snapshot
 **Type**: Periodic Snapshot Fact Table
 **Purpose**: Daily snapshot of key performance indicators
 **Grain**: One row per facility per date
@@ -342,7 +342,7 @@ VETERAN_EVALUATION_DW (Database)
     dim_veterans ------ |------ dim_evaluators
            |           |              |
            |           |              |
-           |     fct_evaluations_     |
+           |     fact_evaluations_     |
            |        completed         |
            |           |              |
     dim_claims -------- |------ dim_facilities
@@ -356,7 +356,7 @@ VETERAN_EVALUATION_DW (Database)
 ### Fact Table Relationships
 
 ```
-fct_evaluations_completed
+fact_evaluations_completed
     ├── dim_veterans (many-to-one)
     ├── dim_evaluators (many-to-one)
     ├── dim_facilities (many-to-one)
@@ -366,13 +366,13 @@ fct_evaluations_completed
     ├── dim_appointments (many-to-one)
     └── dim_dates (many-to-one, multiple roles)
 
-fct_claim_status_changes
+fact_claim_status_changes
     ├── dim_veterans (many-to-one)
     ├── dim_claims (many-to-one)
     ├── dim_facilities (many-to-one)
     └── dim_dates (many-to-one, multiple milestones)
 
-fct_appointments_scheduled
+fact_appointments_scheduled
     ├── dim_veterans (many-to-one)
     ├── dim_evaluators (many-to-one)
     ├── dim_facilities (many-to-one)
@@ -381,7 +381,7 @@ fct_appointments_scheduled
     ├── dim_claims (many-to-one)
     └── dim_dates (many-to-one, multiple roles)
 
-fct_daily_facility_snapshot
+fact_daily_facility_snapshot
     ├── dim_facilities (many-to-one)
     └── dim_dates (many-to-one)
 ```
@@ -400,7 +400,7 @@ SELECT
     COUNT(fe.evaluation_fact_sk) AS total_evaluations,
     SUM(CASE WHEN fe.evaluation_completed_flag = TRUE THEN 1 ELSE 0 END) AS completed_evaluations,
     ROUND(completed_evaluations / NULLIF(total_evaluations, 0) * 100, 2) AS completion_rate_pct
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluations_completed fe
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed fe
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fe.facility_sk = f.facility_sk
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fe.evaluation_date_sk = d.date_sk
 WHERE d.year_number = 2024
@@ -419,7 +419,7 @@ SELECT
     COUNT(fa.appointment_fact_sk) AS total_appointments,
     SUM(CASE WHEN fa.meets_va_wait_time_goal = TRUE THEN 1 ELSE 0 END) AS within_goal,
     ROUND(within_goal / NULLIF(total_appointments, 0) * 100, 2) AS compliance_rate_pct
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointments_scheduled fa
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointments_scheduled fa
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans v ON fa.veteran_sk = v.veteran_sk
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fa.appointment_date_sk = d.date_sk
 WHERE d.fiscal_year = 2024
@@ -441,7 +441,7 @@ SELECT
     SUM(fc.service_connected_granted) AS total_granted,
     SUM(fc.service_connected_denied) AS total_denied,
     ROUND(total_granted / NULLIF(total_granted + total_denied, 0) * 100, 2) AS grant_rate_pct
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_claim_status_changes fc
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_claim_status_changes fc
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fc.rating_decision_date_sk = d.date_sk
 WHERE d.fiscal_year = 2024
 GROUP BY fc.current_status
@@ -461,7 +461,7 @@ SELECT
     SUM(CASE WHEN fe.sufficient_exam_flag = TRUE THEN 1 ELSE 0 END) AS sufficient_exams,
     ROUND(sufficient_exams / NULLIF(total_evaluations, 0) * 100, 2) AS sufficient_exam_rate_pct,
     ROUND(AVG(fe.report_timeliness_days), 1) AS avg_report_turnaround_days
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_evaluations_completed fe
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed fe
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators e ON fe.evaluator_sk = e.evaluator_sk
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fe.facility_sk = f.facility_sk
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fe.evaluation_date_sk = d.date_sk
@@ -484,7 +484,7 @@ SELECT
     AVG(CASE WHEN fa.telehealth_flag = TRUE THEN fa.satisfaction_score END) AS telehealth_satisfaction,
     AVG(CASE WHEN fa.telehealth_flag = FALSE THEN fa.satisfaction_score END) AS in_person_satisfaction,
     SUM(CASE WHEN fa.telehealth_flag = TRUE AND fa.technical_issues_flag = TRUE THEN 1 ELSE 0 END) AS technical_issues
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_appointments_scheduled fa
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointments_scheduled fa
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fa.appointment_date_sk = d.date_sk
 WHERE d.year_number = 2024
   AND fa.attended_flag = TRUE
@@ -506,7 +506,7 @@ SELECT
     fds.evaluation_backlog_count,
     fds.average_satisfaction_score,
     fds.total_evaluation_costs
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fct_daily_facility_snapshot fds
+FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_daily_facility_snapshot fds
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities f ON fds.facility_sk = f.facility_sk
 JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d ON fds.snapshot_date_sk = d.date_sk
 WHERE d.full_date >= CURRENT_DATE - 30
@@ -531,10 +531,10 @@ ORDER BY d.full_date DESC, f.facility_name;
    - dim_appointments (Type 1)
 
 2. **Fact Tables** (load after dimensions)
-   - fct_evaluations_completed
-   - fct_claim_status_changes
-   - fct_appointments_scheduled
-   - fct_daily_facility_snapshot (calculated from other facts)
+   - fact_evaluations_completed
+   - fact_claim_status_changes
+   - fact_appointments_scheduled
+   - fact_daily_facility_snapshot (calculated from other facts)
 
 ### Type 2 SCD Logic
 
@@ -569,10 +569,10 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
 
    All fact tables are pre-configured with clustering keys optimized for common query patterns:
 
-   - `fct_evaluations_completed`: Clustered by `(evaluation_date_sk, facility_sk)`
-   - `fct_claim_status_changes`: Clustered by `(claim_sk, rating_decision_date_sk)`
-   - `fct_appointments_scheduled`: Clustered by `(appointment_date_sk, facility_sk)`
-   - `fct_daily_facility_snapshot`: Clustered by `(snapshot_date_sk, facility_sk)`
+   - `fact_evaluations_completed`: Clustered by `(evaluation_date_sk, facility_sk)`
+   - `fact_claim_status_changes`: Clustered by `(claim_sk, rating_decision_date_sk)`
+   - `fact_appointments_scheduled`: Clustered by `(appointment_date_sk, facility_sk)`
+   - `fact_daily_facility_snapshot`: Clustered by `(snapshot_date_sk, facility_sk)`
 
    Clustering improves query performance by co-locating similar data in micro-partitions.
 
@@ -599,7 +599,7 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
        DATE_TRUNC('month', d.full_date) AS month,
        COUNT(*) AS eval_count,
        AVG(evaluation_duration_minutes) AS avg_duration
-   FROM fct_evaluations_completed fe
+   FROM fact_evaluations_completed fe
    JOIN dim_dates d ON fe.evaluation_date_sk = d.date_sk
    GROUP BY facility_sk, DATE_TRUNC('month', d.full_date);
    ```
@@ -639,7 +639,7 @@ Snowflake does not use traditional indexes. Instead, it uses several optimizatio
    ```sql
    -- Good: Only select needed columns
    SELECT veteran_sk, evaluation_date_sk, evaluation_cost_amount
-   FROM fct_evaluations_completed;
+   FROM fact_evaluations_completed;
 
    -- Avoid: SELECT * reads all columns
    ```
@@ -735,7 +735,7 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA VETERAN_EVALUATION_DW.WAREH
 ```sql
 -- Check for orphaned fact records
 SELECT COUNT(*)
-FROM fct_evaluations_completed fe
+FROM fact_evaluations_completed fe
 LEFT JOIN dim_veterans v ON fe.veteran_sk = v.veteran_sk
 WHERE v.veteran_sk IS NULL;
 

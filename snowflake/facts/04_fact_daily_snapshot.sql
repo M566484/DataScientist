@@ -1,5 +1,5 @@
 -- =====================================================
--- fct_daily_facility_snapshot - Daily Metrics Snapshot
+-- fact_daily_facility_snapshot - Daily Metrics Snapshot
 -- =====================================================
 -- Purpose: Daily snapshot of key performance indicators
 -- Grain: One row per facility per date
@@ -8,7 +8,7 @@
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_daily_facility_snapshot (
+CREATE OR REPLACE TABLE fact_daily_facility_snapshot (
     daily_snapshot_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -97,51 +97,51 @@ COMMENT = 'Periodic snapshot fact table with daily performance metrics by facili
 CLUSTER BY (snapshot_date_sk, facility_sk);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_daily_facility_snapshot.daily_snapshot_sk IS 'Surrogate primary key for the daily snapshot fact';
-COMMENT ON COLUMN fct_daily_facility_snapshot.facility_sk IS 'Foreign key to dim_facilities dimension';
-COMMENT ON COLUMN fct_daily_facility_snapshot.snapshot_date_sk IS 'Foreign key to dim_dates - snapshot date';
-COMMENT ON COLUMN fct_daily_facility_snapshot.snapshot_id IS 'Unique snapshot identifier (degenerate dimension)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluations_scheduled_count IS 'Number of evaluations scheduled for this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluations_completed_count IS 'Number of evaluations completed on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluations_no_show_count IS 'Number of no-shows on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluations_cancelled_count IS 'Number of cancelled evaluations on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluation_completion_rate IS 'Percentage of scheduled evaluations completed';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_scheduled_count IS 'Number of appointments scheduled for this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_available_slots IS 'Number of available appointment slots';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_utilization_rate IS 'Percentage of appointment slots utilized';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_wait_time_days IS 'Average wait time from request to appointment in days';
-COMMENT ON COLUMN fct_daily_facility_snapshot.claims_received_count IS 'Number of new claims received on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.claims_pending_count IS 'Number of claims pending as of this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.claims_completed_count IS 'Number of claims completed on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_claim_age_days IS 'Average age of pending claims in days';
-COMMENT ON COLUMN fct_daily_facility_snapshot.claims_over_125_days_count IS 'Number of claims pending over 125 days (VA target metric)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluation_backlog_count IS 'Number of evaluations in backlog as of this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.exam_request_backlog_count IS 'Number of exam requests awaiting scheduling';
-COMMENT ON COLUMN fct_daily_facility_snapshot.dbq_pending_submission_count IS 'Number of DBQ forms pending submission';
-COMMENT ON COLUMN fct_daily_facility_snapshot.sufficient_exam_rate IS 'Percentage of exams marked as sufficient for rating';
-COMMENT ON COLUMN fct_daily_facility_snapshot.timely_report_submission_rate IS 'Percentage of reports submitted within target timeframe';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_report_completeness_score IS 'Average completeness score for reports (0-100)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.active_evaluators_count IS 'Number of active evaluators as of this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.evaluator_utilization_rate IS 'Percentage of evaluator capacity utilized';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_evaluations_per_evaluator IS 'Average number of evaluations per evaluator';
-COMMENT ON COLUMN fct_daily_facility_snapshot.unique_veterans_served_count IS 'Number of unique veterans served on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.new_veterans_count IS 'Number of new veterans (first visit)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.returning_veterans_count IS 'Number of returning veterans';
-COMMENT ON COLUMN fct_daily_facility_snapshot.telehealth_appointments_count IS 'Number of telehealth appointments on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.telehealth_completion_rate IS 'Percentage of telehealth appointments completed successfully';
-COMMENT ON COLUMN fct_daily_facility_snapshot.telehealth_technical_issues_count IS 'Number of telehealth appointments with technical issues';
-COMMENT ON COLUMN fct_daily_facility_snapshot.total_evaluation_costs IS 'Total cost of evaluations on this day';
-COMMENT ON COLUMN fct_daily_facility_snapshot.total_contractor_payments IS 'Total payments to contract evaluators';
-COMMENT ON COLUMN fct_daily_facility_snapshot.total_travel_reimbursements IS 'Total travel reimbursements paid to veterans';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_cost_per_evaluation IS 'Average cost per evaluation';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_within_20_days_count IS 'Number of appointments scheduled within 20 days';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_21_30_days_count IS 'Number of appointments scheduled in 21-30 days';
-COMMENT ON COLUMN fct_daily_facility_snapshot.appointments_over_30_days_count IS 'Number of appointments scheduled over 30 days out';
-COMMENT ON COLUMN fct_daily_facility_snapshot.wait_time_compliance_rate IS 'Percentage meeting VA wait time goals';
-COMMENT ON COLUMN fct_daily_facility_snapshot.surveys_sent_count IS 'Number of satisfaction surveys sent';
-COMMENT ON COLUMN fct_daily_facility_snapshot.surveys_completed_count IS 'Number of satisfaction surveys completed';
-COMMENT ON COLUMN fct_daily_facility_snapshot.average_satisfaction_score IS 'Average satisfaction score (1-5 scale)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.net_promoter_score IS 'Net Promoter Score (percentage promoters minus detractors)';
-COMMENT ON COLUMN fct_daily_facility_snapshot.source_system IS 'Source system that provided this data';
-COMMENT ON COLUMN fct_daily_facility_snapshot.created_timestamp IS 'Timestamp when record was created';
-COMMENT ON COLUMN fct_daily_facility_snapshot.updated_timestamp IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN fact_daily_facility_snapshot.daily_snapshot_sk IS 'Surrogate primary key for the daily snapshot fact';
+COMMENT ON COLUMN fact_daily_facility_snapshot.facility_sk IS 'Foreign key to dim_facilities dimension';
+COMMENT ON COLUMN fact_daily_facility_snapshot.snapshot_date_sk IS 'Foreign key to dim_dates - snapshot date';
+COMMENT ON COLUMN fact_daily_facility_snapshot.snapshot_id IS 'Unique snapshot identifier (degenerate dimension)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluations_scheduled_count IS 'Number of evaluations scheduled for this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluations_completed_count IS 'Number of evaluations completed on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluations_no_show_count IS 'Number of no-shows on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluations_cancelled_count IS 'Number of cancelled evaluations on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluation_completion_rate IS 'Percentage of scheduled evaluations completed';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_scheduled_count IS 'Number of appointments scheduled for this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_available_slots IS 'Number of available appointment slots';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_utilization_rate IS 'Percentage of appointment slots utilized';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_wait_time_days IS 'Average wait time from request to appointment in days';
+COMMENT ON COLUMN fact_daily_facility_snapshot.claims_received_count IS 'Number of new claims received on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.claims_pending_count IS 'Number of claims pending as of this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.claims_completed_count IS 'Number of claims completed on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_claim_age_days IS 'Average age of pending claims in days';
+COMMENT ON COLUMN fact_daily_facility_snapshot.claims_over_125_days_count IS 'Number of claims pending over 125 days (VA target metric)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluation_backlog_count IS 'Number of evaluations in backlog as of this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.exam_request_backlog_count IS 'Number of exam requests awaiting scheduling';
+COMMENT ON COLUMN fact_daily_facility_snapshot.dbq_pending_submission_count IS 'Number of DBQ forms pending submission';
+COMMENT ON COLUMN fact_daily_facility_snapshot.sufficient_exam_rate IS 'Percentage of exams marked as sufficient for rating';
+COMMENT ON COLUMN fact_daily_facility_snapshot.timely_report_submission_rate IS 'Percentage of reports submitted within target timeframe';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_report_completeness_score IS 'Average completeness score for reports (0-100)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.active_evaluators_count IS 'Number of active evaluators as of this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.evaluator_utilization_rate IS 'Percentage of evaluator capacity utilized';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_evaluations_per_evaluator IS 'Average number of evaluations per evaluator';
+COMMENT ON COLUMN fact_daily_facility_snapshot.unique_veterans_served_count IS 'Number of unique veterans served on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.new_veterans_count IS 'Number of new veterans (first visit)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.returning_veterans_count IS 'Number of returning veterans';
+COMMENT ON COLUMN fact_daily_facility_snapshot.telehealth_appointments_count IS 'Number of telehealth appointments on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.telehealth_completion_rate IS 'Percentage of telehealth appointments completed successfully';
+COMMENT ON COLUMN fact_daily_facility_snapshot.telehealth_technical_issues_count IS 'Number of telehealth appointments with technical issues';
+COMMENT ON COLUMN fact_daily_facility_snapshot.total_evaluation_costs IS 'Total cost of evaluations on this day';
+COMMENT ON COLUMN fact_daily_facility_snapshot.total_contractor_payments IS 'Total payments to contract evaluators';
+COMMENT ON COLUMN fact_daily_facility_snapshot.total_travel_reimbursements IS 'Total travel reimbursements paid to veterans';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_cost_per_evaluation IS 'Average cost per evaluation';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_within_20_days_count IS 'Number of appointments scheduled within 20 days';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_21_30_days_count IS 'Number of appointments scheduled in 21-30 days';
+COMMENT ON COLUMN fact_daily_facility_snapshot.appointments_over_30_days_count IS 'Number of appointments scheduled over 30 days out';
+COMMENT ON COLUMN fact_daily_facility_snapshot.wait_time_compliance_rate IS 'Percentage meeting VA wait time goals';
+COMMENT ON COLUMN fact_daily_facility_snapshot.surveys_sent_count IS 'Number of satisfaction surveys sent';
+COMMENT ON COLUMN fact_daily_facility_snapshot.surveys_completed_count IS 'Number of satisfaction surveys completed';
+COMMENT ON COLUMN fact_daily_facility_snapshot.average_satisfaction_score IS 'Average satisfaction score (1-5 scale)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.net_promoter_score IS 'Net Promoter Score (percentage promoters minus detractors)';
+COMMENT ON COLUMN fact_daily_facility_snapshot.source_system IS 'Source system that provided this data';
+COMMENT ON COLUMN fact_daily_facility_snapshot.created_timestamp IS 'Timestamp when record was created';
+COMMENT ON COLUMN fact_daily_facility_snapshot.updated_timestamp IS 'Timestamp when record was last updated';

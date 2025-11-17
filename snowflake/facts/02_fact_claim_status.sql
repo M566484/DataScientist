@@ -1,5 +1,5 @@
 -- =====================================================
--- fct_claim_status_changes - Claim Status Fact Table
+-- fact_claim_status_changes - Claim Status Fact Table
 -- =====================================================
 -- Purpose: Track claim status changes over time
 -- Grain: One row per claim status change
@@ -8,7 +8,7 @@
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_claim_status_changes (
+CREATE OR REPLACE TABLE fact_claim_status_changes (
     claim_status_fact_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -95,55 +95,55 @@ COMMENT = 'Accumulating snapshot fact table for claim status and processing mile
 CLUSTER BY (claim_sk, rating_decision_date_sk);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_claim_status_changes.claim_status_fact_sk IS 'Surrogate primary key for the claim status fact';
-COMMENT ON COLUMN fct_claim_status_changes.veteran_sk IS 'Foreign key to dim_veterans dimension';
-COMMENT ON COLUMN fct_claim_status_changes.claim_sk IS 'Foreign key to dim_claims dimension';
-COMMENT ON COLUMN fct_claim_status_changes.facility_sk IS 'Foreign key to dim_facilities dimension';
-COMMENT ON COLUMN fct_claim_status_changes.claim_filed_date_sk IS 'Foreign key to dim_dates - claim filed milestone';
-COMMENT ON COLUMN fct_claim_status_changes.claim_received_date_sk IS 'Foreign key to dim_dates - claim received milestone';
-COMMENT ON COLUMN fct_claim_status_changes.initial_review_date_sk IS 'Foreign key to dim_dates - initial review milestone';
-COMMENT ON COLUMN fct_claim_status_changes.evidence_request_date_sk IS 'Foreign key to dim_dates - evidence requested milestone';
-COMMENT ON COLUMN fct_claim_status_changes.evidence_received_date_sk IS 'Foreign key to dim_dates - evidence received milestone';
-COMMENT ON COLUMN fct_claim_status_changes.exam_scheduled_date_sk IS 'Foreign key to dim_dates - exam scheduled milestone';
-COMMENT ON COLUMN fct_claim_status_changes.exam_completed_date_sk IS 'Foreign key to dim_dates - exam completed milestone';
-COMMENT ON COLUMN fct_claim_status_changes.rating_decision_date_sk IS 'Foreign key to dim_dates - rating decision made milestone';
-COMMENT ON COLUMN fct_claim_status_changes.notification_sent_date_sk IS 'Foreign key to dim_dates - decision notification sent milestone';
-COMMENT ON COLUMN fct_claim_status_changes.claim_id IS 'Unique claim identifier (degenerate dimension)';
-COMMENT ON COLUMN fct_claim_status_changes.status_change_id IS 'Unique status change event identifier';
-COMMENT ON COLUMN fct_claim_status_changes.previous_status IS 'Previous claim status before this change';
-COMMENT ON COLUMN fct_claim_status_changes.current_status IS 'Current claim status';
-COMMENT ON COLUMN fct_claim_status_changes.status_change_reason IS 'Reason for status change';
-COMMENT ON COLUMN fct_claim_status_changes.days_in_previous_status IS 'Number of days claim was in previous status';
-COMMENT ON COLUMN fct_claim_status_changes.total_days_pending IS 'Total days claim has been pending';
-COMMENT ON COLUMN fct_claim_status_changes.days_to_complete IS 'Total days from filing to completion';
-COMMENT ON COLUMN fct_claim_status_changes.evidence_requested IS 'TRUE if evidence was requested from veteran';
-COMMENT ON COLUMN fct_claim_status_changes.evidence_received IS 'TRUE if requested evidence was received';
-COMMENT ON COLUMN fct_claim_status_changes.exam_requested IS 'TRUE if medical exam was requested';
-COMMENT ON COLUMN fct_claim_status_changes.exam_completed IS 'TRUE if medical exam was completed';
-COMMENT ON COLUMN fct_claim_status_changes.decision_made IS 'TRUE if rating decision has been made';
-COMMENT ON COLUMN fct_claim_status_changes.notification_sent IS 'TRUE if decision notification was sent to veteran';
-COMMENT ON COLUMN fct_claim_status_changes.days_claim_to_initial_review IS 'Days from claim filed to initial review';
-COMMENT ON COLUMN fct_claim_status_changes.days_review_to_evidence_request IS 'Days from initial review to evidence request';
-COMMENT ON COLUMN fct_claim_status_changes.days_evidence_request_to_receipt IS 'Days from evidence request to receipt';
-COMMENT ON COLUMN fct_claim_status_changes.days_evidence_to_exam_schedule IS 'Days from evidence receipt to exam scheduled';
-COMMENT ON COLUMN fct_claim_status_changes.days_exam_schedule_to_complete IS 'Days from exam scheduled to exam completed';
-COMMENT ON COLUMN fct_claim_status_changes.days_exam_to_decision IS 'Days from exam completed to rating decision';
-COMMENT ON COLUMN fct_claim_status_changes.days_decision_to_notification IS 'Days from decision to notification sent';
-COMMENT ON COLUMN fct_claim_status_changes.number_of_contentions IS 'Number of contentions in the claim';
-COMMENT ON COLUMN fct_claim_status_changes.number_of_exams_required IS 'Number of medical exams required';
-COMMENT ON COLUMN fct_claim_status_changes.number_of_exams_completed IS 'Number of medical exams completed';
-COMMENT ON COLUMN fct_claim_status_changes.fully_developed_claim_flag IS 'TRUE if Fully Developed Claim (FDC) program';
-COMMENT ON COLUMN fct_claim_status_changes.rating_percentage_granted IS 'Total disability rating percentage granted';
-COMMENT ON COLUMN fct_claim_status_changes.service_connected_granted IS 'Count of conditions granted service connection';
-COMMENT ON COLUMN fct_claim_status_changes.service_connected_denied IS 'Count of conditions denied service connection';
-COMMENT ON COLUMN fct_claim_status_changes.deferred_conditions IS 'Count of conditions deferred for additional development';
-COMMENT ON COLUMN fct_claim_status_changes.sufficient_evidence_flag IS 'TRUE if sufficient evidence exists for decision';
-COMMENT ON COLUMN fct_claim_status_changes.remand_flag IS 'TRUE if claim was remanded (sent back) for additional work';
-COMMENT ON COLUMN fct_claim_status_changes.remand_reason IS 'Reason claim was remanded';
-COMMENT ON COLUMN fct_claim_status_changes.additional_development_needed IS 'TRUE if additional development is needed';
-COMMENT ON COLUMN fct_claim_status_changes.assigned_specialist IS 'Name of assigned rating specialist';
-COMMENT ON COLUMN fct_claim_status_changes.regional_office_code IS 'Regional office code processing the claim';
-COMMENT ON COLUMN fct_claim_status_changes.priority_processing_flag IS 'TRUE if claim has priority processing';
-COMMENT ON COLUMN fct_claim_status_changes.source_system IS 'Source system that provided this data';
-COMMENT ON COLUMN fct_claim_status_changes.created_timestamp IS 'Timestamp when record was created';
-COMMENT ON COLUMN fct_claim_status_changes.updated_timestamp IS 'Timestamp when record was last updated';
+COMMENT ON COLUMN fact_claim_status_changes.claim_status_fact_sk IS 'Surrogate primary key for the claim status fact';
+COMMENT ON COLUMN fact_claim_status_changes.veteran_sk IS 'Foreign key to dim_veterans dimension';
+COMMENT ON COLUMN fact_claim_status_changes.claim_sk IS 'Foreign key to dim_claims dimension';
+COMMENT ON COLUMN fact_claim_status_changes.facility_sk IS 'Foreign key to dim_facilities dimension';
+COMMENT ON COLUMN fact_claim_status_changes.claim_filed_date_sk IS 'Foreign key to dim_dates - claim filed milestone';
+COMMENT ON COLUMN fact_claim_status_changes.claim_received_date_sk IS 'Foreign key to dim_dates - claim received milestone';
+COMMENT ON COLUMN fact_claim_status_changes.initial_review_date_sk IS 'Foreign key to dim_dates - initial review milestone';
+COMMENT ON COLUMN fact_claim_status_changes.evidence_request_date_sk IS 'Foreign key to dim_dates - evidence requested milestone';
+COMMENT ON COLUMN fact_claim_status_changes.evidence_received_date_sk IS 'Foreign key to dim_dates - evidence received milestone';
+COMMENT ON COLUMN fact_claim_status_changes.exam_scheduled_date_sk IS 'Foreign key to dim_dates - exam scheduled milestone';
+COMMENT ON COLUMN fact_claim_status_changes.exam_completed_date_sk IS 'Foreign key to dim_dates - exam completed milestone';
+COMMENT ON COLUMN fact_claim_status_changes.rating_decision_date_sk IS 'Foreign key to dim_dates - rating decision made milestone';
+COMMENT ON COLUMN fact_claim_status_changes.notification_sent_date_sk IS 'Foreign key to dim_dates - decision notification sent milestone';
+COMMENT ON COLUMN fact_claim_status_changes.claim_id IS 'Unique claim identifier (degenerate dimension)';
+COMMENT ON COLUMN fact_claim_status_changes.status_change_id IS 'Unique status change event identifier';
+COMMENT ON COLUMN fact_claim_status_changes.previous_status IS 'Previous claim status before this change';
+COMMENT ON COLUMN fact_claim_status_changes.current_status IS 'Current claim status';
+COMMENT ON COLUMN fact_claim_status_changes.status_change_reason IS 'Reason for status change';
+COMMENT ON COLUMN fact_claim_status_changes.days_in_previous_status IS 'Number of days claim was in previous status';
+COMMENT ON COLUMN fact_claim_status_changes.total_days_pending IS 'Total days claim has been pending';
+COMMENT ON COLUMN fact_claim_status_changes.days_to_complete IS 'Total days from filing to completion';
+COMMENT ON COLUMN fact_claim_status_changes.evidence_requested IS 'TRUE if evidence was requested from veteran';
+COMMENT ON COLUMN fact_claim_status_changes.evidence_received IS 'TRUE if requested evidence was received';
+COMMENT ON COLUMN fact_claim_status_changes.exam_requested IS 'TRUE if medical exam was requested';
+COMMENT ON COLUMN fact_claim_status_changes.exam_completed IS 'TRUE if medical exam was completed';
+COMMENT ON COLUMN fact_claim_status_changes.decision_made IS 'TRUE if rating decision has been made';
+COMMENT ON COLUMN fact_claim_status_changes.notification_sent IS 'TRUE if decision notification was sent to veteran';
+COMMENT ON COLUMN fact_claim_status_changes.days_claim_to_initial_review IS 'Days from claim filed to initial review';
+COMMENT ON COLUMN fact_claim_status_changes.days_review_to_evidence_request IS 'Days from initial review to evidence request';
+COMMENT ON COLUMN fact_claim_status_changes.days_evidence_request_to_receipt IS 'Days from evidence request to receipt';
+COMMENT ON COLUMN fact_claim_status_changes.days_evidence_to_exam_schedule IS 'Days from evidence receipt to exam scheduled';
+COMMENT ON COLUMN fact_claim_status_changes.days_exam_schedule_to_complete IS 'Days from exam scheduled to exam completed';
+COMMENT ON COLUMN fact_claim_status_changes.days_exam_to_decision IS 'Days from exam completed to rating decision';
+COMMENT ON COLUMN fact_claim_status_changes.days_decision_to_notification IS 'Days from decision to notification sent';
+COMMENT ON COLUMN fact_claim_status_changes.number_of_contentions IS 'Number of contentions in the claim';
+COMMENT ON COLUMN fact_claim_status_changes.number_of_exams_required IS 'Number of medical exams required';
+COMMENT ON COLUMN fact_claim_status_changes.number_of_exams_completed IS 'Number of medical exams completed';
+COMMENT ON COLUMN fact_claim_status_changes.fully_developed_claim_flag IS 'TRUE if Fully Developed Claim (FDC) program';
+COMMENT ON COLUMN fact_claim_status_changes.rating_percentage_granted IS 'Total disability rating percentage granted';
+COMMENT ON COLUMN fact_claim_status_changes.service_connected_granted IS 'Count of conditions granted service connection';
+COMMENT ON COLUMN fact_claim_status_changes.service_connected_denied IS 'Count of conditions denied service connection';
+COMMENT ON COLUMN fact_claim_status_changes.deferred_conditions IS 'Count of conditions deferred for additional development';
+COMMENT ON COLUMN fact_claim_status_changes.sufficient_evidence_flag IS 'TRUE if sufficient evidence exists for decision';
+COMMENT ON COLUMN fact_claim_status_changes.remand_flag IS 'TRUE if claim was remanded (sent back) for additional work';
+COMMENT ON COLUMN fact_claim_status_changes.remand_reason IS 'Reason claim was remanded';
+COMMENT ON COLUMN fact_claim_status_changes.additional_development_needed IS 'TRUE if additional development is needed';
+COMMENT ON COLUMN fact_claim_status_changes.assigned_specialist IS 'Name of assigned rating specialist';
+COMMENT ON COLUMN fact_claim_status_changes.regional_office_code IS 'Regional office code processing the claim';
+COMMENT ON COLUMN fact_claim_status_changes.priority_processing_flag IS 'TRUE if claim has priority processing';
+COMMENT ON COLUMN fact_claim_status_changes.source_system IS 'Source system that provided this data';
+COMMENT ON COLUMN fact_claim_status_changes.created_timestamp IS 'Timestamp when record was created';
+COMMENT ON COLUMN fact_claim_status_changes.updated_timestamp IS 'Timestamp when record was last updated';

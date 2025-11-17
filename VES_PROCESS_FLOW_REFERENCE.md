@@ -150,7 +150,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - ❌ **Duplicate Request** → Flag and consolidate with existing
 - ❌ **Invalid Format** → Return to VA for correction
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - exam_request_id
 - va_request_number
 - request_received_date_sk
@@ -206,7 +206,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Unclear exam requirements → Escalate to clinical team
 - Authorization issues → Contact VA for clarification
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - eligibility_status
 - eligibility_confirmed_date_sk
 - requested_conditions
@@ -274,7 +274,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Capacity constraints → Escalate to operations manager
 - Specialty not available → Contract with external specialist
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - assigned_evaluator_sk
 - assignment_started_date_sk
 - examiner_assigned_date_sk
@@ -283,7 +283,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - assignment_attempts
 - assignment_rejections
 
-**Data Captured** (Maps to fct_examiner_assignments):
+**Data Captured** (Maps to fact_examiner_assignments):
 - assignment_event_id
 - event_type (ASSIGNED, ACCEPTED, REJECTED, TRANSFERRED)
 - event_timestamp
@@ -328,7 +328,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - If approved: New examiner receives assignment
 - If denied: Original examiner must accept or reject
 
-**Data Captured** (Maps to fct_examiner_assignments):
+**Data Captured** (Maps to fact_examiner_assignments):
 - is_acceptance / is_rejection
 - acceptance_timestamp / rejection_timestamp
 - time_to_response_hours
@@ -391,14 +391,14 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Cannot contact veteran → Escalate to VA
 - Scheduling conflicts → Find alternative examiner
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - appointment_scheduled_date_sk
 - scheduled_flag
 - veteran_notified_flag
 - veteran_notification_date
 - telehealth_requested / telehealth_approved
 
-**Data Captured** (Maps to fct_appointment_events):
+**Data Captured** (Maps to fact_appointment_events):
 - event_type: SCHEDULED
 - appointment_id
 - scheduled_date_sk
@@ -444,7 +444,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 4. Report to VA if pattern of no-shows
 5. May require VA reauthorization
 
-**Data Captured** (Maps to fct_appointment_events):
+**Data Captured** (Maps to fact_appointment_events):
 - event_type: CONFIRMED, RESCHEDULED, CANCELLED, NO_SHOW
 - previous_appointment_id (if rescheduled)
 - new_appointment_id (if rescheduled)
@@ -543,11 +543,11 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Medical emergency during exam → Handle emergency, reschedule
 - Insufficient time to complete → Schedule continuation
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - exam_completed_date_sk
 - completed_flag
 
-**Data Captured** (Maps to fct_evaluations_completed):
+**Data Captured** (Maps to fact_evaluations_completed):
 - evaluation_id
 - evaluation_date_sk
 - exam_start_timestamp
@@ -557,7 +557,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - incomplete_exam_flag
 - incomplete_reason
 
-**Data Captured** (Maps to fct_appointment_events):
+**Data Captured** (Maps to fact_appointment_events):
 - event_type: COMPLETED
 - completion_timestamp
 - exam_duration_minutes
@@ -608,13 +608,13 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Supporting documents attached
 - Submitted to QA queue
 
-**Data Captured** (Maps to fct_evaluations_completed):
+**Data Captured** (Maps to fact_evaluations_completed):
 - report_submission_date_sk
 - report_page_count
 - attachments_count
 - dbq_completeness_percentage
 
-**Data Captured** (Maps to fct_evaluation_qa_events):
+**Data Captured** (Maps to fact_evaluation_qa_events):
 - event_type: INITIAL_SUBMISSION
 - evaluation_id
 - submission_id
@@ -675,7 +675,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Regulatory concern → Legal/compliance review
 - Systemic quality issues → Examiner coaching/training
 
-**Data Captured** (Maps to fct_evaluation_qa_events):
+**Data Captured** (Maps to fact_evaluation_qa_events):
 - event_type: QA_REVIEW_STARTED, QA_REVIEW_COMPLETED
 - qa_reviewer_sk
 - review_started_timestamp
@@ -751,7 +751,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - QA re-review completed
 - Final decision made
 
-**Data Captured** (Maps to fct_evaluation_qa_events):
+**Data Captured** (Maps to fact_evaluation_qa_events):
 - event_type: CLARIFICATION_REQUESTED
 - is_clarification_request: TRUE
 - clarification_type
@@ -809,7 +809,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Average clarification turnaround time
 - QA approval rate by examiner
 
-**Data Captured** (Maps to fct_evaluation_qa_events):
+**Data Captured** (Maps to fact_evaluation_qa_events):
 - event_type: APPROVED
 - is_final_approval: TRUE
 - approved_by
@@ -819,7 +819,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - total_qa_cycles_at_event
 - days_in_qa_process
 
-**Data Captured** (Maps to fct_evaluations_completed):
+**Data Captured** (Maps to fact_evaluations_completed):
 - qa_approved_date_sk
 - qa_approval_timestamp
 - first_pass_qa_approval
@@ -876,20 +876,20 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Missing documents → Compile and retransmit
 - Encryption issues → Resolve technical issue
 
-**Data Captured** (Maps to fct_exam_requests):
+**Data Captured** (Maps to fact_exam_requests):
 - request_closed_date_sk
 - total_cycle_time_days
 - sla_met_flag
 - sla_variance_days
 
-**Data Captured** (Maps to fct_evaluations_completed):
+**Data Captured** (Maps to fact_evaluations_completed):
 - report_delivered_to_va_date_sk
 - va_delivery_timestamp
 - va_delivery_method
 - va_confirmation_number
 - va_delivery_confirmed
 
-**Data Captured** (Maps to fct_evaluation_qa_events):
+**Data Captured** (Maps to fact_evaluation_qa_events):
 - event_type: SENT_TO_VA
 - sent_to_va_flag: TRUE
 - sent_to_va_timestamp
@@ -944,7 +944,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Payment record created
 - Examiner notified
 
-**Data Captured** (Maps to fct_payments - NEW TABLE NEEDED):
+**Data Captured** (Maps to fact_payments - NEW TABLE NEEDED):
 - payment_id
 - evaluator_sk
 - evaluation_id
@@ -994,7 +994,7 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 - Payment dispute → Research and resolve
 - Tax withholding issues → Coordinate with examiner
 
-**Data Captured** (Maps to fct_payments):
+**Data Captured** (Maps to fact_payments):
 - payment_processed_timestamp
 - payment_method (ACH, WIRE, CHECK)
 - payment_confirmation_number
@@ -1137,15 +1137,15 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 ### SLA Metrics
 - **Request to Assignment**: Days from request receipt to examiner assignment
   - Target: ≤ 5 days
-  - Source: fct_exam_requests.days_to_assignment
+  - Source: fact_exam_requests.days_to_assignment
 
 - **Assignment to Scheduling**: Days from assignment to appointment scheduled
   - Target: ≤ 3 days
-  - Source: fct_exam_requests.days_to_scheduling
+  - Source: fact_exam_requests.days_to_scheduling
 
 - **Request to Completion**: Total cycle time from request to exam complete
   - Target: ≤ 21 days (varies by request type)
-  - Source: fct_exam_requests.total_cycle_time_days
+  - Source: fact_exam_requests.total_cycle_time_days
 
 - **SLA Compliance Rate**: Percentage of cases meeting SLA
   - Target: ≥ 95%
@@ -1154,50 +1154,50 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 ### Assignment Metrics
 - **Assignment Acceptance Rate**: Percentage of assignments accepted by first examiner
   - Target: ≥ 85%
-  - Source: fct_examiner_assignments (is_acceptance = TRUE on first assignment)
+  - Source: fact_examiner_assignments (is_acceptance = TRUE on first assignment)
 
 - **Time to Assignment Acceptance**: Hours from assignment to examiner acceptance
   - Target: ≤ 24 hours
-  - Source: fct_examiner_assignments.time_to_response_hours
+  - Source: fact_examiner_assignments.time_to_response_hours
 
 - **Reassignment Rate**: Percentage of cases requiring reassignment
   - Target: ≤ 10%
-  - Source: fct_examiner_assignments (reassignment_number > 0)
+  - Source: fact_examiner_assignments (reassignment_number > 0)
 
 ### Appointment Metrics
 - **Appointment Show Rate**: Percentage of veterans attending scheduled appointments
   - Target: ≥ 90%
-  - Source: fct_appointment_events (veteran_attended_flag)
+  - Source: fact_appointment_events (veteran_attended_flag)
 
 - **Rescheduling Rate**: Percentage of appointments rescheduled
   - Target: ≤ 15%
-  - Source: fct_appointment_events (event_type = 'RESCHEDULED')
+  - Source: fact_appointment_events (event_type = 'RESCHEDULED')
 
 - **No-Show Rate**: Percentage of no-shows
   - Target: ≤ 10%
-  - Source: fct_appointment_events (event_type = 'NO_SHOW')
+  - Source: fact_appointment_events (event_type = 'NO_SHOW')
 
 ### Quality Metrics
 - **First-Pass QA Approval Rate**: Percentage approved on first QA review
   - Target: ≥ 70%
-  - Source: fct_evaluation_qa_events.first_pass_approval_flag
+  - Source: fact_evaluation_qa_events.first_pass_approval_flag
 
 - **Average QA Cycles**: Average number of QA cycles per evaluation
   - Target: ≤ 1.5
-  - Source: fct_evaluation_qa_events.total_qa_cycles_at_event
+  - Source: fact_evaluation_qa_events.total_qa_cycles_at_event
 
 - **QA Turnaround Time**: Hours from submission to QA decision
   - Target: ≤ 48 hours
-  - Source: fct_evaluation_qa_events.turnaround_time_hours
+  - Source: fact_evaluation_qa_events.turnaround_time_hours
 
 - **Overall Quality Score**: Average quality score across all evaluations
   - Target: ≥ 85/100
-  - Source: fct_evaluation_qa_events.overall_quality_score
+  - Source: fact_evaluation_qa_events.overall_quality_score
 
 ### Examiner Performance
 - **Examiner Utilization Rate**: Percentage of examiner capacity utilized
   - Target: 70-85%
-  - Source: fct_examiner_assignments.examiner_utilization_percentage
+  - Source: fact_examiner_assignments.examiner_utilization_percentage
 
 - **Examiner Quality Score**: Average quality score by examiner
   - Target: ≥ 85/100
@@ -1205,11 +1205,11 @@ The VES examination processing workflow manages the complete lifecycle of vetera
 
 - **Examiner On-Time Rate**: Percentage of exams completed on time
   - Target: ≥ 95%
-  - Source: fct_evaluations_completed (exam_date ≤ sla_due_date)
+  - Source: fact_evaluations_completed (exam_date ≤ sla_due_date)
 
 ### Financial Metrics
 - **Average Payment per Exam**: Average examiner payment amount
-  - Source: fct_payments.total_payment_amount
+  - Source: fact_payments.total_payment_amount
 
 - **Payment Processing Time**: Days from exam completion to payment
   - Target: ≤ 14 days
@@ -1284,22 +1284,22 @@ COMPLETE
 
 | Process Stage | Primary Fact Table | Key Metrics Captured |
 |---------------|-------------------|---------------------|
-| Request Intake | fct_exam_requests | Request received, validated, eligibility |
-| Examiner Assignment | fct_examiner_assignments | Assignment events, acceptance/rejection, transfers |
-| Appointment Scheduling | fct_appointment_events | Scheduled, confirmed, rescheduled, cancelled, no-show, completed |
-| Exam Execution | fct_evaluations_completed | Exam date, duration, location, completeness |
-| QA Process | fct_evaluation_qa_events | Submissions, reviews, clarifications, approvals |
-| VA Delivery | fct_evaluations_completed<br>fct_evaluation_qa_events | Delivery timestamp, confirmation, method |
-| Payment | fct_payments (NEW) | Payment amounts, dates, status |
+| Request Intake | fact_exam_requests | Request received, validated, eligibility |
+| Examiner Assignment | fact_examiner_assignments | Assignment events, acceptance/rejection, transfers |
+| Appointment Scheduling | fact_appointment_events | Scheduled, confirmed, rescheduled, cancelled, no-show, completed |
+| Exam Execution | fact_evaluations_completed | Exam date, duration, location, completeness |
+| QA Process | fact_evaluation_qa_events | Submissions, reviews, clarifications, approvals |
+| VA Delivery | fact_evaluations_completed<br>fact_evaluation_qa_events | Delivery timestamp, confirmation, method |
+| Payment | fact_payments (NEW) | Payment amounts, dates, status |
 
 ### Process Flow Coverage Analysis
 
 ✅ **Well Covered**:
-- Exam request tracking (fct_exam_requests)
-- Examiner assignments (fct_examiner_assignments)
-- Appointment lifecycle (fct_appointment_events)
-- QA review process (fct_evaluation_qa_events)
-- Evaluation outcomes (fct_evaluations_completed)
+- Exam request tracking (fact_exam_requests)
+- Examiner assignments (fact_examiner_assignments)
+- Appointment lifecycle (fact_appointment_events)
+- QA review process (fact_evaluation_qa_events)
+- Evaluation outcomes (fact_evaluations_completed)
 
 ⚠️ **Partially Covered** (Priority 2):
 - Document management events
@@ -1307,9 +1307,9 @@ COMPLETE
 - Exception handling events
 
 ❌ **Not Yet Covered** (Priority 2-3):
-- Payment transaction details (fct_payments needed)
-- Detailed document lifecycle (fct_document_events needed)
-- Communication audit trail (fct_communication_events needed)
+- Payment transaction details (fact_payments needed)
+- Detailed document lifecycle (fact_document_events needed)
+- Communication audit trail (fact_communication_events needed)
 
 ---
 

@@ -1,15 +1,15 @@
 -- =====================================================
--- fct_appointment_events - Appointment Lifecycle Events
+-- fact_appointment_events - Appointment Lifecycle Events
 -- =====================================================
 -- Purpose: Track complete history of appointment lifecycle events
 -- Grain: One row per appointment event (scheduled, confirmed, cancelled, rescheduled, completed)
 -- Type: Transaction Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
--- Complements: fct_appointments_scheduled (accumulating snapshot)
+-- Complements: fact_appointments_scheduled (accumulating snapshot)
 
 USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
 
-CREATE OR REPLACE TABLE fct_appointment_events (
+CREATE OR REPLACE TABLE fact_appointment_events (
     appointment_event_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
     -- Foreign Keys to Dimensions
@@ -110,29 +110,29 @@ COMMENT = 'Transaction fact table capturing complete lifecycle history of appoin
 CLUSTER BY (event_date_sk, appointment_id);
 
 -- Column comments for data dictionary
-COMMENT ON COLUMN fct_appointment_events.appointment_event_sk IS 'Surrogate primary key for the appointment event fact';
-COMMENT ON COLUMN fct_appointment_events.appointment_id IS 'Appointment identifier - can have multiple events for same appointment';
-COMMENT ON COLUMN fct_appointment_events.event_id IS 'Unique event identifier';
-COMMENT ON COLUMN fct_appointment_events.event_type IS 'Type of event: SCHEDULED, CONFIRMED, RESCHEDULED, CANCELLED, NO_SHOW, COMPLETED, LATE_ARRIVAL';
-COMMENT ON COLUMN fct_appointment_events.event_status IS 'Status of event: SUCCESS, FAILED, PENDING';
-COMMENT ON COLUMN fct_appointment_events.event_timestamp IS 'Exact timestamp when event occurred';
-COMMENT ON COLUMN fct_appointment_events.event_sequence_number IS 'Sequential number for this appointment (1=first event, 2=second event, etc.)';
-COMMENT ON COLUMN fct_appointment_events.previous_appointment_id IS 'Links to previous appointment ID if this is a rescheduled appointment';
-COMMENT ON COLUMN fct_appointment_events.new_appointment_id IS 'Links to new appointment ID if this appointment was rescheduled';
-COMMENT ON COLUMN fct_appointment_events.reschedule_reason_code IS 'Coded reason for rescheduling';
-COMMENT ON COLUMN fct_appointment_events.cancelled_by IS 'Actor who cancelled: Veteran, Provider, System, Admin';
-COMMENT ON COLUMN fct_appointment_events.cancellation_reason_code IS 'Coded cancellation reason';
-COMMENT ON COLUMN fct_appointment_events.advance_notice_hours IS 'Hours of advance notice before scheduled appointment';
-COMMENT ON COLUMN fct_appointment_events.scheduled_appointment_date IS 'Date appointment was scheduled for (at time of this event)';
-COMMENT ON COLUMN fct_appointment_events.actual_duration_minutes IS 'Actual duration for completed appointments';
-COMMENT ON COLUMN fct_appointment_events.minutes_late IS 'Minutes late for late arrival events';
-COMMENT ON COLUMN fct_appointment_events.event_initiated_by IS 'Who/what initiated this event: Veteran, Staff, System';
-COMMENT ON COLUMN fct_appointment_events.event_source_system IS 'System where event originated: VEMS, OMS, Portal, Call Center';
-COMMENT ON COLUMN fct_appointment_events.notification_sent_flag IS 'TRUE if veteran was notified of this event';
-COMMENT ON COLUMN fct_appointment_events.notification_method IS 'How veteran was notified: Email, SMS, Phone, Portal';
-COMMENT ON COLUMN fct_appointment_events.wait_time_days_at_event IS 'Total wait time when this event occurred';
-COMMENT ON COLUMN fct_appointment_events.reschedule_count_at_event IS 'Number of prior reschedules when this event occurred';
-COMMENT ON COLUMN fct_appointment_events.is_same_day_event IS 'TRUE if event occurred same day as scheduled appointment';
-COMMENT ON COLUMN fct_appointment_events.event_processing_time_seconds IS 'Time taken to process this event in the system';
-COMMENT ON COLUMN fct_appointment_events.error_flag IS 'TRUE if event encountered errors';
-COMMENT ON COLUMN fct_appointment_events.created_timestamp IS 'Timestamp when event record was created in data warehouse';
+COMMENT ON COLUMN fact_appointment_events.appointment_event_sk IS 'Surrogate primary key for the appointment event fact';
+COMMENT ON COLUMN fact_appointment_events.appointment_id IS 'Appointment identifier - can have multiple events for same appointment';
+COMMENT ON COLUMN fact_appointment_events.event_id IS 'Unique event identifier';
+COMMENT ON COLUMN fact_appointment_events.event_type IS 'Type of event: SCHEDULED, CONFIRMED, RESCHEDULED, CANCELLED, NO_SHOW, COMPLETED, LATE_ARRIVAL';
+COMMENT ON COLUMN fact_appointment_events.event_status IS 'Status of event: SUCCESS, FAILED, PENDING';
+COMMENT ON COLUMN fact_appointment_events.event_timestamp IS 'Exact timestamp when event occurred';
+COMMENT ON COLUMN fact_appointment_events.event_sequence_number IS 'Sequential number for this appointment (1=first event, 2=second event, etc.)';
+COMMENT ON COLUMN fact_appointment_events.previous_appointment_id IS 'Links to previous appointment ID if this is a rescheduled appointment';
+COMMENT ON COLUMN fact_appointment_events.new_appointment_id IS 'Links to new appointment ID if this appointment was rescheduled';
+COMMENT ON COLUMN fact_appointment_events.reschedule_reason_code IS 'Coded reason for rescheduling';
+COMMENT ON COLUMN fact_appointment_events.cancelled_by IS 'Actor who cancelled: Veteran, Provider, System, Admin';
+COMMENT ON COLUMN fact_appointment_events.cancellation_reason_code IS 'Coded cancellation reason';
+COMMENT ON COLUMN fact_appointment_events.advance_notice_hours IS 'Hours of advance notice before scheduled appointment';
+COMMENT ON COLUMN fact_appointment_events.scheduled_appointment_date IS 'Date appointment was scheduled for (at time of this event)';
+COMMENT ON COLUMN fact_appointment_events.actual_duration_minutes IS 'Actual duration for completed appointments';
+COMMENT ON COLUMN fact_appointment_events.minutes_late IS 'Minutes late for late arrival events';
+COMMENT ON COLUMN fact_appointment_events.event_initiated_by IS 'Who/what initiated this event: Veteran, Staff, System';
+COMMENT ON COLUMN fact_appointment_events.event_source_system IS 'System where event originated: VEMS, OMS, Portal, Call Center';
+COMMENT ON COLUMN fact_appointment_events.notification_sent_flag IS 'TRUE if veteran was notified of this event';
+COMMENT ON COLUMN fact_appointment_events.notification_method IS 'How veteran was notified: Email, SMS, Phone, Portal';
+COMMENT ON COLUMN fact_appointment_events.wait_time_days_at_event IS 'Total wait time when this event occurred';
+COMMENT ON COLUMN fact_appointment_events.reschedule_count_at_event IS 'Number of prior reschedules when this event occurred';
+COMMENT ON COLUMN fact_appointment_events.is_same_day_event IS 'TRUE if event occurred same day as scheduled appointment';
+COMMENT ON COLUMN fact_appointment_events.event_processing_time_seconds IS 'Time taken to process this event in the system';
+COMMENT ON COLUMN fact_appointment_events.error_flag IS 'TRUE if event encountered errors';
+COMMENT ON COLUMN fact_appointment_events.created_timestamp IS 'Timestamp when event record was created in data warehouse';

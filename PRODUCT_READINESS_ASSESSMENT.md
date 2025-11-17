@@ -78,10 +78,10 @@ is_current BOOLEAN NOT NULL DEFAULT TRUE,
 
 **Compliant Patterns**:
 - ✅ lowercase_snake_case for all tables and columns
-- ✅ `fct_*` prefix for fact tables
+- ✅ `fact_*` prefix for fact tables
 - ✅ `dim_*` prefix for dimension tables
 - ✅ `*_sk` suffix for surrogate keys
-- ✅ Event-based naming for transaction facts (e.g., `fct_evaluations_completed`, `fct_appointment_events`)
+- ✅ Event-based naming for transaction facts (e.g., `fact_evaluations_completed`, `fact_appointment_events`)
 - ✅ Descriptive, non-abbreviated column names
 - ✅ Boolean columns use `*_flag` suffix
 - ✅ Timestamp columns use `*_timestamp` suffix
@@ -130,7 +130,7 @@ is_current BOOLEAN NOT NULL DEFAULT TRUE,
 
 **Evidence**:
 ```sql
--- Snowflake clustering (fct_evaluations_completed.sql:104)
+-- Snowflake clustering (fact_evaluations_completed.sql:104)
 CLUSTER BY (evaluation_date_sk, facility_sk);
 
 -- Proper surrogate key (dim_veterans.sql:11)
@@ -147,14 +147,14 @@ veteran_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 
 | Fact Table | Pattern | Grain | Use Case |
 |------------|---------|-------|----------|
-| `fct_evaluations_completed` | Transaction | One row per evaluation per condition | Evaluation analysis |
-| `fct_appointment_events` | Transaction | One row per appointment event | Appointment lifecycle tracking |
-| `fct_evaluation_qa_events` | Transaction | One row per QA event | QA cycle analysis |
-| `fct_examiner_assignments` | Transaction | One row per assignment event | Workload optimization |
-| `fct_exam_requests` | Accumulating Snapshot | One row per exam request | End-to-end request tracking |
-| `fct_appointments_scheduled` | Accumulating Snapshot | One row per appointment | Current appointment state |
-| `fct_claim_status_changes` | Accumulating Snapshot | One row per claim | Claim milestone tracking |
-| `fct_daily_facility_snapshot` | Periodic Snapshot | One row per facility per day | Daily KPI monitoring |
+| `fact_evaluations_completed` | Transaction | One row per evaluation per condition | Evaluation analysis |
+| `fact_appointment_events` | Transaction | One row per appointment event | Appointment lifecycle tracking |
+| `fact_evaluation_qa_events` | Transaction | One row per QA event | QA cycle analysis |
+| `fact_examiner_assignments` | Transaction | One row per assignment event | Workload optimization |
+| `fact_exam_requests` | Accumulating Snapshot | One row per exam request | End-to-end request tracking |
+| `fact_appointments_scheduled` | Accumulating Snapshot | One row per appointment | Current appointment state |
+| `fact_claim_status_changes` | Accumulating Snapshot | One row per claim | Claim milestone tracking |
+| `fact_daily_facility_snapshot` | Periodic Snapshot | One row per facility per day | Daily KPI monitoring |
 
 **Rating**: 10/10 - Optimal pattern selection
 
@@ -165,13 +165,13 @@ veteran_sk INTEGER AUTOINCREMENT PRIMARY KEY,
 **Event-Based Architecture**: Dual-table approach for complex lifecycle tracking.
 
 **Appointment Lifecycle**:
-- `fct_appointments_scheduled` (current state)
-- `fct_appointment_events` (complete history)
+- `fact_appointments_scheduled` (current state)
+- `fact_appointment_events` (complete history)
 - Supports: scheduled → cancelled → rescheduled → completed
 
 **QA Lifecycle**:
-- `fct_evaluations_completed` (final outcome)
-- `fct_evaluation_qa_events` (review cycles)
+- `fact_evaluations_completed` (final outcome)
+- `fact_evaluation_qa_events` (review cycles)
 - Supports: iterative clarification loops
 
 **Rating**: 10/10 - Sophisticated design
@@ -375,8 +375,8 @@ WHERE is_current = TRUE;
 
 **PHI Fields** (require HIPAA protection):
 - dim_medical_conditions: All medical diagnosis data
-- fct_evaluations_completed: Medical findings, disability assessments
-- fct_evaluation_qa_events: Medical review notes
+- fact_evaluations_completed: Medical findings, disability assessments
+- fact_evaluation_qa_events: Medical review notes
 
 **Recommendation**:
 1. Create security roles (admin, analyst, read-only, etc.)
@@ -441,10 +441,10 @@ ALTER TABLE dim_veterans MODIFY COLUMN veteran_id
 
 **Current Clustering Strategy**:
 ```sql
--- fct_evaluations_completed.sql:104
+-- fact_evaluations_completed.sql:104
 CLUSTER BY (evaluation_date_sk, facility_sk);
 
--- fct_appointment_events.sql - similar pattern
+-- fact_appointment_events.sql - similar pattern
 CLUSTER BY (appointment_date_sk, evaluator_sk);
 ```
 
@@ -465,7 +465,7 @@ CLUSTER BY (appointment_date_sk, evaluator_sk);
 **Example Performance Test**:
 ```sql
 -- Test query performance with QUERY_HISTORY
--- 1. Load 10M rows into fct_evaluations_completed
+-- 1. Load 10M rows into fact_evaluations_completed
 -- 2. Run query
 SELECT
     d.fiscal_year,
@@ -473,7 +473,7 @@ SELECT
     f.facility_name,
     COUNT(*) AS eval_count,
     AVG(fe.evaluation_duration_minutes) AS avg_duration
-FROM fct_evaluations_completed fe
+FROM fact_evaluations_completed fe
 JOIN dim_dates d ON fe.evaluation_date_sk = d.date_sk
 JOIN dim_facilities f ON fe.facility_sk = f.facility_sk
 WHERE d.fiscal_year = 2024
@@ -488,7 +488,7 @@ SELECT
     partitions_scanned,
     partitions_total
 FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY())
-WHERE query_text LIKE '%fct_evaluations_completed%'
+WHERE query_text LIKE '%fact_evaluations_completed%'
 ORDER BY start_time DESC
 LIMIT 5;
 ```
@@ -506,7 +506,7 @@ LIMIT 5;
 
 **Evidence**:
 ```sql
--- fct_evaluations_completed.sql:94-101
+-- fact_evaluations_completed.sql:94-101
 FOREIGN KEY (veteran_sk) REFERENCES dim_veterans(veteran_sk),
 FOREIGN KEY (evaluator_sk) REFERENCES dim_evaluators(evaluator_sk),
 FOREIGN KEY (facility_sk) REFERENCES dim_facilities(facility_sk),
@@ -552,24 +552,24 @@ WHERE NOT EXISTS (
 **Missing Fact Tables** (from PROCESS_FLOW_GAP_ANALYSIS.md):
 
 **Priority 2 - Significant Gaps**:
-1. ❌ `fct_document_events`: Document lifecycle (upload, revision, version control)
-2. ❌ `fct_payments`: Payment transactions to examiners
+1. ❌ `fact_document_events`: Document lifecycle (upload, revision, version control)
+2. ❌ `fact_payments`: Payment transactions to examiners
 3. ❌ `dim_document_types`: Supporting dimension for documents
 4. ❌ `dim_payment_types`: Supporting dimension for payments
 
 **Priority 3 - Moderate Gaps**:
-5. ❌ `fct_communication_events`: Communication audit trail
-6. ❌ `fct_exception_events`: Exception handling tracking
+5. ❌ `fact_communication_events`: Communication audit trail
+6. ❌ `fact_exception_events`: Exception handling tracking
 7. ❌ `dim_communication_templates`: Supporting dimension
 
 **Impact by Gap**:
 
 | Missing Table | Business Impact | Workaround Exists? |
 |---------------|----------------|-------------------|
-| `fct_document_events` | Cannot track DBQ lifecycle, versions | ❌ No workaround |
-| `fct_payments` | Cannot reconcile examiner payments | ⚠️ Partial (amounts in evaluations) |
-| `fct_communication_events` | Cannot audit veteran notifications | ⚠️ Partial (flags in appointments) |
-| `fct_exception_events` | Cannot analyze failure patterns | ❌ No workaround |
+| `fact_document_events` | Cannot track DBQ lifecycle, versions | ❌ No workaround |
+| `fact_payments` | Cannot reconcile examiner payments | ⚠️ Partial (amounts in evaluations) |
+| `fact_communication_events` | Cannot audit veteran notifications | ⚠️ Partial (flags in appointments) |
+| `fact_exception_events` | Cannot analyze failure patterns | ❌ No workaround |
 
 **Recommendation**:
 1. **Phase 1 (MVP)**: Deploy current model for 80% use cases
@@ -752,13 +752,13 @@ source_system VARCHAR(50),  -- No default, no validation
 
 | Business Process | Supporting Tables | Coverage |
 |-----------------|------------------|----------|
-| **Medical Evaluations** | `fct_evaluations_completed`, `dim_evaluation_types`, `dim_medical_conditions` | 95% |
-| **Appointment Lifecycle** | `fct_appointment_events`, `fct_appointments_scheduled`, `dim_appointments` | 95% |
-| **QA Review Process** | `fct_evaluation_qa_events` | 95% |
-| **Exam Request Tracking** | `fct_exam_requests`, `dim_exam_request_types` | 90% |
-| **Examiner Assignment** | `fct_examiner_assignments`, `dim_evaluators` | 90% |
-| **Claim Status Tracking** | `fct_claim_status_changes`, `dim_claims` | 80% |
-| **Daily Operations KPIs** | `fct_daily_facility_snapshot` | 75% |
+| **Medical Evaluations** | `fact_evaluations_completed`, `dim_evaluation_types`, `dim_medical_conditions` | 95% |
+| **Appointment Lifecycle** | `fact_appointment_events`, `fact_appointments_scheduled`, `dim_appointments` | 95% |
+| **QA Review Process** | `fact_evaluation_qa_events` | 95% |
+| **Exam Request Tracking** | `fact_exam_requests`, `dim_exam_request_types` | 90% |
+| **Examiner Assignment** | `fact_examiner_assignments`, `dim_evaluators` | 90% |
+| **Claim Status Tracking** | `fact_claim_status_changes`, `dim_claims` | 80% |
+| **Daily Operations KPIs** | `fact_daily_facility_snapshot` | 75% |
 
 ### Partially Covered Business Processes
 
@@ -923,8 +923,8 @@ source_system VARCHAR(50),  -- No default, no validation
    - Define incident response
 
 3. **Complete Business Coverage** (2 weeks)
-   - Add `fct_document_events`
-   - Add `fct_payments`
+   - Add `fact_document_events`
+   - Add `fact_payments`
    - Add `dim_document_types`
    - Add `dim_payment_types`
 
@@ -952,8 +952,8 @@ source_system VARCHAR(50),  -- No default, no validation
    - Implement provenance tracking
 
 3. **Additional Fact Tables** (2 weeks)
-   - Add `fct_communication_events`
-   - Add `fct_exception_events`
+   - Add `fact_communication_events`
+   - Add `fact_exception_events`
    - Add supporting dimensions
 
 4. **Advanced Features** (3 weeks)
@@ -1111,14 +1111,14 @@ As development continues, **preserve these excellent qualities**:
 
 | # | Table Name | Pattern | Rows (Est) | Status |
 |---|-----------|---------|-----------|--------|
-| 1 | `fct_evaluations_completed` | Transaction | 1M-10M/year | ✅ Ready |
-| 2 | `fct_claim_status_changes` | Accumulating | 100K-1M | ✅ Ready |
-| 3 | `fct_appointments_scheduled` | Accumulating | 1M-10M/year | ✅ Ready |
-| 4 | `fct_daily_facility_snapshot` | Periodic | 36K/year | ✅ Ready |
-| 5 | `fct_appointment_events` | Transaction | 5M-50M/year | ✅ Ready |
-| 6 | `fct_evaluation_qa_events` | Transaction | 3M-30M/year | ✅ Ready |
-| 7 | `fct_exam_requests` | Accumulating | 1M-10M/year | ✅ Ready |
-| 8 | `fct_examiner_assignments` | Transaction | 2M-20M/year | ✅ Ready |
+| 1 | `fact_evaluations_completed` | Transaction | 1M-10M/year | ✅ Ready |
+| 2 | `fact_claim_status_changes` | Accumulating | 100K-1M | ✅ Ready |
+| 3 | `fact_appointments_scheduled` | Accumulating | 1M-10M/year | ✅ Ready |
+| 4 | `fact_daily_facility_snapshot` | Periodic | 36K/year | ✅ Ready |
+| 5 | `fact_appointment_events` | Transaction | 5M-50M/year | ✅ Ready |
+| 6 | `fact_evaluation_qa_events` | Transaction | 3M-30M/year | ✅ Ready |
+| 7 | `fact_exam_requests` | Accumulating | 1M-10M/year | ✅ Ready |
+| 8 | `fact_examiner_assignments` | Transaction | 2M-20M/year | ✅ Ready |
 
 **Total SQL Code**: 2,379 lines across 17 files
 

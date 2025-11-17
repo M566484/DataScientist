@@ -7,7 +7,7 @@ dim_evaluation_types,Dimension,WAREHOUSE,evaluation_type_sk,evaluation_type_id,T
 dim_medical_conditions,Dimension,WAREHOUSE,medical_condition_sk,medical_condition_id,Type 1,Medical conditions and diagnoses,F8BBD0,25
 dim_claims,Dimension,WAREHOUSE,claim_sk,claim_id,Type 2,VA disability claims,FFCCBC,28
 dim_appointments,Dimension,WAREHOUSE,appointment_sk,appointment_id,Type 1,Appointment details,E6EE9C,18
-fct_evaluations_completed,Fact,WAREHOUSE,evaluation_fact_sk,,Transaction,Medical evaluations at evaluation-condition grain,FFE0B2,64
-fct_claim_status_changes,Fact,WAREHOUSE,claim_status_fact_sk,,Accumulating Snapshot,Claim processing milestones,FFAB91,52
-fct_appointments_scheduled,Fact,WAREHOUSE,appointment_fact_sk,,Transaction,Appointment scheduling and outcomes,FFE082,99
-fct_daily_facility_snapshot,Fact,WAREHOUSE,daily_snapshot_sk,,Periodic Snapshot,Daily facility metrics and KPIs,FFF59D,67
+fact_evaluations_completed,Fact,WAREHOUSE,evaluation_fact_sk,,Transaction,Medical evaluations at evaluation-condition grain,FFE0B2,64
+fact_claim_status_changes,Fact,WAREHOUSE,claim_status_fact_sk,,Accumulating Snapshot,Claim processing milestones,FFAB91,52
+fact_appointments_scheduled,Fact,WAREHOUSE,appointment_fact_sk,,Transaction,Appointment scheduling and outcomes,FFE082,99
+fact_daily_facility_snapshot,Fact,WAREHOUSE,daily_snapshot_sk,,Periodic Snapshot,Daily facility metrics and KPIs,FFF59D,67

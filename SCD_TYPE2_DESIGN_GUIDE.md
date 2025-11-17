@@ -209,7 +209,7 @@ SELECT
     v.full_name,
     v.current_disability_rating AS rating_at_time_of_evaluation,
     e.recommended_rating_percentage
-FROM fct_evaluations_completed e
+FROM fact_evaluations_completed e
 INNER JOIN dim_dates d
     ON e.evaluation_date_sk = d.date_sk
 INNER JOIN dim_veterans v
@@ -237,7 +237,7 @@ SELECT
     v.veteran_sk,
     v.full_name,
     v.current_disability_rating AS rating_at_time_of_evaluation
-FROM fct_evaluations_completed e
+FROM fact_evaluations_completed e
 INNER JOIN dim_veterans v
     ON e.veteran_sk = v.veteran_sk
 WHERE e.evaluation_id = 'EVAL-12345';
@@ -419,7 +419,7 @@ Action: Execute Pattern 1 (Insert new version, close old version)
 
 ```sql
 -- CORRECT: Fact table uses veteran_sk (surrogate key)
-CREATE TABLE fct_evaluations_completed (
+CREATE TABLE fact_evaluations_completed (
     evaluation_fact_sk INTEGER,
     veteran_sk INTEGER,  -- ✓ Surrogate key from dimension
     evaluation_date_sk INTEGER,
@@ -427,7 +427,7 @@ CREATE TABLE fct_evaluations_completed (
 );
 
 -- WRONG: Fact table uses veteran_id (business key)
-CREATE TABLE fct_evaluations_completed_wrong (
+CREATE TABLE fact_evaluations_completed_wrong (
     evaluation_fact_sk INTEGER,
     veteran_id VARCHAR(50),  -- ✗ Business key - breaks with SCD Type 2
     ...

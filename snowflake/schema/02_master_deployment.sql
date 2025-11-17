@@ -63,5 +63,5 @@ SELECT 'Fact Tables:' AS info;
 SELECT table_name
 FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'WAREHOUSE'
-  AND table_name LIKE 'fct_%'
+  AND table_name LIKE 'fact_%'
 ORDER BY table_name;
