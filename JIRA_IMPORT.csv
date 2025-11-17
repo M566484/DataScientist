@@ -1,0 +1,48 @@
+Issue Type,Summary,Description,Epic Link,Story Points,Priority,MVP,Sprint,Dependencies,Assignee Role
+Epic,Infrastructure & Foundation Setup,"Setup foundational Snowflake infrastructure including database, schemas, and deployment framework",,21,Critical,Yes,1,,Data Architect
+Story,Setup Snowflake Database and Schemas,"Create database and all required schemas (ODS_RAW, STAGING, WAREHOUSE, REFERENCE, MARTS_CLINICAL) with proper permissions",Infrastructure & Foundation Setup,5,Critical,Yes,1,,Data Engineer
+Story,Setup Development & Deployment Framework,"Establish CI/CD pipelines, deployment scripts, and environment configuration",Infrastructure & Foundation Setup,8,Critical,Yes,1,Setup Snowflake Database and Schemas,DevOps Engineer
+Story,Establish Naming Conventions & Standards,"Document and enforce naming conventions for all database objects",Infrastructure & Foundation Setup,3,High,Yes,1,,Data Architect
+Story,Setup Date Dimension,"Create and populate date dimension table covering 2020-2030",Infrastructure & Foundation Setup,5,High,Yes,1,Setup Snowflake Database and Schemas,Data Engineer
+Epic,ODS Layer & Multi-Source Ingestion,"Create ODS landing tables and establish integration with Mulesoft for OMS and VEMS data",,34,Critical,Yes,1,,Data Engineer
+Story,Create ODS Tables for Source Systems,"Create 8 ODS tables (veterans, evaluators, facilities, exam_requests, evaluations, appointments, qa_events, claims) with source_system discriminator",ODS Layer & Multi-Source Ingestion,13,Critical,Yes,1,Setup Snowflake Database and Schemas,Data Engineer
+Story,Create ODS Control & Error Tables,"Create batch control and error logging tables for ETL tracking",ODS Layer & Multi-Source Ingestion,5,Critical,Yes,1,Create ODS Tables for Source Systems,Data Engineer
+Story,Coordinate with Mulesoft Team on Data Contracts,"Establish data contracts with Mulesoft team for OMS and VEMS data feeds",ODS Layer & Multi-Source Ingestion,8,Critical,Yes,1,Create ODS Tables for Source Systems,Integration Engineer
+Story,Test ODS Data Loading,"Validate ODS tables can receive data from Mulesoft successfully",ODS Layer & Multi-Source Ingestion,8,Critical,Yes,1,"Create ODS Tables for Source Systems,Create ODS Control & Error Tables,Coordinate with Mulesoft Team on Data Contracts",Data Engineer
+Epic,Reference Data Framework,"Create reference tables for system of record configuration, entity crosswalks, field mappings, and code mappings",,21,Critical,Yes,1-2,,Data Architect
+Story,Create System of Record Configuration,"Define and document which source system is authoritative for each entity type",Reference Data Framework,3,Critical,Yes,1,Setup Snowflake Database and Schemas,Data Architect
+Story,Create Entity Crosswalk Tables,"Create crosswalk tables for matching veterans, evaluators, and facilities between OMS and VEMS",Reference Data Framework,5,Critical,Yes,1,Create System of Record Configuration,Data Engineer
+Story,Create Field Mapping Tables,"Document how OMS and VEMS field names map to standardized names",Reference Data Framework,5,High,Yes,1-2,Create System of Record Configuration,Data Analyst
+Story,Create Code Mapping Tables,"Map system-specific code values (specialty, request type, status) to standardized codes",Reference Data Framework,8,High,Yes,1-2,"Create System of Record Configuration,Coordinate with Mulesoft Team on Data Contracts",Data Analyst
+Epic,Staging Layer & Data Reconciliation,"Build staging layer with multi-source data reconciliation and entity matching",,34,Critical,Yes,2,,Data Engineer
+Story,Create Staging Tables,"Create staging tables with DQ scoring and change detection capabilities",Staging Layer & Data Reconciliation,8,Critical,Yes,2,"ODS Layer & Multi-Source Ingestion,Create System of Record Configuration",Data Engineer
+Story,Build Entity Matching Procedures,"Create procedures to match OMS and VEMS records using SSN, NPI, and facility ID",Staging Layer & Data Reconciliation,13,Critical,Yes,2,"Create Entity Crosswalk Tables,Create Staging Tables",Data Engineer
+Story,Build Multi-Source Transformation Procedures,"Create procedures to merge OMS and VEMS data using system of record rules",Staging Layer & Data Reconciliation,13,Critical,Yes,2,"Build Entity Matching Procedures,Create Field Mapping Tables,Create Code Mapping Tables",Data Engineer
+Epic,Core Dimensional Model,"Create core dimension tables (veterans, evaluators, facilities) with SCD Type 2 tracking",,34,Critical,Yes,2-3,,Data Engineer
+Story,Create Core Dimension Tables,"Create dim_veterans, dim_evaluators, dim_facilities with SCD Type 2 structure",Core Dimensional Model,13,Critical,Yes,2,Create Staging Tables,Data Engineer
+Story,Create Dimension Load Procedures,"Create ETL procedures to load dimensions with SCD Type 2 change tracking",Core Dimensional Model,13,Critical,Yes,2-3,"Create Core Dimension Tables,Build Multi-Source Transformation Procedures",Data Engineer
+Story,Create Full Dimension ETL Pipeline,"Create orchestration procedures that execute full dimension pipeline from ODS to warehouse",Core Dimensional Model,8,Critical,Yes,3,Create Dimension Load Procedures,Data Engineer
+Epic,Fact Tables & Metrics,"Create fact tables for evaluations and exam requests with multi-source ID mapping",,34,Critical,Yes,3,,Data Engineer
+Story,Create Core Fact Tables,"Create fact_evaluations_completed and fact_exam_requests tables",Fact Tables & Metrics,13,Critical,Yes,3,Core Dimensional Model,Data Engineer
+Story,Create Multi-Source Fact Transformation Procedures,"Create transformation procedures that map source IDs to master IDs using crosswalks",Fact Tables & Metrics,13,Critical,Yes,3,"Create Core Fact Tables,Build Entity Matching Procedures",Data Engineer
+Story,Create Fact Load Procedures,"Create procedures to load fact tables from staging with surrogate key resolution",Fact Tables & Metrics,8,Critical,Yes,3,"Create Core Fact Tables,Create Multi-Source Fact Transformation Procedures",Data Engineer
+Epic,ETL Orchestration & Automation,"Create master ETL orchestration and schedule automated jobs",,21,Critical,Yes,3,,Data Engineer
+Story,Create Master ETL Orchestration Procedure,"Create master procedure that runs entire pipeline in correct sequence",ETL Orchestration & Automation,8,Critical,Yes,3,"Core Dimensional Model,Fact Tables & Metrics",Data Engineer
+Story,Create Code Translation UDFs,"Create user-defined functions for code value translation",ETL Orchestration & Automation,5,High,Yes,3,Create Code Mapping Tables,Data Engineer
+Story,Setup Scheduled ETL Jobs,"Schedule ETL to run automatically with failure alerting",ETL Orchestration & Automation,8,High,Yes,3,Create Master ETL Orchestration Procedure,DevOps Engineer
+Epic,Data Quality & Lineage (Basic),"Implement basic data quality monitoring and lineage tracking",,21,Critical,Yes,3,,Data Engineer
+Story,Create Reconciliation Log Table,"Create table to log conflicts between OMS and VEMS",Data Quality & Lineage (Basic),3,Critical,Yes,3,Create System of Record Configuration,Data Engineer
+Story,Implement Conflict Logging in Transformations,"Add automatic conflict logging to transformation procedures",Data Quality & Lineage (Basic),5,High,Yes,3,"Create Reconciliation Log Table,Build Multi-Source Transformation Procedures",Data Engineer
+Story,Create Basic Lineage Views,"Create views to trace data lineage from warehouse back to source systems",Data Quality & Lineage (Basic),8,High,Yes,3,Fact Tables & Metrics,Data Engineer
+Story,Create Data Quality Dashboard Views,"Create views that summarize data quality metrics",Data Quality & Lineage (Basic),5,Medium,Yes,3,"Create Reconciliation Log Table,Implement Conflict Logging in Transformations",Data Analyst
+Epic,Business Intelligence Marts,"Create pre-aggregated views for clinical and operational analytics",,21,Medium,No,4,,BI Developer
+Story,Create Clinical Analytics Mart,"Create views for evaluator performance, exam request metrics, and QA analytics",Business Intelligence Marts,13,Medium,No,4,Fact Tables & Metrics,BI Developer
+Story,Create Operational Analytics Mart,"Create views for facility performance and appointment lifecycle analytics",Business Intelligence Marts,8,Medium,No,4,Fact Tables & Metrics,BI Developer
+Epic,Advanced Monitoring & Observability,"Implement comprehensive lineage queries and health check procedures",,13,Medium,No,4,,Data Engineer
+Story,Create Comprehensive Lineage Queries,"Create detailed lineage queries and investigation procedures",Advanced Monitoring & Observability,5,Medium,No,4,Create Basic Lineage Views,Data Engineer
+Story,Create Pipeline Health Check Procedure,"Create automated health check that validates pipeline status",Advanced Monitoring & Observability,5,Medium,No,4,Data Quality & Lineage (Basic),Data Engineer
+Story,Setup Alerting and Notifications,"Configure automated alerts for pipeline issues",Advanced Monitoring & Observability,3,Low,No,4,Create Pipeline Health Check Procedure,DevOps Engineer
+Epic,Documentation & Training,"Create technical documentation and conduct user training",,13,High,Partial,1-4,,Technical Writer
+Story,Create Technical Documentation,"Create comprehensive architecture documentation and troubleshooting guides",Documentation & Training,5,High,Yes,1-4,"Staging Layer & Data Reconciliation,Core Dimensional Model,Fact Tables & Metrics",Technical Writer
+Story,Create Interactive User Guide,"Create easy-to-understand HTML guide for business users",Documentation & Training,3,Medium,No,4,Create Technical Documentation,Technical Writer
+Story,Conduct Training Sessions,"Prepare materials and conduct training for analysts, developers, and stakeholders",Documentation & Training,5,High,Partial,4,"Create Technical Documentation,Create Interactive User Guide",Business Analyst
