@@ -781,7 +781,7 @@ Instead of processing all ODS data daily, only process new/changed records:
 ```sql
 -- Create stream on ODS veterans table
 CREATE OR REPLACE STREAM stream_ods_veterans_changes
-  ON TABLE VESDW_PRD.ods.ods_veterans_source
+  ON TABLE VESODS_PRDDATA_PRD.ods_veterans_source
   APPEND_ONLY = FALSE;  -- Track inserts, updates, deletes
 ```
 

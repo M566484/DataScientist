@@ -193,11 +193,11 @@ BEGIN
 
   -- Validate ODS data loaded
   SELECT COUNT(*) INTO :v_oms_count
-  FROM VESDW_PRD.ods.ods_veterans_source
+  FROM VESODS_PRDDATA_PRD.ods_veterans_source
   WHERE batch_id = :v_batch_id AND source_system = 'OMS';
 
   SELECT COUNT(*) INTO :v_vems_count
-  FROM VESDW_PRD.ods.ods_veterans_source
+  FROM VESODS_PRDDATA_PRD.ods_veterans_source
   WHERE batch_id = :v_batch_id AND source_system = 'VEMS';
 
   -- Alert if no data extracted
