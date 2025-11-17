@@ -1,0 +1,26 @@
+relationship_id,from_table,from_key,to_table,to_key,cardinality,relationship_label,relationship_type
+R01,dim_dates,date_sk,fact_evaluations_completed,evaluation_date_sk,1:M,occurred on,Foreign Key
+R02,dim_veterans,veteran_sk,fact_evaluations_completed,veteran_sk,1:M,has evaluations,Foreign Key
+R03,dim_evaluators,evaluator_sk,fact_evaluations_completed,evaluator_sk,1:M,performed by,Foreign Key
+R04,dim_facilities,facility_sk,fact_evaluations_completed,facility_sk,1:M,conducted at,Foreign Key
+R05,dim_evaluation_types,evaluation_type_sk,fact_evaluations_completed,evaluation_type_sk,1:M,type of,Foreign Key
+R06,dim_medical_conditions,medical_condition_sk,fact_evaluations_completed,medical_condition_sk,1:M,evaluates condition,Foreign Key
+R07,dim_claims,claim_sk,fact_evaluations_completed,claim_sk,1:M,supports claim,Foreign Key
+R08,dim_appointments,appointment_sk,fact_evaluations_completed,appointment_sk,1:M,via appointment,Foreign Key
+R09,dim_dates,date_sk,fact_claim_status_changes,claim_received_date_sk,1:M,claim received on,Foreign Key
+R10,dim_dates,date_sk,fact_claim_status_changes,exam_scheduled_date_sk,1:M,exam scheduled on,Foreign Key
+R11,dim_dates,date_sk,fact_claim_status_changes,exam_completed_date_sk,1:M,exam completed on,Foreign Key
+R12,dim_dates,date_sk,fact_claim_status_changes,rating_decision_date_sk,1:M,decision made on,Foreign Key
+R13,dim_veterans,veteran_sk,fact_claim_status_changes,veteran_sk,1:M,filed by veteran,Foreign Key
+R14,dim_claims,claim_sk,fact_claim_status_changes,claim_sk,1:M,tracks claim status,Foreign Key
+R15,dim_facilities,facility_sk,fact_claim_status_changes,facility_sk,1:M,processed at facility,Foreign Key
+R16,dim_dates,date_sk,fact_appointments_scheduled,appointment_date_sk,1:M,scheduled for date,Foreign Key
+R17,dim_dates,date_sk,fact_appointments_scheduled,scheduled_date_sk,1:M,scheduled on date,Foreign Key
+R18,dim_veterans,veteran_sk,fact_appointments_scheduled,veteran_sk,1:M,veteran has appointment,Foreign Key
+R19,dim_evaluators,evaluator_sk,fact_appointments_scheduled,evaluator_sk,1:M,assigned to evaluator,Foreign Key
+R20,dim_facilities,facility_sk,fact_appointments_scheduled,facility_sk,1:M,located at facility,Foreign Key
+R21,dim_evaluation_types,evaluation_type_sk,fact_appointments_scheduled,evaluation_type_sk,1:M,scheduled evaluation type,Foreign Key
+R22,dim_appointments,appointment_sk,fact_appointments_scheduled,appointment_sk,1:M,appointment details,Foreign Key
+R23,dim_claims,claim_sk,fact_appointments_scheduled,claim_sk,1:M,related to claim,Foreign Key
+R24,dim_dates,date_sk,fact_daily_facility_snapshot,snapshot_date_sk,1:M,snapshot date,Foreign Key
+R25,dim_facilities,facility_sk,fact_daily_facility_snapshot,facility_sk,1:M,metrics for facility,Foreign Key
