@@ -312,6 +312,318 @@ END AS disability_rating_category
 
 ---
 
+## Multi-Source Data Integration
+
+### Overview
+
+The VES data pipeline integrates data from **two primary source systems**:
+
+1. **OMS (Order Management System)** - Legacy system containing historical veteran and evaluation data
+2. **VEMS (Veteran Evaluation Management System)** - Modern system with current operational data
+
+These systems have different schemas, field naming conventions, and code values. The staging layer performs **data reconciliation and merging** to create a unified view.
+
+### Integration Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│   OMS System    │     │  VEMS System    │
+│   (Legacy)      │     │   (Modern)      │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         │  Mulesoft ETL         │  Mulesoft ETL
+         ▼                       ▼
+┌─────────────────────────────────────────┐
+│     ODS Layer (Separate Records)        │
+│  ods_veterans_source (OMS rows)         │
+│  ods_veterans_source (VEMS rows)        │
+└────────┬────────────────────────────────┘
+         │
+         │  Entity Matching + Code Mapping
+         ▼
+┌─────────────────────────────────────────┐
+│   Reference Tables (REFERENCE Schema)   │
+│  • ref_entity_crosswalk_*               │
+│  • ref_field_mapping_*                  │
+│  • ref_code_mapping_*                   │
+│  • ref_system_of_record                 │
+│  • ref_reconciliation_log               │
+└────────┬────────────────────────────────┘
+         │
+         │  Merge + Reconcile
+         ▼
+┌─────────────────────────────────────────┐
+│  Staging Layer (Merged Records)         │
+│  stg_veterans (OMS+VEMS combined)       │
+│  Source: OMS_MERGED or VEMS_MERGED      │
+└─────────────────────────────────────────┘
+```
+
+### Reference Schema Tables
+
+#### 1. System of Record Configuration
+
+**`ref_system_of_record`** - Defines authoritative source per entity type:
+
+```sql
+CREATE TABLE ref_system_of_record (
+    entity_type VARCHAR(50) PRIMARY KEY,
+    primary_source_system VARCHAR(50) NOT NULL,    -- OMS or VEMS
+    fallback_source_system VARCHAR(50),
+    reconciliation_rule VARCHAR(100),              -- PREFER_PRIMARY, MOST_RECENT, MERGE_FIELDS
+    conflict_resolution VARCHAR(100)
+);
+```
+
+**Configuration**:
+| Entity Type | Primary Source | Fallback | Reconciliation Rule |
+|-------------|----------------|----------|---------------------|
+| VETERAN | OMS | VEMS | PREFER_PRIMARY |
+| EVALUATOR | VEMS | OMS | PREFER_PRIMARY |
+| FACILITY | OMS | VEMS | PREFER_PRIMARY |
+| APPOINTMENT | VEMS | NULL | SINGLE_SOURCE |
+| EXAM_REQUEST | VEMS | OMS | MERGE_FIELDS |
+
+#### 2. Field Mapping Tables
+
+**`ref_field_mapping_oms`** and **`ref_field_mapping_vems`** - Map source-specific field names to standard names:
+
+```sql
+CREATE TABLE ref_field_mapping_oms (
+    entity_type VARCHAR(50) NOT NULL,
+    source_field_name VARCHAR(100) NOT NULL,
+    standard_field_name VARCHAR(100) NOT NULL,
+    data_type VARCHAR(50),
+    transformation_rule VARCHAR(500),
+    PRIMARY KEY (entity_type, source_field_name)
+);
+```
+
+**Example Mappings**:
+| Source System | Entity | Source Field | Standard Field | Transformation |
+|---------------|--------|--------------|----------------|----------------|
+| OMS | VETERAN | `vet_ssn` | `veteran_ssn` | Direct mapping |
+| OMS | VETERAN | `disability_pct` | `disability_rating` | `CAST(disability_pct AS INTEGER)` |
+| VEMS | VETERAN | `veteran_ssn` | `veteran_ssn` | Direct mapping |
+| VEMS | VETERAN | `disability_rating` | `disability_rating` | Direct mapping |
+
+#### 3. Code Value Mapping Tables
+
+**`ref_code_mapping_specialty`**, **`ref_code_mapping_request_type`**, **`ref_code_mapping_appointment_status`** - Translate system-specific codes to standard values:
+
+```sql
+CREATE TABLE ref_code_mapping_specialty (
+    source_system VARCHAR(50) NOT NULL,
+    source_code VARCHAR(50) NOT NULL,
+    source_description VARCHAR(200),
+    standard_value VARCHAR(100) NOT NULL,
+    standard_code VARCHAR(50),
+    category VARCHAR(100),
+    active_flag BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (source_system, source_code)
+);
+```
+
+**Example Code Mappings**:
+| Source System | Source Code | Standard Value | Standard Code | Category |
+|---------------|-------------|----------------|---------------|----------|
+| OMS | `PSYCH` | `Psychiatry` | `PSYCHIATRY` | `MENTAL_HEALTH` |
+| VEMS | `PSYCHIATRY` | `Psychiatry` | `PSYCHIATRY` | `MENTAL_HEALTH` |
+| OMS | `ORTHO` | `Orthopedics` | `ORTHOPEDICS` | `MUSCULOSKELETAL` |
+| VEMS | `ORTHOPEDICS` | `Orthopedics` | `ORTHOPEDICS` | `MUSCULOSKELETAL` |
+
+#### 4. Entity Crosswalk Tables
+
+**`ref_entity_crosswalk_veteran`**, **`ref_entity_crosswalk_evaluator`**, **`ref_entity_crosswalk_facility`** - Match records between OMS and VEMS:
+
+```sql
+CREATE TABLE ref_entity_crosswalk_veteran (
+    master_veteran_id VARCHAR(50) PRIMARY KEY,
+    oms_veteran_id VARCHAR(50),
+    oms_ssn VARCHAR(11),
+    vems_veteran_id VARCHAR(50),
+    vems_ssn VARCHAR(11),
+    va_file_number VARCHAR(50),
+    match_confidence DECIMAL(5,2),     -- 0-100 confidence score
+    match_method VARCHAR(50),           -- SSN_EXACT_MATCH, NAME_DOB_MATCH, MANUAL
+    primary_source_system VARCHAR(50),
+    created_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+**Matching Logic**:
+- **Veterans**: Match on SSN (100% confidence), Name+DOB (85% confidence)
+- **Evaluators**: Match on NPI (100% confidence), License Number (85% confidence)
+- **Facilities**: Match on Facility ID (100% confidence), Facility Name (95% confidence)
+
+#### 5. Reconciliation Log
+
+**`ref_reconciliation_log`** - Tracks conflicts and resolutions:
+
+```sql
+CREATE TABLE ref_reconciliation_log (
+    reconciliation_id INTEGER AUTOINCREMENT PRIMARY KEY,
+    batch_id VARCHAR(50),
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id VARCHAR(50) NOT NULL,
+    conflict_type VARCHAR(100),         -- DUPLICATE, FIELD_MISMATCH, MISSING_IN_SYSTEM
+    oms_value VARIANT,
+    vems_value VARIANT,
+    resolved_value VARIANT,
+    resolution_method VARCHAR(100),
+    reconciliation_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+```
+
+### Multi-Source ETL Patterns
+
+#### Pattern 1: Entity Matching (Crosswalk Building)
+
+```sql
+-- Build veteran crosswalk using SSN
+MERGE INTO ref_entity_crosswalk_veteran tgt
+USING (
+    SELECT
+        COALESCE(oms.veteran_ssn, vems.veteran_ssn) AS master_veteran_id,
+        oms.source_record_id AS oms_veteran_id,
+        vems.source_record_id AS vems_veteran_id,
+        CASE
+            WHEN oms.veteran_ssn = vems.veteran_ssn THEN 100.00
+            WHEN oms.veteran_ssn IS NOT NULL THEN 90.00
+            ELSE 90.00
+        END AS match_confidence
+    FROM ods_veterans_source oms
+    FULL OUTER JOIN ods_veterans_source vems
+        ON oms.veteran_ssn = vems.veteran_ssn
+        AND oms.source_system = 'OMS'
+        AND vems.source_system = 'VEMS'
+) src
+ON tgt.master_veteran_id = src.master_veteran_id
+WHEN MATCHED THEN UPDATE ...
+WHEN NOT MATCHED THEN INSERT ...
+```
+
+#### Pattern 2: Data Merging with System of Record Preference
+
+```sql
+-- Merge veterans preferring OMS as primary source
+WITH combined_sources AS (
+    SELECT
+        xwalk.master_veteran_id,
+        xwalk.primary_source_system,
+
+        -- Primary source fields (use system of record)
+        CASE WHEN xwalk.primary_source_system = 'OMS'
+            THEN oms.first_name
+            ELSE vems.first_name
+        END AS first_name_primary,
+
+        -- Merged fields (most recent non-null value)
+        COALESCE(
+            CASE WHEN vems.extraction_timestamp > oms.extraction_timestamp
+                THEN vems.email ELSE NULL END,
+            oms.email,
+            vems.email
+        ) AS email_merged,
+
+        -- Conflict detection
+        CASE
+            WHEN oms.disability_rating IS NOT NULL
+                AND vems.disability_rating IS NOT NULL
+                AND oms.disability_rating != vems.disability_rating
+            THEN 'DISABILITY_RATING_MISMATCH'
+        END AS conflict_type
+
+    FROM ref_entity_crosswalk_veteran xwalk
+    LEFT JOIN ods_veterans_source oms
+        ON xwalk.oms_veteran_id = oms.source_record_id
+    LEFT JOIN ods_veterans_source vems
+        ON xwalk.vems_veteran_id = vems.source_record_id
+)
+INSERT INTO stg_veterans (...)
+SELECT ... FROM combined_sources;
+```
+
+#### Pattern 3: Code Value Translation
+
+```sql
+-- User-defined function for code mapping
+CREATE FUNCTION fn_map_specialty_code(
+    p_source_system VARCHAR,
+    p_source_code VARCHAR
+)
+RETURNS VARCHAR
+AS
+$$
+    SELECT standard_value
+    FROM ref_code_mapping_specialty
+    WHERE source_system = p_source_system
+      AND source_code = p_source_code
+      AND active_flag = TRUE
+    LIMIT 1
+$$;
+
+-- Usage in transformation
+SELECT
+    veteran_id,
+    fn_map_specialty_code(source_system, specialty_code) AS specialty
+FROM ods_evaluations_source;
+```
+
+#### Pattern 4: Conflict Logging
+
+```sql
+-- Log conflicts for review
+INSERT INTO ref_reconciliation_log (
+    batch_id, entity_type, entity_id, conflict_type,
+    oms_value, vems_value, resolved_value, resolution_method
+)
+SELECT
+    :batch_id,
+    'VETERAN',
+    xwalk.master_veteran_id,
+    'DISABILITY_RATING_MISMATCH',
+    TO_VARIANT(oms.disability_rating),
+    TO_VARIANT(vems.disability_rating),
+    TO_VARIANT(COALESCE(oms.disability_rating, vems.disability_rating)),
+    'PREFER_OMS'
+FROM ref_entity_crosswalk_veteran xwalk
+JOIN ods_veterans_source oms ON xwalk.oms_veteran_id = oms.source_record_id
+JOIN ods_veterans_source vems ON xwalk.vems_veteran_id = vems.source_record_id
+WHERE oms.disability_rating IS NOT NULL
+  AND vems.disability_rating IS NOT NULL
+  AND oms.disability_rating != vems.disability_rating;
+```
+
+### Multi-Source Stored Procedures
+
+| Procedure | Purpose | Layer Transition |
+|-----------|---------|------------------|
+| `sp_build_crosswalk_veterans()` | Match veterans between OMS/VEMS | ODS → Reference |
+| `sp_build_crosswalk_evaluators()` | Match evaluators between OMS/VEMS | ODS → Reference |
+| `sp_build_crosswalk_facilities()` | Match facilities between OMS/VEMS | ODS → Reference |
+| `sp_transform_multisource_ods_to_staging_veterans()` | Merge veteran data | ODS + Reference → Staging |
+| `sp_transform_multisource_ods_to_staging_evaluators()` | Merge evaluator data | ODS + Reference → Staging |
+| `sp_transform_multisource_ods_to_staging_facilities()` | Merge facility data | ODS + Reference → Staging |
+| `sp_transform_multisource_ods_to_staging_exam_requests()` | Transform exam requests with ID mapping | ODS + Reference → Staging |
+| `sp_transform_multisource_ods_to_staging_evaluations()` | Transform evaluations with ID mapping | ODS + Reference → Staging |
+| `sp_transform_multisource_ods_to_staging_appointments()` | Transform appointments with ID mapping | ODS + Reference → Staging |
+| `sp_etl_master_pipeline_multisource()` | Orchestrate complete multi-source ETL | Full Pipeline |
+
+### Best Practices
+
+1. **Always build crosswalks first** before merging data
+2. **Log all conflicts** for data stewardship review
+3. **Use UDFs for code mapping** to ensure consistency
+4. **Track match confidence** to identify low-quality matches
+5. **Prefer primary source** per ref_system_of_record configuration
+6. **Use most recent timestamp** for frequently-updated fields
+7. **Include source_system metadata** in staging tables (e.g., 'OMS_MERGED', 'VEMS_MERGED')
+8. **Update DQ scores** to reflect multi-source quality issues
+
+---
+
 ## Layer 3: Warehouse Layer (Star Schema)
 
 ### Purpose
