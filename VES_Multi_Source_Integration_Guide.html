@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VES Multi-Source Data Integration Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 500;
+            color: #495057;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #2a5298;
+            border-bottom: 3px solid #2a5298;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #495057;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .callout {
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .callout.info {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .callout.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .callout.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .diagram {
+            background: #f8f9fa;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            border: 2px solid #dee2e6;
+        }
+
+        .diagram pre {
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .accordion {
+            margin: 20px 0;
+        }
+
+        .accordion-item {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .accordion-header:hover {
+            background: #e9ecef;
+        }
+
+        .accordion-header .icon {
+            transition: transform 0.3s;
+        }
+
+        .accordion-item.active .accordion-header .icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: white;
+        }
+
+        .accordion-item.active .accordion-content {
+            max-height: 2000px;
+        }
+
+        .accordion-body {
+            padding: 20px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+        .code-block .function { color: #61afef; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #2a5298;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        .card h4 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+        }
+
+        .badge.primary { background: #667eea; color: white; }
+        .badge.success { background: #28a745; color: white; }
+        .badge.info { background: #17a2b8; color: white; }
+        .badge.warning { background: #ffc107; color: #333; }
+
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .step-desc {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .step:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: 20px;
+            font-size: 2em;
+            color: #667eea;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media (max-width: 768px) {
+            .step-indicator {
+                flex-direction: column;
+            }
+
+            .step:not(:last-child)::after {
+                content: '↓';
+                right: auto;
+                top: auto;
+                bottom: -30px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 VES Multi-Source Data Integration</h1>
+            <p>A Step-by-Step Guide to OMS & VEMS Data Reconciliation</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">📋 Overview</button>
+            <button class="nav-tab" onclick="showTab('architecture')">🏗️ Architecture</button>
+            <button class="nav-tab" onclick="showTab('reference')">🗂️ Reference Tables</button>
+            <button class="nav-tab" onclick="showTab('etl')">⚙️ ETL Process</button>
+            <button class="nav-tab" onclick="showTab('patterns')">💡 Code Patterns</button>
+            <button class="nav-tab" onclick="showTab('deployment')">🚀 Deployment</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <h2>Understanding the Challenge</h2>
+
+            <div class="callout info">
+                <h3>The Problem</h3>
+                <p>The VES organization operates with <strong>two separate systems</strong>:</p>
+                <ul>
+                    <li><strong>OMS (Order Management System)</strong> - Legacy system with historical data</li>
+                    <li><strong>VEMS (Veteran Evaluation Management System)</strong> - Modern system with current operations</li>
+                </ul>
+                <p>These systems have <span class="highlight">different schemas, field names, and code values</span>, but represent the same real-world entities (veterans, evaluators, facilities).</p>
+            </div>
+
+            <div class="callout success">
+                <h3>The Solution</h3>
+                <p>We've implemented a <strong>multi-source data integration framework</strong> that:</p>
+                <ul>
+                    <li>✅ Matches records between OMS and VEMS (entity resolution)</li>
+                    <li>✅ Translates different field names to a standard format</li>
+                    <li>✅ Maps code values to consistent terminology</li>
+                    <li>✅ Merges data intelligently based on system of record rules</li>
+                    <li>✅ Logs conflicts for data steward review</li>
+                    <li>✅ Tracks data quality with confidence scores</li>
+                </ul>
+            </div>
+
+            <h3>Key Benefits</h3>
+            <div class="grid">
+                <div class="card">
+                    <h4>🎯 Single Source of Truth</h4>
+                    <p>Unified view of all veterans, evaluators, and facilities regardless of source system.</p>
+                </div>
+                <div class="card">
+                    <h4>📊 Better Analytics</h4>
+                    <p>Complete historical data from OMS combined with current operations from VEMS.</p>
+                </div>
+                <div class="card">
+                    <h4>🔍 Data Quality</h4>
+                    <p>Automated conflict detection and resolution with full audit trail.</p>
+                </div>
+                <div class="card">
+                    <h4>🔄 Future-Proof</h4>
+                    <p>Flexible framework that can accommodate additional source systems.</p>
+                </div>
+            </div>
+
+            <h3>What's Different Between OMS and VEMS?</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>OMS (Legacy)</th>
+                        <th>VEMS (Modern)</th>
+                        <th>Our Solution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Field Names</strong></td>
+                        <td><code>vet_ssn</code>, <code>disability_pct</code></td>
+                        <td><code>veteran_ssn</code>, <code>disability_rating</code></td>
+                        <td>Standard: <code>veteran_ssn</code>, <code>disability_rating</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Specialty Codes</strong></td>
+                        <td><code>PSYCH</code>, <code>ORTHO</code></td>
+                        <td><code>PSYCHIATRY</code>, <code>ORTHOPEDICS</code></td>
+                        <td>Standard: <code>PSYCHIATRY</code>, <code>ORTHOPEDICS</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Freshness</strong></td>
+                        <td>Historical, less frequently updated</td>
+                        <td>Current, real-time operations</td>
+                        <td>Most recent non-null values</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coverage</strong></td>
+                        <td>All veterans, legacy evaluators</td>
+                        <td>Active veterans, current evaluators</td>
+                        <td>Complete coverage from both</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ARCHITECTURE TAB -->
+        <div id="architecture" class="tab-content">
+            <h2>Data Pipeline Architecture</h2>
+
+            <div class="callout info">
+                <p>The integration happens in the <strong>Staging Layer</strong>, following a medallion architecture pattern.</p>
+            </div>
+
+            <div class="diagram">
+                <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                      SOURCE SYSTEMS                              │
+│                                                                  │
+│        OMS (Legacy)              VEMS (Modern)                   │
+│     Different schemas          Different schemas                │
+└──────────┬───────────────────────────┬──────────────────────────┘
+           │                           │
+           │     Mulesoft ETL          │    Mulesoft ETL
+           │     (External)            │    (External)
+           ▼                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   LAYER 1: ODS (Raw Landing)                     │
+│                   Schema: ODS_RAW                                │
+│                                                                  │
+│  ods_veterans_source (source_system = 'OMS')                    │
+│  ods_veterans_source (source_system = 'VEMS')                   │
+│  [Separate rows for each source system]                         │
+└──────────┬──────────────────────────────────────────────────────┘
+           │
+           │  📍 MULTI-SOURCE INTEGRATION HAPPENS HERE
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              REFERENCE SCHEMA (Mappings)                         │
+│                                                                  │
+│  ┌─────────────────────┐  ┌────────────────────┐               │
+│  │ Entity Crosswalks   │  │  Code Mappings     │               │
+│  │ • Veterans (SSN)    │  │  • Specialty       │               │
+│  │ • Evaluators (NPI)  │  │  • Request Type    │               │
+│  │ • Facilities (ID)   │  │  • Status Codes    │               │
+│  └─────────────────────┘  └────────────────────┘               │
+│                                                                  │
+│  ┌─────────────────────┐  ┌────────────────────┐               │
+│  │ Field Mappings      │  │  System of Record  │               │
+│  │ • OMS → Standard    │  │  • Who is primary? │               │
+│  │ • VEMS → Standard   │  │  • Resolution rule │               │
+│  └─────────────────────┘  └────────────────────┘               │
+└──────────┬──────────────────────────────────────────────────────┘
+           │
+           │  Merge + Reconcile
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              LAYER 2: STAGING (Merged & Cleansed)                │
+│              Schema: STAGING                                     │
+│                                                                  │
+│  stg_veterans                                                    │
+│  - veteran_id: Master ID (from crosswalk)                       │
+│  - source_system: 'OMS_MERGED' or 'VEMS_MERGED'                │
+│  - All data reconciled and standardized                         │
+└──────────┬──────────────────────────────────────────────────────┘
+           │
+           │  SCD Type 2 Load
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│         LAYER 3: WAREHOUSE (Dimensional Model)                   │
+│         Schema: WAREHOUSE                                        │
+│                                                                  │
+│  dim_veterans, dim_evaluators, dim_facilities                   │
+│  fact_evaluations, fact_exam_requests, etc.                     │
+└──────────┬──────────────────────────────────────────────────────┘
+           │
+           │  Aggregate
+           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│           LAYER 4: MARTS (Business Views)                        │
+│           Schema: MARTS_CLINICAL                                 │
+│                                                                  │
+│  vw_evaluator_performance, vw_facility_performance, etc.        │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>Data Flow Steps</h3>
+            <div class="step-indicator">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Extract</div>
+                    <div class="step-desc">Mulesoft loads OMS & VEMS data separately into ODS</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Match</div>
+                    <div class="step-desc">Build crosswalks to link OMS & VEMS records</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Transform</div>
+                    <div class="step-desc">Merge data using system of record rules</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Load</div>
+                    <div class="step-desc">Insert unified data into warehouse</div>
+                </div>
+            </div>
+
+            <div class="callout warning">
+                <h3>⚠️ Important: Where Does Integration Happen?</h3>
+                <p>The combination logic is <strong>ONLY in the Staging Layer</strong>. Here's why:</p>
+                <ul>
+                    <li><strong>ODS Layer</strong>: Keeps raw data separate (preserves source fidelity)</li>
+                    <li><strong>Staging Layer</strong>: ✅ Performs all reconciliation and merging</li>
+                    <li><strong>Warehouse Layer</strong>: Receives already-merged, clean data</li>
+                    <li><strong>Marts Layer</strong>: Works with unified dimensional model</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- REFERENCE TABLES TAB -->
+        <div id="reference" class="tab-content">
+            <h2>Reference Tables - The Integration Foundation</h2>
+
+            <p>The <code>REFERENCE</code> schema contains <strong>11 tables</strong> that power the multi-source integration:</p>
+
+            <div class="accordion">
+                <!-- System of Record -->
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>1️⃣ ref_system_of_record - Who Is Primary?</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Defines which source system is authoritative for each entity type.</p>
+
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Entity Type</th>
+                                        <th>Primary Source</th>
+                                        <th>Fallback</th>
+                                        <th>Rule</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>VETERAN</td>
+                                        <td><span class="badge primary">OMS</span></td>
+                                        <td>VEMS</td>
+                                        <td>PREFER_PRIMARY</td>
+                                    </tr>
+                                    <tr>
+                                        <td>EVALUATOR</td>
+                                        <td><span class="badge success">VEMS</span></td>
+                                        <td>OMS</td>
+                                        <td>PREFER_PRIMARY</td>
+                                    </tr>
+                                    <tr>
+                                        <td>FACILITY</td>
+                                        <td><span class="badge primary">OMS</span></td>
+                                        <td>VEMS</td>
+                                        <td>PREFER_PRIMARY</td>
+                                    </tr>
+                                    <tr>
+                                        <td>APPOINTMENT</td>
+                                        <td><span class="badge success">VEMS</span></td>
+                                        <td>-</td>
+                                        <td>SINGLE_SOURCE</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <p><strong>Why different primaries?</strong></p>
+                            <ul>
+                                <li><strong>OMS for Veterans</strong>: Has complete historical records</li>
+                                <li><strong>VEMS for Evaluators</strong>: Most current provider information</li>
+                                <li><strong>VEMS for Appointments</strong>: Only source for scheduling</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entity Crosswalks -->
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>2️⃣ ref_entity_crosswalk_* - Matching Records</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Links OMS and VEMS records for the same real-world entity with confidence scoring.</p>
+
+                            <h4>Crosswalk Tables:</h4>
+                            <ul>
+                                <li><code>ref_entity_crosswalk_veteran</code> - Match on SSN</li>
+                                <li><code>ref_entity_crosswalk_evaluator</code> - Match on NPI</li>
+                                <li><code>ref_entity_crosswalk_facility</code> - Match on Facility ID/Name</li>
+                            </ul>
+
+                            <h4>Example: Veteran Crosswalk</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Master ID</th>
+                                        <th>OMS ID</th>
+                                        <th>VEMS ID</th>
+                                        <th>Match Method</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>123-45-6789</td>
+                                        <td>OMS_V_12345</td>
+                                        <td>VEMS_VET_789</td>
+                                        <td>SSN_EXACT_MATCH</td>
+                                        <td><span class="badge success">100%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>987-65-4321</td>
+                                        <td>OMS_V_67890</td>
+                                        <td>-</td>
+                                        <td>SSN_OMS_ONLY</td>
+                                        <td><span class="badge warning">90%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>555-12-3456</td>
+                                        <td>-</td>
+                                        <td>VEMS_VET_456</td>
+                                        <td>SSN_VEMS_ONLY</td>
+                                        <td><span class="badge warning">90%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="callout info">
+                                <p><strong>How it works:</strong> The <code>sp_build_crosswalk_veterans()</code> procedure uses a FULL OUTER JOIN on SSN to find matches. The master ID becomes the single identifier used throughout the warehouse.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Field Mappings -->
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>3️⃣ ref_field_mapping_* - Standardizing Field Names</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Maps system-specific field names to standardized names.</p>
+
+                            <h4>OMS → Standard Mappings</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>OMS Field</th>
+                                        <th>Standard Field</th>
+                                        <th>Transformation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>vet_ssn</code></td>
+                                        <td><code>veteran_ssn</code></td>
+                                        <td>Direct mapping</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>vet_first</code></td>
+                                        <td><code>first_name</code></td>
+                                        <td>UPPER(TRIM(vet_first))</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>disability_pct</code></td>
+                                        <td><code>disability_rating</code></td>
+                                        <td>CAST(disability_pct AS INTEGER)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <h4>VEMS Fields (Already Standardized)</h4>
+                            <p>VEMS uses modern naming that matches our standards, so most fields map directly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Mappings -->
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>4️⃣ ref_code_mapping_* - Translating Code Values</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Converts system-specific codes to standardized values.</p>
+
+                            <h4>Specialty Code Example</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Source System</th>
+                                        <th>Source Code</th>
+                                        <th>Standard Value</th>
+                                        <th>Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>OMS</td>
+                                        <td><code>PSYCH</code></td>
+                                        <td><code>PSYCHIATRY</code></td>
+                                        <td>MENTAL_HEALTH</td>
+                                    </tr>
+                                    <tr>
+                                        <td>VEMS</td>
+                                        <td><code>PSYCHIATRY</code></td>
+                                        <td><code>PSYCHIATRY</code></td>
+                                        <td>MENTAL_HEALTH</td>
+                                    </tr>
+                                    <tr>
+                                        <td>OMS</td>
+                                        <td><code>ORTHO</code></td>
+                                        <td><code>ORTHOPEDICS</code></td>
+                                        <td>MUSCULOSKELETAL</td>
+                                    </tr>
+                                    <tr>
+                                        <td>VEMS</td>
+                                        <td><code>ORTHOPEDICS</code></td>
+                                        <td><code>ORTHOPEDICS</code></td>
+                                        <td>MUSCULOSKELETAL</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <h4>Code Mapping Tables</h4>
+                            <ul>
+                                <li><code>ref_code_mapping_specialty</code></li>
+                                <li><code>ref_code_mapping_request_type</code></li>
+                                <li><code>ref_code_mapping_appointment_status</code></li>
+                            </ul>
+
+                            <div class="callout success">
+                                <p><strong>Pro Tip:</strong> Use the UDF functions (<code>fn_map_specialty_code()</code>, etc.) in your transformations for automatic translation!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reconciliation Log -->
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>5️⃣ ref_reconciliation_log - Tracking Conflicts</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Logs all data conflicts between OMS and VEMS for review by data stewards.</p>
+
+                            <h4>Example Conflict</h4>
+                            <div class="code-block">
+Entity: VETERAN
+Entity ID: 123-45-6789
+Conflict Type: DISABILITY_RATING_MISMATCH
+OMS Value: 80
+VEMS Value: 70
+Resolved Value: 80  <span class="comment">-- OMS is primary source</span>
+Resolution Method: PREFER_OMS
+                            </div>
+
+                            <p><strong>Why log conflicts?</strong></p>
+                            <ul>
+                                <li>Data stewards can review discrepancies</li>
+                                <li>Identify systematic data quality issues</li>
+                                <li>Provide audit trail for decisions</li>
+                                <li>Track patterns in mismatches</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ETL PROCESS TAB -->
+        <div id="etl" class="tab-content">
+            <h2>ETL Process - How It All Works</h2>
+
+            <div class="callout info">
+                <p>The multi-source ETL follows a <strong>3-step pattern</strong> for each entity:</p>
+                <ol>
+                    <li><strong>Build Crosswalk</strong> - Match OMS and VEMS records</li>
+                    <li><strong>Transform & Merge</strong> - Combine data using crosswalk</li>
+                    <li><strong>Load to Warehouse</strong> - Insert unified records</li>
+                </ol>
+            </div>
+
+            <h3>Step-by-Step: Veteran Integration</h3>
+
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 1: Build Veteran Crosswalk</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Stored Procedure:</strong> <code>sp_build_crosswalk_veterans(p_batch_id)</code></p>
+
+                            <h4>What it does:</h4>
+                            <ol>
+                                <li>Joins OMS and VEMS veteran records using FULL OUTER JOIN on SSN</li>
+                                <li>Creates a master veteran ID (uses SSN as the golden identifier)</li>
+                                <li>Calculates match confidence (100% for exact SSN match)</li>
+                                <li>Stores mapping in <code>ref_entity_crosswalk_veteran</code></li>
+                            </ol>
+
+                            <div class="code-block">
+<span class="comment">-- Simplified logic</span>
+<span class="keyword">SELECT</span>
+    <span class="function">COALESCE</span>(oms.veteran_ssn, vems.veteran_ssn) <span class="keyword">AS</span> master_veteran_id,
+    oms.source_record_id <span class="keyword">AS</span> oms_veteran_id,
+    vems.source_record_id <span class="keyword">AS</span> vems_veteran_id,
+    <span class="keyword">CASE</span>
+        <span class="keyword">WHEN</span> oms.veteran_ssn = vems.veteran_ssn <span class="keyword">THEN</span> <span class="string">100.00</span>
+        <span class="keyword">WHEN</span> oms.veteran_ssn <span class="keyword">IS NOT NULL</span> <span class="keyword">THEN</span> <span class="string">90.00</span>
+        <span class="keyword">ELSE</span> <span class="string">90.00</span>
+    <span class="keyword">END</span> <span class="keyword">AS</span> match_confidence
+<span class="keyword">FROM</span> ods_veterans_source oms
+<span class="keyword">FULL OUTER JOIN</span> ods_veterans_source vems
+    <span class="keyword">ON</span> oms.veteran_ssn = vems.veteran_ssn
+    <span class="keyword">AND</span> oms.source_system = <span class="string">'OMS'</span>
+    <span class="keyword">AND</span> vems.source_system = <span class="string">'VEMS'</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 2: Transform & Merge Veteran Data</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Stored Procedure:</strong> <code>sp_transform_multisource_ods_to_staging_veterans(p_batch_id)</code></p>
+
+                            <h4>What it does:</h4>
+                            <ol>
+                                <li>Calls <code>sp_build_crosswalk_veterans()</code> first</li>
+                                <li>Uses crosswalk to join OMS and VEMS data</li>
+                                <li>Applies field-level merge rules:
+                                    <ul>
+                                        <li><strong>Primary fields</strong>: Use OMS (system of record)</li>
+                                        <li><strong>Dynamic fields</strong>: Use most recent non-null value</li>
+                                        <li><strong>Conflicts</strong>: Log for review</li>
+                                    </ul>
+                                </li>
+                                <li>Inserts merged records into <code>stg_veterans</code></li>
+                            </ol>
+
+                            <h4>Merge Logic Examples:</h4>
+                            <div class="code-block">
+<span class="comment">-- Primary source field (prefer OMS)</span>
+<span class="keyword">CASE WHEN</span> xwalk.primary_source_system = <span class="string">'OMS'</span>
+    <span class="keyword">THEN</span> oms.first_name
+    <span class="keyword">ELSE</span> vems.first_name
+<span class="keyword">END</span> <span class="keyword">AS</span> first_name_primary
+
+<span class="comment">-- Most recent value for frequently-updated field</span>
+<span class="function">COALESCE</span>(
+    <span class="keyword">CASE WHEN</span> vems.extraction_timestamp > oms.extraction_timestamp
+        <span class="keyword">THEN</span> vems.email <span class="keyword">ELSE NULL END</span>,
+    oms.email,
+    vems.email
+) <span class="keyword">AS</span> email_merged
+
+<span class="comment">-- Conflict detection</span>
+<span class="keyword">CASE</span>
+    <span class="keyword">WHEN</span> oms.disability_rating <span class="keyword">IS NOT NULL</span>
+         <span class="keyword">AND</span> vems.disability_rating <span class="keyword">IS NOT NULL</span>
+         <span class="keyword">AND</span> oms.disability_rating != vems.disability_rating
+    <span class="keyword">THEN</span> <span class="string">'DISABILITY_RATING_MISMATCH'</span>
+<span class="keyword">END</span> <span class="keyword">AS</span> conflict_type
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 3: Load to Warehouse</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p><strong>Stored Procedure:</strong> <code>sp_load_dim_veterans(p_batch_id)</code></p>
+
+                            <h4>What it does:</h4>
+                            <ol>
+                                <li>Reads merged data from <code>stg_veterans</code></li>
+                                <li>Applies SCD Type 2 logic (detects changes via MD5 hash)</li>
+                                <li>End-dates old versions, inserts new versions</li>
+                                <li>Loads into <code>dim_veterans</code> in WAREHOUSE schema</li>
+                            </ol>
+
+                            <p>✅ At this point, the warehouse has a <strong>single unified view</strong> of each veteran!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Master Orchestration</h3>
+            <p>The <code>sp_etl_master_pipeline_multisource()</code> procedure runs all transformations in order:</p>
+
+            <div class="code-block">
+<span class="comment">-- Dimensions (with multi-source merge)</span>
+<span class="keyword">CALL</span> <span class="function">sp_transform_multisource_ods_to_staging_veterans</span>(v_batch_id);
+<span class="keyword">CALL</span> <span class="function">sp_load_dim_veterans</span>(v_batch_id);
+
+<span class="keyword">CALL</span> <span class="function">sp_transform_multisource_ods_to_staging_evaluators</span>(v_batch_id);
+<span class="keyword">CALL</span> <span class="function">sp_load_dim_evaluators</span>(v_batch_id);
+
+<span class="keyword">CALL</span> <span class="function">sp_transform_multisource_ods_to_staging_facilities</span>(v_batch_id);
+<span class="keyword">CALL</span> <span class="function">sp_load_dim_facilities</span>(v_batch_id);
+
+<span class="comment">-- Facts (with ID mapping via crosswalks)</span>
+<span class="keyword">CALL</span> <span class="function">sp_transform_multisource_ods_to_staging_exam_requests</span>(v_batch_id);
+<span class="keyword">CALL</span> <span class="function">sp_etl_exam_requests</span>(v_batch_id);
+
+<span class="keyword">CALL</span> <span class="function">sp_transform_multisource_ods_to_staging_evaluations</span>(v_batch_id);
+<span class="keyword">CALL</span> <span class="function">sp_etl_evaluations</span>(v_batch_id);
+            </div>
+
+            <div class="callout success">
+                <p><strong>💡 Key Insight:</strong> Each fact transformation uses the crosswalk tables to map OMS/VEMS IDs to master IDs, ensuring all foreign keys reference the unified dimensions!</p>
+            </div>
+        </div>
+
+        <!-- CODE PATTERNS TAB -->
+        <div id="patterns" class="tab-content">
+            <h2>Code Patterns You Can Reuse</h2>
+
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 1: FULL OUTER JOIN for Matching</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Use FULL OUTER JOIN to find all combinations of OMS and VEMS records.</p>
+
+                            <div class="code-block">
+<span class="keyword">FROM</span> ods_veterans_source oms
+<span class="keyword">FULL OUTER JOIN</span> ods_veterans_source vems
+    <span class="keyword">ON</span> oms.veteran_ssn = vems.veteran_ssn
+    <span class="keyword">AND</span> oms.source_system = <span class="string">'OMS'</span>
+    <span class="keyword">AND</span> vems.source_system = <span class="string">'VEMS'</span>
+                            </div>
+
+                            <p><strong>Why FULL OUTER JOIN?</strong></p>
+                            <ul>
+                                <li>Captures records that exist only in OMS</li>
+                                <li>Captures records that exist only in VEMS</li>
+                                <li>Captures records that exist in both (matched)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 2: System of Record Preference</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Use CASE to prefer the primary source for core fields.</p>
+
+                            <div class="code-block">
+<span class="comment">-- Prefer OMS for veteran name (system of record)</span>
+<span class="keyword">CASE WHEN</span> xwalk.primary_source_system = <span class="string">'OMS'</span>
+    <span class="keyword">THEN</span> oms.first_name
+    <span class="keyword">ELSE</span> vems.first_name
+<span class="keyword">END</span> <span class="keyword">AS</span> first_name_primary
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 3: Most Recent Value</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>For frequently-updated fields like email or phone, use the most recent non-null value.</p>
+
+                            <div class="code-block">
+<span class="function">COALESCE</span>(
+    <span class="comment">-- If VEMS is newer, use VEMS value</span>
+    <span class="keyword">CASE WHEN</span> vems.extraction_timestamp > oms.extraction_timestamp
+        <span class="keyword">THEN</span> vems.email <span class="keyword">ELSE NULL END</span>,
+
+    <span class="comment">-- Otherwise try OMS</span>
+    oms.email,
+
+    <span class="comment">-- Finally try VEMS anyway</span>
+    vems.email
+) <span class="keyword">AS</span> email_merged
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 4: Code Translation with UDFs</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Use user-defined functions for consistent code mapping.</p>
+
+                            <h4>Function Definition:</h4>
+                            <div class="code-block">
+<span class="keyword">CREATE FUNCTION</span> <span class="function">fn_map_specialty_code</span>(
+    p_source_system <span class="keyword">VARCHAR</span>,
+    p_source_code <span class="keyword">VARCHAR</span>
+)
+<span class="keyword">RETURNS VARCHAR</span>
+<span class="keyword">AS</span>
+$$
+    <span class="keyword">SELECT</span> standard_value
+    <span class="keyword">FROM</span> ref_code_mapping_specialty
+    <span class="keyword">WHERE</span> source_system = p_source_system
+      <span class="keyword">AND</span> source_code = p_source_code
+      <span class="keyword">AND</span> active_flag = <span class="keyword">TRUE</span>
+    <span class="keyword">LIMIT</span> <span class="string">1</span>
+$$;
+                            </div>
+
+                            <h4>Usage:</h4>
+                            <div class="code-block">
+<span class="keyword">SELECT</span>
+    evaluator_id,
+    <span class="function">fn_map_specialty_code</span>(source_system, specialty_code) <span class="keyword">AS</span> specialty
+<span class="keyword">FROM</span> ods_evaluators_source;
+
+<span class="comment">-- OMS 'PSYCH' → 'PSYCHIATRY'</span>
+<span class="comment">-- VEMS 'PSYCHIATRY' → 'PSYCHIATRY'</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 5: Conflict Detection & Logging</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Detect conflicts during transformation and log them for review.</p>
+
+                            <div class="code-block">
+<span class="comment">-- Detect conflict in CTE</span>
+<span class="keyword">WITH</span> combined_sources <span class="keyword">AS</span> (
+    <span class="keyword">SELECT</span>
+        <span class="keyword">CASE</span>
+            <span class="keyword">WHEN</span> oms.disability_rating <span class="keyword">IS NOT NULL</span>
+                 <span class="keyword">AND</span> vems.disability_rating <span class="keyword">IS NOT NULL</span>
+                 <span class="keyword">AND</span> oms.disability_rating != vems.disability_rating
+            <span class="keyword">THEN</span> <span class="string">'DISABILITY_RATING_MISMATCH'</span>
+        <span class="keyword">END</span> <span class="keyword">AS</span> conflict_type,
+        oms.disability_rating <span class="keyword">AS</span> oms_value,
+        vems.disability_rating <span class="keyword">AS</span> vems_value
+    <span class="keyword">FROM</span> ...
+)
+
+<span class="comment">-- Log conflicts</span>
+<span class="keyword">INSERT INTO</span> ref_reconciliation_log (
+    batch_id, entity_type, entity_id, conflict_type,
+    oms_value, vems_value, resolved_value, resolution_method
+)
+<span class="keyword">SELECT</span>
+    :batch_id,
+    <span class="string">'VETERAN'</span>,
+    master_veteran_id,
+    <span class="string">'DISABILITY_RATING_MISMATCH'</span>,
+    <span class="function">TO_VARIANT</span>(oms_value),
+    <span class="function">TO_VARIANT</span>(vems_value),
+    <span class="function">TO_VARIANT</span>(<span class="function">COALESCE</span>(oms_value, vems_value)),
+    <span class="string">'PREFER_OMS'</span>
+<span class="keyword">FROM</span> combined_sources
+<span class="keyword">WHERE</span> conflict_type <span class="keyword">IS NOT NULL</span>;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Pattern 6: ID Mapping for Facts</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>When transforming facts, map source-specific IDs to master IDs using crosswalks.</p>
+
+                            <div class="code-block">
+<span class="keyword">SELECT</span>
+    <span class="comment">-- Map veteran ID through crosswalk</span>
+    <span class="function">COALESCE</span>(vet_xwalk.master_veteran_id, src.veteran_id) <span class="keyword">AS</span> veteran_id,
+
+    <span class="comment">-- Map evaluator ID through crosswalk</span>
+    <span class="function">COALESCE</span>(eval_xwalk.master_evaluator_id, src.evaluator_id) <span class="keyword">AS</span> evaluator_id,
+
+    <span class="comment">-- Map facility ID through crosswalk</span>
+    <span class="function">COALESCE</span>(fac_xwalk.master_facility_id, src.facility_id) <span class="keyword">AS</span> facility_id
+
+<span class="keyword">FROM</span> ods_exam_requests_source src
+<span class="keyword">LEFT JOIN</span> ref_entity_crosswalk_veteran vet_xwalk
+    <span class="keyword">ON</span> (src.veteran_id = vet_xwalk.oms_veteran_id <span class="keyword">AND</span> src.source_system = <span class="string">'OMS'</span>)
+    <span class="keyword">OR</span> (src.veteran_id = vet_xwalk.vems_veteran_id <span class="keyword">AND</span> src.source_system = <span class="string">'VEMS'</span>)
+<span class="keyword">LEFT JOIN</span> ref_entity_crosswalk_evaluator eval_xwalk
+    <span class="keyword">ON</span> (src.evaluator_id = eval_xwalk.oms_evaluator_id <span class="keyword">AND</span> src.source_system = <span class="string">'OMS'</span>)
+    <span class="keyword">OR</span> (src.evaluator_id = eval_xwalk.vems_evaluator_id <span class="keyword">AND</span> src.source_system = <span class="string">'VEMS'</span>);
+                            </div>
+
+                            <p>This ensures all foreign keys in facts reference the master IDs in dimensions!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEPLOYMENT TAB -->
+        <div id="deployment" class="tab-content">
+            <h2>Deployment Guide</h2>
+
+            <div class="callout success">
+                <h3>📦 What's Been Created</h3>
+                <ul>
+                    <li>✅ <code>snowflake/reference/01_create_reference_tables.sql</code> - 11 reference tables</li>
+                    <li>✅ <code>snowflake/etl/03_etl_procedures_multi_source.sql</code> - 9 transformation procedures + orchestration</li>
+                    <li>✅ <code>snowflake/schema/02_master_deployment.sql</code> - Updated to include all layers</li>
+                    <li>✅ <code>DATA_PIPELINE_ARCHITECTURE.md</code> - Updated with multi-source section</li>
+                </ul>
+            </div>
+
+            <h3>Deployment Steps</h3>
+
+            <div class="accordion">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 1: Review the Master Deployment Script</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>The deployment script now includes all 4 layers:</p>
+
+                            <div class="code-block">
+<span class="comment">-- Step 1: Setup Database and Schemas</span>
+!source 00_setup_database.sql
+
+<span class="comment">-- Step 2: Create ODS Layer Tables</span>
+!source ../ods/01_create_ods_tables.sql
+
+<span class="comment">-- Step 3: Create Reference Tables ⭐ NEW</span>
+!source ../reference/01_create_reference_tables.sql
+
+<span class="comment">-- Step 4: Create Staging Layer Tables</span>
+!source ../staging/01_create_staging_tables.sql
+
+<span class="comment">-- Step 5: Create Dimension Tables</span>
+<span class="comment">-- ...</span>
+
+<span class="comment">-- Step 6: Create Fact Tables</span>
+<span class="comment">-- ...</span>
+
+<span class="comment">-- Step 7: Populate Date Dimension</span>
+<span class="comment">-- ...</span>
+
+<span class="comment">-- Step 8: Create ETL Procedures ⭐ UPDATED</span>
+!source ../etl/01_etl_procedures_dimensions.sql
+!source ../etl/02_etl_procedures_facts.sql
+!source ../etl/03_etl_procedures_multi_source.sql
+
+<span class="comment">-- Step 9: Create Marts Layer Views</span>
+!source ../marts/01_create_marts_clinical.sql
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 2: Deploy to Snowflake</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>Run the master deployment script in Snowflake:</p>
+
+                            <div class="code-block">
+<span class="comment">-- In Snowflake SQL Worksheet</span>
+!source snowflake/schema/02_master_deployment.sql
+                            </div>
+
+                            <p>This will create:</p>
+                            <ul>
+                                <li>8 ODS tables in <code>ODS_RAW</code> schema</li>
+                                <li>11 reference tables in <code>REFERENCE</code> schema</li>
+                                <li>7 staging tables in <code>STAGING</code> schema</li>
+                                <li>9 dimension tables in <code>WAREHOUSE</code> schema</li>
+                                <li>8 fact tables in <code>WAREHOUSE</code> schema</li>
+                                <li>All ETL procedures (24 total)</li>
+                                <li>6 mart views in <code>MARTS_CLINICAL</code> schema</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 3: Populate Reference Data</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p>The reference tables already have sample data, but you should review and customize:</p>
+
+                            <h4>Tables to Review:</h4>
+                            <ul>
+                                <li><code>ref_system_of_record</code> - Confirm primary source choices</li>
+                                <li><code>ref_field_mapping_oms</code> - Add any OMS-specific field mappings</li>
+                                <li><code>ref_field_mapping_vems</code> - Add any VEMS-specific field mappings</li>
+                                <li><code>ref_code_mapping_specialty</code> - Add all specialty codes from both systems</li>
+                                <li><code>ref_code_mapping_request_type</code> - Add all request type codes</li>
+                                <li><code>ref_code_mapping_appointment_status</code> - Add all status codes</li>
+                            </ul>
+
+                            <div class="callout warning">
+                                <p><strong>⚠️ Important:</strong> Crosswalk tables (<code>ref_entity_crosswalk_*</code>) are populated automatically by the ETL procedures. Don't manually insert data here!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 4: Test with Sample Data</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <h4>1. Load Sample ODS Data</h4>
+                            <div class="code-block">
+<span class="comment">-- Insert test OMS veteran</span>
+<span class="keyword">INSERT INTO</span> ods_veterans_source (
+    source_system, source_record_id, veteran_ssn,
+    first_name, last_name, disability_rating, batch_id
+) <span class="keyword">VALUES</span> (
+    <span class="string">'OMS'</span>, <span class="string">'OMS_V_001'</span>, <span class="string">'123-45-6789'</span>,
+    <span class="string">'John'</span>, <span class="string">'Doe'</span>, <span class="string">80</span>, <span class="string">'TEST_BATCH_001'</span>
+);
+
+<span class="comment">-- Insert matching VEMS veteran (same SSN)</span>
+<span class="keyword">INSERT INTO</span> ods_veterans_source (
+    source_system, source_record_id, veteran_ssn,
+    first_name, last_name, disability_rating, batch_id
+) <span class="keyword">VALUES</span> (
+    <span class="string">'VEMS'</span>, <span class="string">'VEMS_VET_999'</span>, <span class="string">'123-45-6789'</span>,
+    <span class="string">'John'</span>, <span class="string">'Doe'</span>, <span class="string">70</span>, <span class="string">'TEST_BATCH_001'</span>
+);
+                            </div>
+
+                            <h4>2. Run Multi-Source ETL</h4>
+                            <div class="code-block">
+<span class="keyword">CALL</span> <span class="function">sp_etl_master_pipeline_multisource</span>(<span class="string">'FULL'</span>);
+                            </div>
+
+                            <h4>3. Verify Results</h4>
+                            <div class="code-block">
+<span class="comment">-- Check crosswalk</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> ref_entity_crosswalk_veteran;
+
+<span class="comment">-- Check merged staging data</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> stg_veterans;
+
+<span class="comment">-- Check warehouse dimension</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> dim_veterans <span class="keyword">WHERE</span> is_current = <span class="keyword">TRUE</span>;
+
+<span class="comment">-- Check reconciliation log for conflicts</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> ref_reconciliation_log;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Step 5: Monitor & Maintain</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <h4>Key Monitoring Queries</h4>
+
+                            <p><strong>Match Quality:</strong></p>
+                            <div class="code-block">
+<span class="keyword">SELECT</span>
+    primary_source_system,
+    match_method,
+    <span class="function">COUNT</span>(*) <span class="keyword">AS</span> count,
+    <span class="function">AVG</span>(match_confidence) <span class="keyword">AS</span> avg_confidence
+<span class="keyword">FROM</span> ref_entity_crosswalk_veteran
+<span class="keyword">GROUP BY</span> primary_source_system, match_method
+<span class="keyword">ORDER BY</span> avg_confidence <span class="keyword">DESC</span>;
+                            </div>
+
+                            <p><strong>Unresolved Conflicts:</strong></p>
+                            <div class="code-block">
+<span class="keyword">SELECT</span>
+    entity_type,
+    conflict_type,
+    <span class="function">COUNT</span>(*) <span class="keyword">AS</span> conflict_count
+<span class="keyword">FROM</span> ref_reconciliation_log
+<span class="keyword">WHERE</span> reconciliation_timestamp >= <span class="function">CURRENT_DATE</span>() - <span class="string">7</span>
+<span class="keyword">GROUP BY</span> entity_type, conflict_type
+<span class="keyword">ORDER BY</span> conflict_count <span class="keyword">DESC</span>;
+                            </div>
+
+                            <p><strong>Data Quality Trends:</strong></p>
+                            <div class="code-block">
+<span class="keyword">SELECT</span>
+    source_system,
+    <span class="function">AVG</span>(dq_score) <span class="keyword">AS</span> avg_quality,
+    <span class="function">COUNT</span>(*) <span class="keyword">AS</span> record_count
+<span class="keyword">FROM</span> stg_veterans
+<span class="keyword">GROUP BY</span> source_system;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Troubleshooting</h3>
+
+            <div class="grid">
+                <div class="card">
+                    <h4>⚠️ Low Match Confidence</h4>
+                    <p><strong>Issue:</strong> Many records with &lt;100% match confidence</p>
+                    <p><strong>Solution:</strong> Review <code>ref_entity_crosswalk_*</code> tables for records without exact matches. Consider adding fuzzy matching logic.</p>
+                </div>
+
+                <div class="card">
+                    <h4>⚠️ High Conflict Rate</h4>
+                    <p><strong>Issue:</strong> Many conflicts logged in <code>ref_reconciliation_log</code></p>
+                    <p><strong>Solution:</strong> Review conflict patterns. May need to adjust system of record rules or add data quality checks at source.</p>
+                </div>
+
+                <div class="card">
+                    <h4>⚠️ Missing Translations</h4>
+                    <p><strong>Issue:</strong> NULL values from UDF code mapping functions</p>
+                    <p><strong>Solution:</strong> Add missing codes to <code>ref_code_mapping_*</code> tables. Check for new codes from source systems.</p>
+                </div>
+
+                <div class="card">
+                    <h4>⚠️ Performance Issues</h4>
+                    <p><strong>Issue:</strong> ETL taking too long</p>
+                    <p><strong>Solution:</strong> Ensure ODS tables are clustered by <code>source_system</code> and <code>batch_id</code>. Consider incremental loads.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>VES Multi-Source Data Integration Guide</strong></p>
+            <p>Version 1.0 | Created: 2025-11-17</p>
+            <p>For questions or issues, contact the Data Engineering team</p>
+        </footer>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active from all nav tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(navTab => navTab.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+
+            // Mark nav tab as active
+            event.target.classList.add('active');
+        }
+
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const wasActive = item.classList.contains('active');
+
+            // Close all accordion items
+            const allItems = header.closest('.accordion').querySelectorAll('.accordion-item');
+            allItems.forEach(i => i.classList.remove('active'));
+
+            // If it wasn't active, open it
+            if (!wasActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // Auto-expand first accordion item in each section
+        document.addEventListener('DOMContentLoaded', function() {
+            const accordions = document.querySelectorAll('.accordion');
+            accordions.forEach(accordion => {
+                const firstItem = accordion.querySelector('.accordion-item');
+                if (firstItem) {
+                    firstItem.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
