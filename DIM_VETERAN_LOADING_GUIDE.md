@@ -13,9 +13,11 @@ Estimated Time: 2-3 hours for initial setup
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
+- [Multi-Environment Strategy](#multi-environment-strategy)
 - [Architecture Overview](#architecture-overview)
 - [Step 1: Understand Your Source Systems](#step-1-understand-your-source-systems)
 - [Step 2: Set Up ODS Layer Tables](#step-2-set-up-ods-layer-tables)
+- [Step 2a: Set Up Environment Configuration](#step-2a-set-up-environment-configuration)
 - [Step 3: Create Streams for Change Data Capture](#step-3-create-streams-for-change-data-capture)
 - [Step 4: Create Staging Layer with Merge Logic](#step-4-create-staging-layer-with-merge-logic)
 - [Step 5: Create the dim_veteran Dimension Table](#step-5-create-the-dim_veteran-dimension-table)
@@ -93,11 +95,80 @@ VESODS_PRDDATA_PRD
   └── OMS schema (OMS data)
 
 -- Data warehouse database
-VESDW_PRD
+VESDW_PRD (or VESDW_DEV, VESDW_TST depending on environment)
   └── staging schema (merged data)
   └── warehouse schema (dimensional model)
   └── metadata schema (monitoring)
 ```
+
+---
+
+## Multi-Environment Strategy
+
+### Environment Overview
+
+This guide supports deployment across three environments:
+
+| Environment | DW Database | ODS Database | Purpose |
+|-------------|-------------|--------------|---------|
+| **DEV** | `VESDW_DEV` | `VESODS_DEV` | Development & unit testing |
+| **TST** | `VESDW_TST` | `VESODS_TST` | Integration & UAT testing |
+| **PRD** | `VESDW_PRD` | `VESODS_PRD` | Production |
+
+### Key Principle: Environment-Agnostic Code
+
+**❌ PROBLEM: Hardcoded database names**
+```sql
+-- This only works in PRD!
+USE DATABASE VESDW_PRD;
+SELECT * FROM VESDW_PRD.warehouse.dim_veteran;
+```
+
+**✅ SOLUTION: Environment-aware code**
+```sql
+-- This works in ANY environment!
+USE DATABASE IDENTIFIER(get_dw_database());
+SELECT * FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran');
+```
+
+### How This Guide Handles Environments
+
+This guide uses **two approaches** for environment management:
+
+1. **Configuration Table Approach** (Recommended for Production)
+   - Create `environment_config` table in each environment
+   - Store database names in configuration
+   - Procedures automatically use correct environment
+   - See [Step 2a](#step-2a-set-up-environment-configuration)
+
+2. **Simplified Examples** (For Learning)
+   - Examples show `VESDW_DEV` for clarity
+   - In production, replace with dynamic references
+   - See comments in code for production approach
+
+### Quick Start by Environment
+
+**If you're working in DEV:**
+- Replace `VESDW_PRD` with `VESDW_DEV` in examples
+- Replace `VESODS_PRD` with `VESODS_DEV` in examples
+
+**If you're working in TST:**
+- Replace `VESDW_PRD` with `VESDW_TST` in examples
+- Replace `VESODS_PRD` with `VESODS_TST` in examples
+
+**For Production-Ready Code:**
+- Follow [Step 2a](#step-2a-set-up-environment-configuration) to set up environment configuration
+- Use the "Production Version" code snippets provided throughout
+
+### Complete Multi-Environment Guide
+
+For comprehensive coverage of multi-environment deployments, including:
+- Automated deployment scripts
+- Environment promotion (DEV → TST → PRD)
+- Testing strategies
+- Deployment checklists
+
+See: **[MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md](MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md)**
 
 ---
 
@@ -454,6 +525,186 @@ SELECT * FROM ods_vems_veteran LIMIT 5;
 ```
 
 **Checkpoint:** You should now have data in both ODS tables.
+
+---
+
+## Step 2a: Set Up Environment Configuration
+
+### Why Environment Configuration?
+
+Before proceeding, we'll set up environment configuration to make our code work seamlessly across DEV, TST, and PRD environments without hardcoding database names.
+
+### Step 2a.1: Create Environment Configuration Table
+
+Run this in **each environment** (VESDW_DEV, VESDW_TST, VESDW_PRD):
+
+```sql
+-- Switch to the appropriate database for your environment
+USE ROLE DATA_ENGINEER_ROLE;
+USE DATABASE VESDW_DEV;  -- Change to VESDW_TST or VESDW_PRD as needed
+USE SCHEMA metadata;
+
+-- Create environment configuration table
+CREATE TABLE IF NOT EXISTS environment_config (
+    config_key VARCHAR(100) PRIMARY KEY,
+    config_value VARCHAR(500),
+    description VARCHAR(1000),
+    last_updated TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- FOR DEV ENVIRONMENT: Insert these values
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MERGE INTO environment_config AS target
+USING (
+    SELECT 'ENVIRONMENT_NAME' AS config_key, 'DEV' AS config_value,
+           'Current environment: DEV, TST, or PRD' AS description
+    UNION ALL
+    SELECT 'DW_DATABASE', 'VESDW_DEV',
+           'Data warehouse database name'
+    UNION ALL
+    SELECT 'ODS_DATABASE', 'VESODS_DEV',
+           'Operational data store database name'
+) AS source
+ON target.config_key = source.config_key
+WHEN MATCHED THEN UPDATE SET
+    config_value = source.config_value,
+    description = source.description,
+    last_updated = CURRENT_TIMESTAMP()
+WHEN NOT MATCHED THEN INSERT (config_key, config_value, description)
+    VALUES (source.config_key, source.config_value, source.description);
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- FOR TST ENVIRONMENT: Use these values instead
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/*
+MERGE INTO environment_config AS target
+USING (
+    SELECT 'ENVIRONMENT_NAME' AS config_key, 'TST' AS config_value,
+           'Current environment: DEV, TST, or PRD' AS description
+    UNION ALL
+    SELECT 'DW_DATABASE', 'VESDW_TST',
+           'Data warehouse database name'
+    UNION ALL
+    SELECT 'ODS_DATABASE', 'VESODS_TST',
+           'Operational data store database name'
+) AS source
+ON target.config_key = source.config_key
+WHEN MATCHED THEN UPDATE SET config_value = source.config_value
+WHEN NOT MATCHED THEN INSERT (config_key, config_value, description)
+    VALUES (source.config_key, source.config_value, source.description);
+*/
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- FOR PRD ENVIRONMENT: Use these values instead
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/*
+MERGE INTO environment_config AS target
+USING (
+    SELECT 'ENVIRONMENT_NAME' AS config_key, 'PRD' AS config_value,
+           'Current environment: DEV, TST, or PRD' AS description
+    UNION ALL
+    SELECT 'DW_DATABASE', 'VESDW_PRD',
+           'Data warehouse database name'
+    UNION ALL
+    SELECT 'ODS_DATABASE', 'VESODS_PRD',
+           'Operational data store database name'
+) AS source
+ON target.config_key = source.config_key
+WHEN MATCHED THEN UPDATE SET config_value = source.config_value
+WHEN NOT MATCHED THEN INSERT (config_key, config_value, description)
+    VALUES (source.config_key, source.config_value, source.description);
+*/
+
+-- Verify configuration
+SELECT * FROM environment_config ORDER BY config_key;
+```
+
+### Step 2a.2: Create Helper Functions
+
+```sql
+-- Function to get current environment name
+CREATE OR REPLACE FUNCTION get_environment()
+RETURNS VARCHAR
+AS
+$$
+    SELECT config_value
+    FROM environment_config
+    WHERE config_key = 'ENVIRONMENT_NAME'
+$$;
+
+-- Function to get DW database name
+CREATE OR REPLACE FUNCTION get_dw_database()
+RETURNS VARCHAR
+AS
+$$
+    SELECT config_value
+    FROM environment_config
+    WHERE config_key = 'DW_DATABASE'
+$$;
+
+-- Function to get ODS database name
+CREATE OR REPLACE FUNCTION get_ods_database()
+RETURNS VARCHAR
+AS
+$$
+    SELECT config_value
+    FROM environment_config
+    WHERE config_key = 'ODS_DATABASE'
+$$;
+
+-- Test the functions
+SELECT
+    get_environment() AS current_environment,
+    get_dw_database() AS dw_database,
+    get_ods_database() AS ods_database;
+```
+
+**Expected Output (in DEV):**
+```
+current_environment | dw_database | ods_database
+--------------------|-------------|-------------
+DEV                 | VESDW_DEV   | VESODS_DEV
+```
+
+**Expected Output (in TST):**
+```
+current_environment | dw_database | ods_database
+--------------------|-------------|-------------
+TST                 | VESDW_TST   | VESODS_TST
+```
+
+**Expected Output (in PRD):**
+```
+current_environment | dw_database | ods_database
+--------------------|-------------|-------------
+PRD                 | VESDW_PRD   | VESODS_PRD
+```
+
+### Using Environment Configuration
+
+From this point forward, you have two options for writing SQL:
+
+**Option 1: Simplified (for learning/examples)**
+```sql
+-- Hardcoded - easier to read, but must be changed per environment
+USE DATABASE VESDW_DEV;
+SELECT * FROM VESDW_DEV.warehouse.dim_veteran;
+```
+
+**Option 2: Environment-Aware (production-ready)**
+```sql
+-- Dynamic - works in any environment!
+USE DATABASE IDENTIFIER(get_dw_database());
+SELECT * FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran');
+```
+
+**For the rest of this guide:**
+- Examples show simplified code for clarity (e.g., `VESDW_DEV`)
+- Production versions are noted with "🏭 Production Version" comments
+- When deploying to TST or PRD, use environment-aware code
+
+**Checkpoint:** Environment configuration is now set up!
 
 ---
 
