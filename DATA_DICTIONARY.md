@@ -843,7 +843,7 @@ ORDER BY average_wait_time_days;
 
 ## Version History
 
-- **v1.0** (2024-11-18): Initial data dictionary created
+- **v1.0** (2024-11-18): Initial data dictionary created by Mark Chappell
   - Documented 9 dimension tables
   - Documented 9 fact tables
   - Documented monitoring and quality tables

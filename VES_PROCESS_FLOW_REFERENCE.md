@@ -1317,7 +1317,7 @@ COMPLETE
 
 | Date | Author | Change Description |
 |------|--------|-------------------|
-| 2025-11-16 | Claude | Initial creation from process_flow.png |
+| 2025-11-16 | Mark Chappell | Initial creation from process_flow.png |
 
 ---
 

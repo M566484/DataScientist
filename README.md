@@ -1000,8 +1000,9 @@ Key differences to learn:
 **License**: This solution is provided as-is for educational and implementation purposes.
 
 **Credits**:
-- Architecture designed using Kimball dimensional modeling methodology
-- Implementation on Snowflake Data Cloud
+- Solution architecture and implementation by Mark Chappell
+- Designed using Kimball dimensional modeling methodology
+- Built on Snowflake Data Cloud platform
 - Documentation follows industry best practices
 
 **Version**: v2.0 (2024-11-18)
