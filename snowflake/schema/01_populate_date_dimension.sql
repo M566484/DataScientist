@@ -77,7 +77,7 @@ BEGIN
         DAY(full_date) AS day_of_month,
         DAYOFYEAR(full_date) AS day_of_year,
         DAYOFWEEK(full_date) AS day_of_week,
-        DAYNAME(full_date) AS day_name,
+        TRIM(TO_CHAR(full_date, 'Day')) AS day_name,
         TO_CHAR(full_date, 'DY') AS day_abbr,
 
         -- Weekend/Weekday flags
