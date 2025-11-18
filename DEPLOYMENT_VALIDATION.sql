@@ -1,6 +1,7 @@
 -- =============================================================================
 -- VES Data Warehouse - Deployment Validation & Health Check Suite
 -- =============================================================================
+-- Author: Mark Chappell
 -- Purpose: Comprehensive validation of VES data warehouse deployment
 -- Run this script after deploying the solution to verify all components
 -- Expected runtime: 2-3 minutes

@@ -576,7 +576,7 @@ When adding new documentation:
 **Next Review**: 2025-02-18
 
 **Version History:**
-- v1.0 (2024-11-18): Initial comprehensive index created
+- v1.0 (2024-11-18): Initial comprehensive index created by Mark Chappell
 
 ---
 
