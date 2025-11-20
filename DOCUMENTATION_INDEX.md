@@ -136,7 +136,7 @@ Total Documents: 27 files
 1. [DEVELOPER_ONBOARDING_GUIDE.md](DEVELOPER_ONBOARDING_GUIDE.md) - New hire program
 2. [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) - Training material
 
-### 🎓 Learning / Transitioning from SQL Server/Redshift
+### 🎓 Learning / Transitioning from SQL Server
 
 **Your Learning Path:**
 1. [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) - **START HERE** (70 pages)
@@ -264,7 +264,7 @@ Perfect for new team members and those unfamiliar with the solution.
 |----------|-------|--------------|---------|
 | [README.md](README.md) | 15 | 15-30 min | Solution overview, quick start, deployment |
 | [DEVELOPER_ONBOARDING_GUIDE.md](DEVELOPER_ONBOARDING_GUIDE.md) | 68 | 5 days | Structured 5-day onboarding program |
-| [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) | 70 | 4-6 hours | SQL Server/Redshift → Snowflake transition |
+| [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) | 70 | 4-6 hours | SQL Server → Snowflake transition |
 
 ### 📊 Architecture & Design (5 documents, 85 pages)
 

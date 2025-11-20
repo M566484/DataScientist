@@ -44,8 +44,10 @@ In this guide, you'll learn how to:
 ### What You'll Build
 
 ```
-OMS (Redshift)           VEMS (SQL Server)
+OMS (SQL Server)         VEMS (Salesforce)
      ↓                          ↓
+     └──────→ [Mulesoft ETL] ←─┘
+                   ↓
 [ODS Layer: ods_oms_veteran] [ODS Layer: ods_vems_veteran]
      ↓                          ↓
 [Stream: stream_oms_veteran] [Stream: stream_vems_veteran]
@@ -180,10 +182,11 @@ See: **[MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md](MULTI_ENVIRONMENT_DEPLOYMENT_GUID
 ┌─────────────────────────────────────────────────────────────────────┐
 │ STEP 1: SOURCE SYSTEMS                                              │
 │                                                                      │
-│  OMS (Redshift)                    VEMS Core (SQL Server)           │
+│  OMS (SQL Server)                  VEMS Core (Salesforce)           │
 │  - Order Management System         - Veteran Evaluation System      │
 │  - Has: veteran_id, name,         - Has: veteran_ssn, demographics, │
 │    contact info                     service history                 │
+│  - Data moved via Mulesoft        - Data moved via Mulesoft         │
 └─────────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -241,8 +244,9 @@ See: **[MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md](MULTI_ENVIRONMENT_DEPLOYMENT_GUID
 
 ### Source System 1: OMS (Order Management System)
 
-**Location:** Redshift database
-**What it contains:** Basic veteran information from appointment scheduling
+**Location:** SQL Server database
+**What it contains:** Basic veteran information from appointment scheduling (includes Core and PNM data)
+**Data Transfer:** Mulesoft ETL process moves data to Snowflake ODS
 
 **Key fields:**
 - `veteran_id` - Unique identifier (business key)
