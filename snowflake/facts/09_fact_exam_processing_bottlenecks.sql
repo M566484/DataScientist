@@ -23,7 +23,9 @@
 -- Date: 2025-11-17
 -- =====================================================================================
 
-CREATE OR REPLACE TABLE datascience.warehouse.fact_exam_processing_bottlenecks (
+SET dw_database = (SELECT get_dw_database());
+
+CREATE OR REPLACE TABLE IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') (
 
     -- ==========================================
     -- PRIMARY KEY
@@ -238,15 +240,15 @@ CREATE OR REPLACE TABLE datascience.warehouse.fact_exam_processing_bottlenecks (
 
     CONSTRAINT pk_fact_exam_processing_bottlenecks PRIMARY KEY (exam_request_sk),
     CONSTRAINT fk_bottleneck_veteran FOREIGN KEY (veteran_dim_sk)
-        REFERENCES datascience.warehouse.dim_veteran(veteran_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_veteran')(veteran_sk),
     CONSTRAINT fk_bottleneck_examiner FOREIGN KEY (examiner_dim_sk)
-        REFERENCES datascience.warehouse.dim_examiner(examiner_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_examiner')(examiner_sk),
     CONSTRAINT fk_bottleneck_facility FOREIGN KEY (facility_dim_sk)
-        REFERENCES datascience.warehouse.dim_facility(facility_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility')(facility_sk),
     CONSTRAINT fk_bottleneck_exam_type FOREIGN KEY (exam_type_dim_sk)
-        REFERENCES datascience.warehouse.dim_exam_type(exam_type_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_type')(exam_type_sk),
     CONSTRAINT fk_bottleneck_specialty FOREIGN KEY (specialty_dim_sk)
-        REFERENCES datascience.warehouse.dim_specialty(specialty_sk)
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty')(specialty_sk)
 )
 COMMENT = 'Comprehensive exam processing bottleneck detection and analysis'
 ;
@@ -257,33 +259,33 @@ COMMENT = 'Comprehensive exam processing bottleneck detection and analysis'
 
 -- Query by bottleneck type
 CREATE INDEX idx_bottleneck_type
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(primary_bottleneck_type);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(primary_bottleneck_type);
 
 -- Query by stage bottleneck
 CREATE INDEX idx_bottleneck_stage
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(primary_bottleneck_stage);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(primary_bottleneck_stage);
 
 -- Query by SLA status
 CREATE INDEX idx_sla_status
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(sla_breach_flag, sla_at_risk_flag);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(sla_breach_flag, sla_at_risk_flag);
 
 -- Query by facility
 CREATE INDEX idx_facility
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(facility_dim_sk);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(facility_dim_sk);
 
 -- Query by examiner
 CREATE INDEX idx_examiner
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(examiner_dim_sk);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(examiner_dim_sk);
 
 -- Query by date range
 CREATE INDEX idx_request_date
-    ON datascience.warehouse.fact_exam_processing_bottlenecks(request_date_sk);
+    ON IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')(request_date_sk);
 
 -- =====================================================================================
 -- POPULATION QUERY
 -- =====================================================================================
 
-CREATE OR REPLACE VIEW datascience.warehouse.vw_populate_bottleneck_fact AS
+CREATE OR REPLACE VIEW IDENTIFIER($dw_database || '.WAREHOUSE.vw_populate_bottleneck_fact') AS
 WITH exam_request_base AS (
     SELECT
         fer.exam_request_sk,
@@ -316,7 +318,7 @@ WITH exam_request_base AS (
         DATEDIFF(hour, fer.examiner_accepted_date_sk, fer.appointment_scheduled_date_sk) AS scheduling_coordination_hours,
         DATEDIFF(hour, fer.appointment_scheduled_date_sk, fer.exam_completed_date_sk) AS scheduled_to_appointment_hours
 
-    FROM datascience.warehouse.fact_exam_requests fer
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_requests') fer
     WHERE fer.request_received_date_sk IS NOT NULL
 ),
 
@@ -344,7 +346,7 @@ assignment_metrics AS (
                 OVER (PARTITION BY fea.exam_request_sk ORDER BY fea.assignment_event_timestamp))
             ELSE 0 END) AS reassignment_delay_hours
 
-    FROM datascience.warehouse.fact_examiner_assignments fea
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_examiner_assignments') fea
     GROUP BY fea.exam_request_sk
 ),
 
@@ -365,7 +367,7 @@ appointment_metrics AS (
         -- Veteran availability impact
         AVG(fae.wait_time_days_at_event * 24) AS avg_appointment_wait_hours
 
-    FROM datascience.warehouse.fact_appointment_events fae
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_appointment_events') fae
     GROUP BY fae.exam_request_sk
 ),
 
@@ -410,7 +412,7 @@ qa_metrics AS (
         MAX(CASE WHEN feqe.primary_deficiency_type = 'INSUFFICIENT_MEDICAL_RATIONALE' THEN TRUE ELSE FALSE END) AS medical_rationale_deficiency_flag,
         MAX(CASE WHEN feqe.primary_deficiency_type = 'DBQ_INCOMPLETE' THEN TRUE ELSE FALSE END) AS dbq_completion_deficiency_flag
 
-    FROM datascience.warehouse.fact_evaluation_qa_events feqe
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_evaluation_qa_events') feqe
     GROUP BY feqe.exam_request_sk
 ),
 
@@ -419,7 +421,7 @@ evaluation_metrics AS (
         fec.exam_request_sk,
         fec.evaluation_duration_minutes AS exam_duration_minutes,
         fec.exam_complexity_score
-    FROM datascience.warehouse.fact_evaluations_completed fec
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_evaluations_completed') fec
 ),
 
 facility_capacity AS (
@@ -429,8 +431,8 @@ facility_capacity AS (
         fdfs.utilization_percentage AS facility_utilization_pct,
         fdfs.active_request_count AS facility_backlog_count,
         CASE WHEN fdfs.utilization_percentage > 90 THEN TRUE ELSE FALSE END AS facility_capacity_constraint_flag
-    FROM datascience.warehouse.fact_daily_facility_snapshot fdfs
-    WHERE fdfs.snapshot_date_sk = (SELECT MAX(snapshot_date_sk) FROM datascience.warehouse.fact_daily_facility_snapshot)
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_daily_facility_snapshot') fdfs
+    WHERE fdfs.snapshot_date_sk = (SELECT MAX(snapshot_date_sk) FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_daily_facility_snapshot'))
 ),
 
 -- Calculate benchmarks for comparison
@@ -441,7 +443,7 @@ benchmarks AS (
         AVG(fer.total_cycle_time_days * 24) AS avg_cycle_time_hours,
         AVG(fer.time_in_queue_hours) AS avg_queue_time_hours,
         STDDEV(fer.total_cycle_time_days * 24) AS stddev_cycle_time_hours
-    FROM datascience.warehouse.fact_exam_requests fer
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_requests') fer
     WHERE fer.request_closed_date_sk IS NOT NULL
     GROUP BY fer.exam_type_dim_sk, fer.specialty_dim_sk
 )
@@ -754,17 +756,17 @@ LEFT JOIN benchmarks bm ON erb.exam_type_dim_sk = bm.exam_type_dim_sk
 -- COMMENTS
 -- =====================================================================================
 
-COMMENT ON TABLE datascience.warehouse.fact_exam_processing_bottlenecks IS
+COMMENT ON TABLE IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') IS
 'Comprehensive fact table for identifying and analyzing bottlenecks in exam processing. Tracks timing at each stage, classifies internal vs external delays, monitors capacity constraints, and identifies root causes of delays.';
 
-COMMENT ON COLUMN datascience.warehouse.fact_exam_processing_bottlenecks.primary_bottleneck_stage IS
+COMMENT ON COLUMN IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks').primary_bottleneck_stage IS
 'The processing stage with the longest duration (QUEUE_WAIT, QA_REVIEW, SCHEDULING, APPOINTMENT_WAIT, etc.)';
 
-COMMENT ON COLUMN datascience.warehouse.fact_exam_processing_bottlenecks.primary_bottleneck_type IS
+COMMENT ON COLUMN IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks').primary_bottleneck_type IS
 'Classification of bottleneck: INTERNAL_VEMS (controlled by VES), EXTERNAL_VA (dependent on VA), EXTERNAL_VETERAN (dependent on veteran), or MIXED';
 
-COMMENT ON COLUMN datascience.warehouse.fact_exam_processing_bottlenecks.internal_process_hours IS
+COMMENT ON COLUMN IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks').internal_process_hours IS
 'Total hours spent in VEMS-controlled processes (validation, queue, assignment, exam, QA)';
 
-COMMENT ON COLUMN datascience.warehouse.fact_exam_processing_bottlenecks.external_dependency_hours IS
+COMMENT ON COLUMN IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks').external_dependency_hours IS
 'Total hours waiting on external parties (veteran availability, VA response)';

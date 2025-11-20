@@ -586,8 +586,8 @@ Example:
 ```sql
 -- Focus on high-priority orthopedic exams from last month
 SELECT ...
-FROM datascience.warehouse.fact_exam_processing_bottlenecks fb
-JOIN datascience.warehouse.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
 WHERE ds.specialty_name = 'Orthopedics'
   AND fb.priority_level = 'HIGH'
   AND fb.request_date_sk >= DATEADD(month, -1, CURRENT_DATE())

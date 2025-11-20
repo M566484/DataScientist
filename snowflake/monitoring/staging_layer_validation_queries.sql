@@ -15,6 +15,9 @@
 -- Date: 2025-11-17
 -- =====================================================================================
 
+SET dw_database = (SELECT get_dw_database());
+SET ods_database = (SELECT get_ods_database());
+
 -- =====================================================================================
 -- 1. CROSSWALK VALIDATION QUERIES
 -- =====================================================================================
@@ -31,7 +34,7 @@ SELECT
     SUM(CASE WHEN match_method = 'SSN_VEMS_ONLY' THEN 1 ELSE 0 END) AS vems_only,
     ROUND(SUM(CASE WHEN match_method = 'SSN_EXACT_MATCH' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS exact_match_pct,
     ROUND(AVG(match_confidence), 2) AS avg_confidence
-FROM datascience.reference.ref_entity_crosswalk_veteran
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran')
 WHERE batch_id = 'BATCH_20251117_001' -- CHANGE THIS TO YOUR BATCH ID
 
 UNION ALL
@@ -44,7 +47,7 @@ SELECT
     SUM(CASE WHEN match_method = 'NPI_VEMS_ONLY' THEN 1 ELSE 0 END) AS vems_only,
     ROUND(SUM(CASE WHEN match_method = 'NPI_EXACT_MATCH' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS exact_match_pct,
     ROUND(AVG(match_confidence), 2) AS avg_confidence
-FROM datascience.reference.ref_entity_crosswalk_evaluator
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator')
 WHERE batch_id = 'BATCH_20251117_001'
 
 UNION ALL
@@ -57,7 +60,7 @@ SELECT
     SUM(CASE WHEN match_method = 'FACILITY_ID_VEMS_ONLY' THEN 1 ELSE 0 END) AS vems_only,
     ROUND(SUM(CASE WHEN match_method = 'FACILITY_ID_EXACT_MATCH' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS exact_match_pct,
     ROUND(AVG(match_confidence), 2) AS avg_confidence
-FROM datascience.reference.ref_entity_crosswalk_facility
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_facility')
 WHERE batch_id = 'BATCH_20251117_001';
 
 /*
@@ -78,7 +81,7 @@ SELECT
     vems_veteran_id,
     match_confidence,
     match_method
-FROM datascience.reference.ref_entity_crosswalk_veteran
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran
 WHERE batch_id = 'BATCH_20251117_001'
   AND match_confidence < 95  -- Flag anything not an exact match
 ORDER BY match_confidence
@@ -112,7 +115,7 @@ SELECT
     COUNT(*) AS record_count,
     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS percentage,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_veterans
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY
     CASE
@@ -137,7 +140,7 @@ SELECT
     COUNT(*) AS record_count,
     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS percentage,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_evaluators
+FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY
     CASE
@@ -165,8 +168,8 @@ SELECT
     'VETERANS' AS entity_type,
     TRIM(value) AS dq_issue,
     COUNT(*) AS occurrence_count,
-    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM datascience.staging.stg_veterans WHERE batch_id = 'BATCH_20251117_001'), 2) AS pct_of_total
-FROM datascience.staging.stg_veterans,
+    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans WHERE batch_id = 'BATCH_20251117_001'), 2) AS pct_of_total
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans,
      LATERAL SPLIT_TO_TABLE(dq_issues, ';')
 WHERE batch_id = 'BATCH_20251117_001'
   AND dq_issues IS NOT NULL
@@ -178,8 +181,8 @@ SELECT
     'EVALUATORS' AS entity_type,
     TRIM(value) AS dq_issue,
     COUNT(*) AS occurrence_count,
-    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM datascience.staging.stg_evaluators WHERE batch_id = 'BATCH_20251117_001'), 2) AS pct_of_total
-FROM datascience.staging.stg_evaluators,
+    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators WHERE batch_id = 'BATCH_20251117_001'), 2) AS pct_of_total
+FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators,
      LATERAL SPLIT_TO_TABLE(dq_issues, ';')
 WHERE batch_id = 'BATCH_20251117_001'
   AND dq_issues IS NOT NULL
@@ -208,7 +211,7 @@ SELECT
     dq_issues,
     source_system,
     match_confidence
-FROM datascience.staging.stg_veterans
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
 WHERE batch_id = 'BATCH_20251117_001'
   AND dq_score < 60  -- Critical quality threshold
 ORDER BY dq_score
@@ -236,7 +239,7 @@ SELECT
     COUNT(DISTINCT entity_id) AS affected_entities,
     resolution_method,
     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY entity_type), 2) AS pct_of_entity_conflicts
-FROM datascience.reference.ref_reconciliation_log
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY entity_type, conflict_type, resolution_method
 ORDER BY entity_type, conflict_count DESC;
@@ -261,7 +264,7 @@ SELECT
     resolved_value,
     resolution_method,
     resolution_timestamp
-FROM datascience.reference.ref_reconciliation_log
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log
 WHERE batch_id = 'BATCH_20251117_001'
 ORDER BY entity_type, conflict_type, entity_id
 LIMIT 100;
@@ -287,7 +290,7 @@ SELECT
     v.vems_value AS vems_disability_rating,
     v.resolution_method,
     v.dq_score
-FROM datascience.staging.stg_veterans v
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans v
 WHERE v.batch_id = 'BATCH_20251117_001'
   AND v.conflict_type IS NOT NULL
 ORDER BY v.conflict_type, v.master_veteran_id
@@ -306,7 +309,7 @@ WITH ods_counts AS (
         'VETERANS' AS entity_type,
         source_system,
         COUNT(*) AS ods_count
-    FROM datascience.ods.ods_veterans_source
+    FROM IDENTIFIER($ods_database || '.ODS.ods_veterans_source
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 
@@ -316,7 +319,7 @@ WITH ods_counts AS (
         'EVALUATORS' AS entity_type,
         source_system,
         COUNT(*) AS ods_count
-    FROM datascience.ods.ods_evaluators_source
+    FROM IDENTIFIER($ods_database || '.ODS.ods_evaluators_source
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 
@@ -326,7 +329,7 @@ WITH ods_counts AS (
         'FACILITIES' AS entity_type,
         source_system,
         COUNT(*) AS ods_count
-    FROM datascience.ods.ods_facilities_source
+    FROM IDENTIFIER($ods_database || '.ODS.ods_facilities_source
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 ),
@@ -335,7 +338,7 @@ staging_counts AS (
         'VETERANS' AS entity_type,
         source_system,
         COUNT(*) AS staging_count
-    FROM datascience.staging.stg_veterans
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 
@@ -345,7 +348,7 @@ staging_counts AS (
         'EVALUATORS' AS entity_type,
         source_system,
         COUNT(*) AS staging_count
-    FROM datascience.staging.stg_evaluators
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 
@@ -355,7 +358,7 @@ staging_counts AS (
         'FACILITIES' AS entity_type,
         source_system,
         COUNT(*) AS staging_count
-    FROM datascience.staging.stg_facilities
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_facilities
     WHERE batch_id = 'BATCH_20251117_001'
     GROUP BY source_system
 )
@@ -392,7 +395,7 @@ SELECT
     COUNT(*) AS record_count,
     ROUND(AVG(match_confidence), 2) AS avg_match_confidence,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_veterans
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY source_system
 
@@ -404,7 +407,7 @@ SELECT
     COUNT(*) AS record_count,
     ROUND(AVG(match_confidence), 2) AS avg_match_confidence,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_evaluators
+FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY source_system
 
@@ -416,7 +419,7 @@ SELECT
     COUNT(*) AS record_count,
     ROUND(AVG(match_confidence), 2) AS avg_match_confidence,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_facilities
+FROM IDENTIFIER($dw_database || '.STAGING.stg_facilities
 WHERE batch_id = 'BATCH_20251117_001'
 GROUP BY source_system
 
@@ -443,10 +446,10 @@ WITH conflict_check AS (
             WHEN oms.disability_rating IS NOT NULL THEN oms.disability_rating
             ELSE vems.disability_rating
         END AS expected_value
-    FROM datascience.staging.stg_veterans v
-    LEFT JOIN datascience.ods.ods_veterans_source oms
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans v
+    LEFT JOIN IDENTIFIER($ods_database || '.ODS.ods_veterans_source oms
         ON v.oms_veteran_id = oms.source_record_id AND oms.source_system = 'OMS'
-    LEFT JOIN datascience.ods.ods_veterans_source vems
+    LEFT JOIN IDENTIFIER($ods_database || '.ODS.ods_veterans_source vems
         ON v.vems_veteran_id = vems.source_record_id AND vems.source_system = 'VEMS'
     WHERE v.batch_id = 'BATCH_20251117_001'
       AND oms.disability_rating IS NOT NULL
@@ -479,10 +482,10 @@ WITH evaluator_check AS (
             WHEN vems.phone IS NOT NULL THEN vems.phone
             ELSE oms.phone
         END AS expected_value
-    FROM datascience.staging.stg_evaluators e
-    LEFT JOIN datascience.ods.ods_evaluators_source oms
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators e
+    LEFT JOIN IDENTIFIER($ods_database || '.ODS.ods_evaluators_source oms
         ON e.oms_evaluator_id = oms.source_record_id AND oms.source_system = 'OMS'
-    LEFT JOIN datascience.ods.ods_evaluators_source vems
+    LEFT JOIN IDENTIFIER($ods_database || '.ODS.ods_evaluators_source vems
         ON e.vems_evaluator_id = vems.source_record_id AND vems.source_system = 'VEMS'
     WHERE e.batch_id = 'BATCH_20251117_001'
       AND oms.phone IS NOT NULL
@@ -513,8 +516,8 @@ WITH crosswalk_stats AS (
         COUNT(*) AS value,
         'crosswalks built' AS unit,
         CASE WHEN COUNT(*) > 0 THEN '✓ PASS' ELSE '✗ FAIL' END AS status
-    FROM datascience.reference.ref_entity_crosswalk_veteran
-    WHERE batch_id = (SELECT MAX(batch_id) FROM datascience.reference.ref_entity_crosswalk_veteran)
+    FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran
+    WHERE batch_id = (SELECT MAX(batch_id) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran)
 ),
 staging_dq AS (
     SELECT
@@ -522,8 +525,8 @@ staging_dq AS (
         ROUND(AVG(dq_score), 2) AS value,
         'avg DQ score' AS unit,
         CASE WHEN AVG(dq_score) >= 80 THEN '✓ PASS' ELSE '✗ WARN' END AS status
-    FROM datascience.staging.stg_veterans
-    WHERE batch_id = (SELECT MAX(batch_id) FROM datascience.staging.stg_veterans)
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
+    WHERE batch_id = (SELECT MAX(batch_id) FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans)
 ),
 conflict_stats AS (
     SELECT
@@ -531,8 +534,8 @@ conflict_stats AS (
         COUNT(*) AS value,
         'conflicts logged' AS unit,
         CASE WHEN COUNT(*) < 1000 THEN '✓ PASS' ELSE '⚠ REVIEW' END AS status
-    FROM datascience.reference.ref_reconciliation_log
-    WHERE batch_id = (SELECT MAX(batch_id) FROM datascience.reference.ref_reconciliation_log)
+    FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log
+    WHERE batch_id = (SELECT MAX(batch_id) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log)
 )
 SELECT * FROM crosswalk_stats
 UNION ALL
