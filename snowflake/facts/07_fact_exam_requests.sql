@@ -6,7 +6,9 @@
 -- Type: Accumulating Snapshot Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
+USE SCHEMA WAREHOUSE;
 
 CREATE OR REPLACE TABLE fact_exam_requests (
     exam_request_sk INTEGER AUTOINCREMENT PRIMARY KEY,
@@ -158,13 +160,13 @@ CREATE OR REPLACE TABLE fact_exam_requests (
     last_status_change_timestamp TIMESTAMP_NTZ,
 
     -- Foreign Key Constraints
-    FOREIGN KEY (veteran_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans(veteran_sk),
-    FOREIGN KEY (facility_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities(facility_sk),
-    FOREIGN KEY (exam_request_type_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_exam_request_types(exam_request_type_sk),
-    FOREIGN KEY (claim_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_claims(claim_sk),
-    FOREIGN KEY (assigned_evaluator_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators(evaluator_sk),
-    FOREIGN KEY (previous_examiner_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators(evaluator_sk),
-    FOREIGN KEY (request_received_date_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates(date_sk)
+    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
+    FOREIGN KEY (exam_request_type_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk),
+    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk),
+    FOREIGN KEY (assigned_evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (previous_examiner_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (request_received_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
 )
 COMMENT = 'Accumulating snapshot fact table for exam requests from VA to VES - tracks complete request lifecycle'
 CLUSTER BY (request_received_date_sk, assignment_status);

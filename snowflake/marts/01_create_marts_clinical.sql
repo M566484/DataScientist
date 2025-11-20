@@ -5,7 +5,8 @@
 -- Pattern: Pre-aggregated views optimized for business reporting
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE DATABASE VETERAN_EVALUATION_DW;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 
 -- =====================================================
 -- Create Marts Schema - Clinical Operations
@@ -62,10 +63,10 @@ SELECT
     -- Current Status
     e.active_flag
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators e
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed f
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators') e
+LEFT JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_evaluations_completed') f
     ON e.evaluator_sk = f.evaluator_sk
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d
+LEFT JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates') d
     ON f.evaluation_date_sk = d.date_sk
 WHERE e.is_current = TRUE
 GROUP BY
@@ -120,10 +121,10 @@ SELECT
     SUM(CASE WHEN f.complex_case_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS complex_case_rate_pct,
     SUM(CASE WHEN f.requires_specialist_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS specialist_required_rate_pct
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_exam_requests f
-JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_exam_requests') f
+JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates') d
     ON f.request_received_date_sk = d.date_sk
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_exam_request_types rt
+LEFT JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_exam_request_types') rt
     ON f.exam_request_type_sk = rt.exam_request_type_sk
 GROUP BY
     d.fiscal_year,
@@ -174,8 +175,8 @@ SELECT
     AVG(qa.turnaround_time_hours) AS avg_turnaround_time_hours,
     SUM(CASE WHEN qa.turnaround_time_hours <= 48 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS sla_48hr_compliance_rate_pct
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluation_qa_events qa
-JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_evaluation_qa_events') qa
+JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates') d
     ON qa.event_date_sk = d.date_sk
 WHERE qa.event_type IN ('QA_REVIEW_STARTED', 'QA_REVIEW_COMPLETED')
 GROUP BY
@@ -227,8 +228,8 @@ SELECT
     -- Average Duration (for completed appointments)
     AVG(CASE WHEN ae.event_type = 'COMPLETED' THEN ae.duration_minutes ELSE NULL END) AS avg_appointment_duration_minutes
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_appointment_events ae
-JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_appointment_events') ae
+JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates') d
     ON ae.event_date_sk = d.date_sk
 GROUP BY
     d.fiscal_year,
@@ -278,8 +279,8 @@ SELECT
         ELSE 'LOW COMPLEXITY'
     END AS complexity_level
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.dim_medical_conditions mc
-JOIN VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed f
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_medical_conditions') mc
+JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_evaluations_completed') f
     ON mc.medical_condition_sk = f.medical_condition_sk
 GROUP BY
     mc.condition_name,
@@ -328,10 +329,10 @@ SELECT
     -- Status
     fac.active_flag
 
-FROM VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities fac
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed f
+FROM IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities') fac
+LEFT JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.fact_evaluations_completed') f
     ON fac.facility_sk = f.facility_sk
-LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d
+LEFT JOIN IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates') d
     ON f.evaluation_date_sk = d.date_sk
 WHERE fac.is_current = TRUE
 GROUP BY
@@ -352,6 +353,6 @@ COMMENT ON VIEW vw_facility_performance_dashboard IS 'Facility performance dashb
 SELECT
     table_name,
     comment
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.VIEWS
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.VIEWS
 WHERE table_schema = 'MARTS_CLINICAL'
 ORDER BY table_name;

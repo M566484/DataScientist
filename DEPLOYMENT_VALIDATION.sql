@@ -19,7 +19,7 @@
 USE ROLE ACCOUNTADMIN;
 
 -- Create validation results table to store test outcomes
-CREATE OR REPLACE TABLE VESDW_PRD.metadata.deployment_validation_results (
+CREATE OR REPLACE TABLE IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id INT,
     test_category VARCHAR(50),
     test_name VARCHAR(200),
@@ -35,35 +35,35 @@ CREATE OR REPLACE TABLE VESDW_PRD.metadata.deployment_validation_results (
 -- =============================================================================
 
 -- Test 1.1: Verify VESDW_PRD database exists
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
     101 AS test_id,
     'Database Structure' AS test_category,
-    'VESDW_PRD database exists' AS test_name,
+    CONCAT(get_dw_database(), ' database exists') AS test_name,
     'EXISTS' AS expected_value,
     CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END AS actual_value,
     CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.DATABASES
-WHERE DATABASE_NAME = 'VESDW_PRD';
+WHERE DATABASE_NAME = get_dw_database();
 
 -- Test 1.2: Verify VESODS_PRDDATA_PRD database exists
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
     102 AS test_id,
     'Database Structure' AS test_category,
-    'VESODS_PRDDATA_PRD database exists' AS test_name,
+    CONCAT(get_ods_database(), ' database exists') AS test_name,
     'EXISTS' AS expected_value,
     CASE WHEN COUNT(*) > 0 THEN 'EXISTS' ELSE 'MISSING' END AS actual_value,
     CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.DATABASES
-WHERE DATABASE_NAME = 'VESODS_PRDDATA_PRD';
+WHERE DATABASE_NAME = get_ods_database();
 
 -- Test 1.3: Verify all required schemas exist in VESDW_PRD
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -75,14 +75,14 @@ SELECT
     CASE WHEN COUNT(*) = 4 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.SCHEMATA
 WHERE SCHEMA_NAME IN ('staging', 'warehouse', 'marts', 'metadata')
-  AND CATALOG_NAME = 'VESDW_PRD';
+  AND CATALOG_NAME = get_dw_database();
 
 -- =============================================================================
 -- TEST CATEGORY 2: DIMENSION TABLES
 -- =============================================================================
 
 -- Test 2.1: Verify all 9 dimension tables exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -94,11 +94,11 @@ SELECT
     CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'warehouse'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'dim_%';
 
 -- Test 2.2: Verify dim_date is populated (should have ~3,650 rows for 10 years)
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -108,10 +108,10 @@ SELECT
     '>3000' AS expected_value,
     COUNT(*)::VARCHAR AS actual_value,
     CASE WHEN COUNT(*) > 3000 THEN 'PASS' ELSE 'FAIL' END AS status
-FROM VESDW_PRD.warehouse.dim_date;
+FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_date');
 
 -- Test 2.3: Check dim_date date range (should span at least 5 years)
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -121,10 +121,10 @@ SELECT
     '>= 5 years' AS expected_value,
     DATEDIFF(year, MIN(full_date), MAX(full_date))::VARCHAR || ' years' AS actual_value,
     CASE WHEN DATEDIFF(year, MIN(full_date), MAX(full_date)) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
-FROM VESDW_PRD.warehouse.dim_date;
+FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_date');
 
 -- Test 2.4: Verify SCD Type 2 columns exist in applicable dimensions
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -136,7 +136,7 @@ SELECT
     CASE WHEN COUNT(DISTINCT TABLE_NAME) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = 'warehouse'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'dim_%'
   AND COLUMN_NAME IN ('is_current', 'valid_from', 'valid_to')
 GROUP BY TABLE_NAME
@@ -147,7 +147,7 @@ HAVING COUNT(DISTINCT COLUMN_NAME) = 3;
 -- =============================================================================
 
 -- Test 3.1: Verify all 9 fact tables exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -159,11 +159,11 @@ SELECT
     CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'warehouse'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'fact_%';
 
 -- Test 3.2: Verify fact tables have foreign keys to date dimension
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -175,7 +175,7 @@ SELECT
     CASE WHEN COUNT(DISTINCT TABLE_NAME) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = 'warehouse'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'fact_%'
   AND COLUMN_NAME LIKE '%date_sk';
 
@@ -184,7 +184,7 @@ WHERE TABLE_SCHEMA = 'warehouse'
 -- =============================================================================
 
 -- Test 4.1: Verify staging tables exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -196,14 +196,14 @@ SELECT
     CASE WHEN COUNT(*) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'staging'
-  AND TABLE_CATALOG = 'VESDW_PRD';
+  AND TABLE_CATALOG = get_dw_database();
 
 -- =============================================================================
 -- TEST CATEGORY 5: STORED PROCEDURES & FUNCTIONS
 -- =============================================================================
 
 -- Test 5.1: Verify ETL stored procedures exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -214,10 +214,10 @@ SELECT
     COUNT(*)::VARCHAR || ' procedures' AS actual_value,
     CASE WHEN COUNT(*) >= 10 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.PROCEDURES
-WHERE PROCEDURE_CATALOG = 'VESDW_PRD';
+WHERE PROCEDURE_CATALOG = get_dw_database();
 
 -- Test 5.2: Verify monitoring procedures exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -228,7 +228,7 @@ SELECT
     COUNT(*)::VARCHAR || ' procedures' AS actual_value,
     CASE WHEN COUNT(*) >= 2 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.PROCEDURES
-WHERE PROCEDURE_CATALOG = 'VESDW_PRD'
+WHERE PROCEDURE_CATALOG = get_dw_database()
   AND PROCEDURE_NAME IN ('sp_record_pipeline_health', 'sp_run_data_quality_checks');
 
 -- =============================================================================
@@ -236,7 +236,7 @@ WHERE PROCEDURE_CATALOG = 'VESDW_PRD'
 -- =============================================================================
 
 -- Test 6.1: Verify monitoring dashboard views exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -248,11 +248,11 @@ SELECT
     CASE WHEN COUNT(*) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'metadata'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'vw_%';
 
 -- Test 6.2: Verify data quality framework tables exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -264,11 +264,11 @@ SELECT
     CASE WHEN COUNT(*) >= 2 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'metadata'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'dq_%';
 
 -- Test 6.3: Verify data quality rules are pre-loaded
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -278,11 +278,11 @@ SELECT
     '>= 40 rules' AS expected_value,
     COUNT(*)::VARCHAR || ' rules' AS actual_value,
     CASE WHEN COUNT(*) >= 40 THEN 'PASS' ELSE 'FAIL' END AS status
-FROM VESDW_PRD.metadata.dq_rule_catalog
+FROM IDENTIFIER(get_dw_database() || '.metadata.dq_rule_catalog')
 WHERE is_active = TRUE;
 
 -- Test 6.4: Verify pipeline health metrics table exists
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -295,14 +295,14 @@ SELECT
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_NAME = 'pipeline_health_metrics'
   AND TABLE_SCHEMA = 'metadata'
-  AND TABLE_CATALOG = 'VESDW_PRD';
+  AND TABLE_CATALOG = get_dw_database();
 
 -- =============================================================================
 -- TEST CATEGORY 7: ORCHESTRATION (TASKS & STREAMS)
 -- =============================================================================
 
 -- Test 7.1: Verify Snowflake Tasks exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -313,10 +313,10 @@ SELECT
     COUNT(*)::VARCHAR || ' tasks' AS actual_value,
     CASE WHEN COUNT(*) >= 10 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TASKS
-WHERE TASK_CATALOG = 'VESDW_PRD';
+WHERE TASK_CATALOG = get_dw_database();
 
 -- Test 7.2: Verify Snowflake Streams exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -328,10 +328,10 @@ SELECT
     CASE WHEN COUNT(*) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_TYPE = 'STREAM'
-  AND TABLE_CATALOG = 'VESDW_PRD';
+  AND TABLE_CATALOG = get_dw_database();
 
 -- Test 7.3: Check if tasks are in correct state (should be suspended initially)
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -342,7 +342,7 @@ SELECT
     COUNT(*)::VARCHAR || ' tasks configured' AS actual_value,
     CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TASKS
-WHERE TASK_CATALOG = 'VESDW_PRD'
+WHERE TASK_CATALOG = get_dw_database()
   AND STATE IN ('started', 'suspended');
 
 -- =============================================================================
@@ -350,7 +350,7 @@ WHERE TASK_CATALOG = 'VESDW_PRD'
 -- =============================================================================
 
 -- Test 8.1: Verify marts schema views exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -362,10 +362,10 @@ SELECT
     CASE WHEN COUNT(*) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'marts'
-  AND TABLE_CATALOG = 'VESDW_PRD';
+  AND TABLE_CATALOG = get_dw_database();
 
 -- Test 8.2: Verify executive dashboard views exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -377,11 +377,11 @@ SELECT
     CASE WHEN COUNT(*) >= 5 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'marts'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'vw_exec_%';
 
 -- Test 8.3: Verify materialized views exist for performance
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -393,7 +393,7 @@ SELECT
     CASE WHEN COUNT(*) >= 2 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'marts'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_TYPE = 'MATERIALIZED VIEW';
 
 -- =============================================================================
@@ -401,7 +401,7 @@ WHERE TABLE_SCHEMA = 'marts'
 -- =============================================================================
 
 -- Test 9.1: Verify clustering keys are defined on large tables
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -413,7 +413,7 @@ SELECT
     CASE WHEN COUNT(DISTINCT TABLE_NAME) >= 3 THEN 'PASS' ELSE 'FAIL' END AS status
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'warehouse'
-  AND TABLE_CATALOG = 'VESDW_PRD'
+  AND TABLE_CATALOG = get_dw_database()
   AND TABLE_NAME LIKE 'fact_%'
   AND CLUSTERING_KEY IS NOT NULL;
 
@@ -422,7 +422,7 @@ WHERE TABLE_SCHEMA = 'warehouse'
 -- =============================================================================
 
 -- Test 10.1: Verify warehouse resource monitors exist
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -452,17 +452,17 @@ UNION ALL
 SELECT ''
 UNION ALL
 SELECT '  Total Tests: ' || COUNT(*)::VARCHAR
-FROM VESDW_PRD.metadata.deployment_validation_results
-WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
 UNION ALL
 SELECT '  Tests Passed: ' || COUNT(*)::VARCHAR
-FROM VESDW_PRD.metadata.deployment_validation_results
-WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
   AND status = 'PASS'
 UNION ALL
 SELECT '  Tests Failed: ' || COUNT(*)::VARCHAR
-FROM VESDW_PRD.metadata.deployment_validation_results
-WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
   AND status = 'FAIL'
 UNION ALL
 SELECT ''
@@ -481,8 +481,8 @@ SELECT
         WHEN status = 'FAIL' THEN '✗'
         ELSE '?'
     END AS result_icon
-FROM VESDW_PRD.metadata.deployment_validation_results
-WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
 ORDER BY test_id;
 
 -- Display only failed tests (if any)
@@ -500,16 +500,16 @@ SELECT
     expected_value,
     actual_value,
     error_message
-FROM VESDW_PRD.metadata.deployment_validation_results
-WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
   AND status = 'FAIL'
 ORDER BY test_id;
 
 -- Overall deployment status
 SELECT
     CASE
-        WHEN (SELECT COUNT(*) FROM VESDW_PRD.metadata.deployment_validation_results
-              WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM VESDW_PRD.metadata.deployment_validation_results)
+        WHEN (SELECT COUNT(*) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results')
+              WHERE test_timestamp = (SELECT MAX(test_timestamp) FROM IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results'))
                 AND status = 'FAIL') = 0
         THEN '✓ DEPLOYMENT VALIDATION PASSED - All systems operational!'
         ELSE '✗ DEPLOYMENT VALIDATION FAILED - Please review failed tests above'
@@ -522,12 +522,12 @@ SELECT
 -- Test sample query on dim_date (should be <100ms)
 SET start_time = (SELECT CURRENT_TIMESTAMP());
 
-SELECT COUNT(*) FROM VESDW_PRD.warehouse.dim_date
+SELECT COUNT(*) FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_date')
 WHERE fiscal_year = 2024;
 
 SET end_time = (SELECT CURRENT_TIMESTAMP());
 
-INSERT INTO VESDW_PRD.metadata.deployment_validation_results (
+INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results') (
     test_id, test_category, test_name, expected_value, actual_value, status
 )
 SELECT
@@ -552,4 +552,4 @@ UNION ALL
 SELECT '=' || REPEAT('=', 80) || '=';
 
 -- Cleanup (optional - comment out if you want to keep validation history)
--- DROP TABLE VESDW_PRD.metadata.deployment_validation_results;
+-- DROP TABLE IDENTIFIER(get_dw_database() || '.metadata.deployment_validation_results');

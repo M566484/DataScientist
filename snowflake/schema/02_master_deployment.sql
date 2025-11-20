@@ -58,7 +58,7 @@ SELECT 'Deployment completed successfully' AS status;
 -- Show ODS tables
 SELECT 'ODS Tables (Raw Data):' AS info;
 SELECT table_name, row_count, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'ODS_RAW'
   AND table_name LIKE 'ods_%'
 ORDER BY table_name;
@@ -66,7 +66,7 @@ ORDER BY table_name;
 -- Show reference tables
 SELECT 'Reference Tables (Multi-Source Mappings):' AS info;
 SELECT table_name, row_count, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'REFERENCE'
   AND table_name LIKE 'ref_%'
 ORDER BY table_name;
@@ -74,7 +74,7 @@ ORDER BY table_name;
 -- Show staging tables
 SELECT 'Staging Tables:' AS info;
 SELECT table_name, row_count, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'STAGING'
   AND table_name LIKE 'stg_%'
 ORDER BY table_name;
@@ -82,7 +82,7 @@ ORDER BY table_name;
 -- Show dimension tables
 SELECT 'Dimension Tables:' AS info;
 SELECT table_name, row_count, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'WAREHOUSE'
   AND table_name LIKE 'dim_%'
 ORDER BY table_name;
@@ -90,7 +90,7 @@ ORDER BY table_name;
 -- Show fact tables
 SELECT 'Fact Tables:' AS info;
 SELECT table_name, row_count, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'WAREHOUSE'
   AND table_name LIKE 'fact_%'
 ORDER BY table_name;
@@ -98,7 +98,7 @@ ORDER BY table_name;
 -- Show marts views
 SELECT 'Marts Views:' AS info;
 SELECT table_name, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.VIEWS
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.VIEWS
 WHERE table_schema = 'MARTS_CLINICAL'
   AND table_name LIKE 'vw_%'
 ORDER BY table_name;
@@ -106,6 +106,6 @@ ORDER BY table_name;
 -- Show stored procedures
 SELECT 'ETL Stored Procedures:' AS info;
 SELECT procedure_name, created
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.PROCEDURES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.PROCEDURES
 WHERE procedure_schema = 'WAREHOUSE'
 ORDER BY procedure_name;

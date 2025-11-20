@@ -5,7 +5,8 @@
 -- Usage: Run these queries to investigate data issues
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE DATABASE VETERAN_EVALUATION_DW;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 
 -- =====================================================
 -- QUERY 1: Complete Lineage Trace for a Veteran
