@@ -89,8 +89,8 @@ Ensure you have all deployment files from the repository:
 -- Verify database context
 SELECT CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_ROLE();
 
--- Verify get_dw_database() function exists
-SELECT get_dw_database();
+-- Verify fn_fn_get_dw_database() function exists
+SELECT fn_fn_get_dw_database();
 
 -- Expected: Your data warehouse database name (e.g., 'VES_DW')
 ```
@@ -136,8 +136,8 @@ Phase 3: Full Rollout
 -- 1.1.1: Set database context
 -- ============================================================
 USE ROLE SYSADMIN;  -- Or your admin role
-SELECT get_dw_database();  -- Note the database name
-USE DATABASE IDENTIFIER(get_dw_database());
+SELECT fn_fn_get_dw_database();  -- Note the database name
+USE DATABASE IDENTIFIER(fn_fn_get_dw_database());
 USE SCHEMA WAREHOUSE;
 
 -- ============================================================
@@ -293,7 +293,7 @@ SELECT fn_get_priority_group_details(5) AS group_5_details;
 -- 1.3.1: Create metadata schema and tables
 -- ============================================================
 USE ROLE SYSADMIN;
-USE DATABASE IDENTIFIER(get_dw_database());
+USE DATABASE IDENTIFIER(fn_get_dw_database());
 
 -- Run: @snowflake/metadata/01_create_metadata_tables.sql
 -- Or copy/paste and execute all statements

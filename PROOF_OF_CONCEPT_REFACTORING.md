@@ -32,8 +32,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Transform and load from ODS to Staging
     INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') (
@@ -205,8 +205,8 @@ COMMENT = 'Refactored version using common functions and reference tables. 54% c
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Transform and load from ODS to Staging
     INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') (

@@ -83,8 +83,8 @@ $$
     var surrogate_key = config_result.getColumnValue('SURROGATE_KEY_COLUMN');
 
     // Build database reference
-    var dw_database = snowflake.execute({sqlText: "SELECT get_dw_database()"}).next() ?
-                      snowflake.execute({sqlText: "SELECT get_dw_database()"}).getColumnValue(1) :
+    var dw_database = snowflake.execute({sqlText: "SELECT fn_get_dw_database()"}).next() ?
+                      snowflake.execute({sqlText: "SELECT fn_get_dw_database()"}).getColumnValue(1) :
                       snowflake.execute({sqlText: "SELECT CURRENT_DATABASE()"}).next() ?
                       snowflake.execute({sqlText: "SELECT CURRENT_DATABASE()"}).getColumnValue(1) : null;
 

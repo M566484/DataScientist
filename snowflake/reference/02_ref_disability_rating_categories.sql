@@ -14,7 +14,7 @@
 --   SELECT * FROM reference.ref_disability_rating_categories WHERE 80 BETWEEN min_rating AND max_rating;
 -- =====================================================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA REFERENCE;
 

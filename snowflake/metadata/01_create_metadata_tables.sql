@@ -15,7 +15,7 @@
 --   4. etl_execution_log - Pipeline execution tracking
 -- =====================================================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 
 -- =====================================================================================================================
