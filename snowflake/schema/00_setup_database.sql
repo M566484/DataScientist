@@ -5,8 +5,113 @@
 -- Target: Snowflake Data Warehouse
 -- Standards: VES Snowflake Naming Conventions v1.0
 
+-- =====================================================
+-- STEP 0: Create Environment Configuration
+-- =====================================================
+-- This configuration table must exist BEFORE creating the main data warehouse
+-- It stores environment-specific configuration values
+
+-- Create a temporary schema for configuration (if using shared database)
+-- OR create in your organization's configuration database
+-- Example: Use PLAYGROUND.CHAPPEM or your org's config schema
+
+CREATE TABLE IF NOT EXISTS PLAYGROUND.CHAPPEM.environment_config (
+    config_key VARCHAR(100) PRIMARY KEY,
+    config_value VARCHAR(500) NOT NULL,
+    config_description VARCHAR(1000),
+    environment VARCHAR(50) DEFAULT 'PRODUCTION',
+    created_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+)
+COMMENT = 'Environment-specific configuration values for VES Data Warehouse';
+
+-- Populate configuration values (CUSTOMIZE FOR YOUR ENVIRONMENT)
+MERGE INTO PLAYGROUND.CHAPPEM.environment_config AS target
+USING (
+    SELECT 'DW_DATABASE' AS config_key,
+           'VESDW_PRD' AS config_value,
+           'Data warehouse database name' AS config_description,
+           'PRODUCTION' AS environment
+    UNION ALL
+    SELECT 'ODS_DATABASE' AS config_key,
+           'VESODS_PRDDATA_PRD' AS config_value,
+           'Operational data store database name' AS config_description,
+           'PRODUCTION' AS environment
+    UNION ALL
+    SELECT 'ETL_WAREHOUSE' AS config_key,
+           'ETL_WH' AS config_value,
+           'Warehouse for ETL processing' AS config_description,
+           'PRODUCTION' AS environment
+    UNION ALL
+    SELECT 'ANALYTICS_WAREHOUSE' AS config_key,
+           'ANALYTICS_WH' AS config_value,
+           'Warehouse for analytics queries' AS config_description,
+           'PRODUCTION' AS environment
+) AS source
+ON target.config_key = source.config_key
+WHEN MATCHED THEN
+    UPDATE SET
+        config_value = source.config_value,
+        config_description = source.config_description,
+        updated_timestamp = CURRENT_TIMESTAMP()
+WHEN NOT MATCHED THEN
+    INSERT (config_key, config_value, config_description, environment)
+    VALUES (source.config_key, source.config_value, source.config_description, source.environment);
+
+-- =====================================================
+-- STEP 1: Create Utility Functions
+-- =====================================================
+
+-- Function: get_dw_database()
+-- Purpose: Returns the data warehouse database name from configuration
+CREATE OR REPLACE FUNCTION PLAYGROUND.CHAPPEM.get_dw_database()
+RETURNS VARCHAR
+LANGUAGE SQL
+AS '
+    SELECT config_value
+    FROM PLAYGROUND.CHAPPEM.environment_config
+    WHERE config_key = ''DW_DATABASE''
+';
+
+-- Function: get_ods_database()
+-- Purpose: Returns the ODS database name from configuration
+CREATE OR REPLACE FUNCTION PLAYGROUND.CHAPPEM.get_ods_database()
+RETURNS VARCHAR
+LANGUAGE SQL
+AS '
+    SELECT config_value
+    FROM PLAYGROUND.CHAPPEM.environment_config
+    WHERE config_key = ''ODS_DATABASE''
+';
+
+-- Function: get_etl_warehouse()
+-- Purpose: Returns the ETL warehouse name from configuration
+CREATE OR REPLACE FUNCTION PLAYGROUND.CHAPPEM.get_etl_warehouse()
+RETURNS VARCHAR
+LANGUAGE SQL
+AS '
+    SELECT config_value
+    FROM PLAYGROUND.CHAPPEM.environment_config
+    WHERE config_key = ''ETL_WAREHOUSE''
+';
+
+-- Function: get_analytics_warehouse()
+-- Purpose: Returns the analytics warehouse name from configuration
+CREATE OR REPLACE FUNCTION PLAYGROUND.CHAPPEM.get_analytics_warehouse()
+RETURNS VARCHAR
+LANGUAGE SQL
+AS '
+    SELECT config_value
+    FROM PLAYGROUND.CHAPPEM.environment_config
+    WHERE config_key = ''ANALYTICS_WAREHOUSE''
+';
+
+-- =====================================================
+-- STEP 2: Create Data Warehouse Database
+-- =====================================================
+
 -- Create database using dynamic database name
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT PLAYGROUND.CHAPPEM.get_dw_database());
 
 CREATE DATABASE IF NOT EXISTS IDENTIFIER($dw_database)
     COMMENT = 'Data warehouse for veteran evaluation services and reporting';
