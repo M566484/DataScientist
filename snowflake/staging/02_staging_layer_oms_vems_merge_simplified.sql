@@ -33,13 +33,16 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
     -- Clear existing crosswalk for this batch
-    DELETE FROM datascience.reference.ref_entity_crosswalk_veteran
+    DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran')
     WHERE batch_id = :p_batch_id;
 
     -- Build crosswalk using FULL OUTER JOIN on SSN
-    INSERT INTO datascience.reference.ref_entity_crosswalk_veteran (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') (
         batch_id,
         master_veteran_id,
         oms_veteran_id,
@@ -74,8 +77,8 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.ods.ods_veterans_source oms
-    FULL OUTER JOIN datascience.ods.ods_veterans_source vems
+    FROM IDENTIFIER(:v_ods_database || '.ODS.ods_veterans_source') oms
+    FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_veterans_source') vems
         ON oms.veteran_ssn = vems.veteran_ssn
         AND oms.source_system = 'OMS'
         AND vems.source_system = 'VEMS'
@@ -96,11 +99,14 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    DELETE FROM datascience.reference.ref_entity_crosswalk_evaluator
+    DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator')
     WHERE batch_id = :p_batch_id;
 
-    INSERT INTO datascience.reference.ref_entity_crosswalk_evaluator (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') (
         batch_id,
         master_evaluator_id,
         oms_evaluator_id,
@@ -132,8 +138,8 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.ods.ods_evaluators_source oms
-    FULL OUTER JOIN datascience.ods.ods_evaluators_source vems
+    FROM IDENTIFIER(:v_ods_database || '.ODS.ods_evaluators_source') oms
+    FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_evaluators_source') vems
         ON oms.evaluator_npi = vems.evaluator_npi
         AND oms.source_system = 'OMS'
         AND vems.source_system = 'VEMS'
@@ -154,11 +160,14 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    DELETE FROM datascience.reference.ref_entity_crosswalk_facility
+    DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility')
     WHERE batch_id = :p_batch_id;
 
-    INSERT INTO datascience.reference.ref_entity_crosswalk_facility (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') (
         batch_id,
         master_facility_id,
         oms_facility_id,
@@ -190,8 +199,8 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.ods.ods_facilities_source oms
-    FULL OUTER JOIN datascience.ods.ods_facilities_source vems
+    FROM IDENTIFIER(:v_ods_database || '.ODS.ods_facilities_source') oms
+    FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_facilities_source') vems
         ON oms.facility_id = vems.facility_id
         AND oms.source_system = 'OMS'
         AND vems.source_system = 'VEMS'
@@ -222,13 +231,16 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
     -- Clear staging for this batch
-    DELETE FROM datascience.staging.stg_veterans
+    DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans')
     WHERE batch_id = :p_batch_id;
 
     -- Merge OMS and VEMS data into staging
-    INSERT INTO datascience.staging.stg_veterans (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') (
         batch_id,
         master_veteran_id,
         veteran_ssn,
@@ -391,17 +403,17 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.reference.ref_entity_crosswalk_veteran xwalk
-    LEFT JOIN datascience.ods.ods_veterans_source oms
+    FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') xwalk
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_veterans_source') oms
         ON xwalk.oms_veteran_id = oms.source_record_id
         AND oms.source_system = 'OMS'
-    LEFT JOIN datascience.ods.ods_veterans_source vems
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_veterans_source') vems
         ON xwalk.vems_veteran_id = vems.source_record_id
         AND vems.source_system = 'VEMS'
     WHERE xwalk.batch_id = :p_batch_id;
 
     -- Log conflicts to reconciliation log
-    INSERT INTO datascience.reference.ref_reconciliation_log (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_reconciliation_log') (
         batch_id, entity_type, entity_id, conflict_type,
         oms_value, vems_value, resolved_value, resolution_method, resolution_timestamp
     )
@@ -415,7 +427,7 @@ BEGIN
         oms_value AS resolved_value, -- OMS wins per system-of-record rules
         resolution_method,
         CURRENT_TIMESTAMP() AS resolution_timestamp
-    FROM datascience.staging.stg_veterans
+    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans')
     WHERE batch_id = :p_batch_id
       AND conflict_type IS NOT NULL;
 
@@ -433,11 +445,14 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    DELETE FROM datascience.staging.stg_evaluators
+    DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators')
     WHERE batch_id = :p_batch_id;
 
-    INSERT INTO datascience.staging.stg_evaluators (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators') (
         batch_id,
         master_evaluator_id,
         evaluator_npi,
@@ -476,7 +491,7 @@ BEGIN
         COALESCE(vems.credential, oms.credential) AS credential,
 
         -- Specialty: Use code mapping UDF to standardize
-        datascience.reference.fn_map_specialty_code(
+        IDENTIFIER(:v_dw_database || '.REFERENCE.fn_map_specialty_code')(
             COALESCE(vems.source_system, oms.source_system),
             COALESCE(vems.specialty_code, oms.specialty_code)
         ) AS specialty,
@@ -517,10 +532,10 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.reference.ref_entity_crosswalk_evaluator xwalk
-    LEFT JOIN datascience.ods.ods_evaluators_source oms
+    FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') xwalk
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_evaluators_source') oms
         ON xwalk.oms_evaluator_id = oms.source_record_id AND oms.source_system = 'OMS'
-    LEFT JOIN datascience.ods.ods_evaluators_source vems
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_evaluators_source') vems
         ON xwalk.vems_evaluator_id = vems.source_record_id AND vems.source_system = 'VEMS'
     WHERE xwalk.batch_id = :p_batch_id;
 
@@ -538,11 +553,14 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    DELETE FROM datascience.staging.stg_facilities
+    DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_facilities')
     WHERE batch_id = :p_batch_id;
 
-    INSERT INTO datascience.staging.stg_facilities (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_facilities') (
         batch_id,
         master_facility_id,
         facility_id,
@@ -601,10 +619,10 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.reference.ref_entity_crosswalk_facility xwalk
-    LEFT JOIN datascience.ods.ods_facilities_source oms
+    FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') xwalk
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_facilities_source') oms
         ON xwalk.oms_facility_id = oms.source_record_id AND oms.source_system = 'OMS'
-    LEFT JOIN datascience.ods.ods_facilities_source vems
+    LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_facilities_source') vems
         ON xwalk.vems_facility_id = vems.source_record_id AND vems.source_system = 'VEMS'
     WHERE xwalk.batch_id = :p_batch_id;
 
@@ -627,11 +645,14 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    DELETE FROM datascience.staging.stg_fact_exam_requests
+    DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests')
     WHERE batch_id = :p_batch_id;
 
-    INSERT INTO datascience.staging.stg_fact_exam_requests (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests') (
         batch_id,
         exam_request_id,
         master_veteran_id,
@@ -661,7 +682,7 @@ BEGIN
         fac_xwalk.master_facility_id,
 
         -- Map request type code to standard value
-        datascience.reference.fn_map_request_type_code(
+        IDENTIFIER(:v_dw_database || '.REFERENCE.fn_map_request_type_code')(
             COALESCE(oms.source_system, vems.source_system),
             COALESCE(oms.request_type_code, vems.request_type_code)
         ) AS request_type,
@@ -685,14 +706,14 @@ BEGIN
 
         CURRENT_TIMESTAMP() AS created_timestamp
 
-    FROM datascience.ods.ods_exam_requests_source oms
-    FULL OUTER JOIN datascience.ods.ods_exam_requests_source vems
+    FROM IDENTIFIER(:v_ods_database || '.ODS.ods_exam_requests_source') oms
+    FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS.ods_exam_requests_source') vems
         ON oms.exam_request_id = vems.exam_request_id
         AND oms.source_system = 'OMS'
         AND vems.source_system = 'VEMS'
-    LEFT JOIN datascience.reference.ref_entity_crosswalk_veteran vet_xwalk
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
         ON COALESCE(oms.veteran_ssn, vems.veteran_ssn) = vet_xwalk.master_veteran_id
-    LEFT JOIN datascience.reference.ref_entity_crosswalk_facility fac_xwalk
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
         ON COALESCE(oms.facility_id, vems.facility_id) = fac_xwalk.master_facility_id
     WHERE (oms.batch_id = :p_batch_id OR vems.batch_id = :p_batch_id);
 

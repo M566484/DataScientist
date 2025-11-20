@@ -28,25 +28,29 @@
 Before starting, verify these tables exist:
 
 ```sql
+-- Set database context dynamically
+SET dw_database = (SELECT get_dw_database());
+SET ods_database = (SELECT get_ods_database());
+
 -- Check ODS tables
-SELECT COUNT(*) FROM datascience.ods.ods_veterans_source;
-SELECT COUNT(*) FROM datascience.ods.ods_evaluators_source;
-SELECT COUNT(*) FROM datascience.ods.ods_facilities_source;
-SELECT COUNT(*) FROM datascience.ods.ods_exam_requests_source;
+SELECT COUNT(*) FROM IDENTIFIER($ods_database || '.ODS.ods_veterans_source');
+SELECT COUNT(*) FROM IDENTIFIER($ods_database || '.ODS.ods_evaluators_source');
+SELECT COUNT(*) FROM IDENTIFIER($ods_database || '.ODS.ods_facilities_source');
+SELECT COUNT(*) FROM IDENTIFIER($ods_database || '.ODS.ods_exam_requests_source');
 
 -- Check reference tables
-SELECT COUNT(*) FROM datascience.reference.ref_entity_crosswalk_veteran;
-SELECT COUNT(*) FROM datascience.reference.ref_entity_crosswalk_evaluator;
-SELECT COUNT(*) FROM datascience.reference.ref_entity_crosswalk_facility;
-SELECT COUNT(*) FROM datascience.reference.ref_system_of_record;
-SELECT COUNT(*) FROM datascience.reference.ref_code_mapping_specialty;
-SELECT COUNT(*) FROM datascience.reference.ref_reconciliation_log;
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_facility');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_system_of_record');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_code_mapping_specialty');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log');
 
 -- Check staging tables
-SELECT COUNT(*) FROM datascience.staging.stg_veterans;
-SELECT COUNT(*) FROM datascience.staging.stg_evaluators;
-SELECT COUNT(*) FROM datascience.staging.stg_facilities;
-SELECT COUNT(*) FROM datascience.staging.stg_fact_exam_requests;
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_evaluators');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_facilities');
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_fact_exam_requests');
 ```
 
 **If any tables are missing:**
@@ -65,9 +69,9 @@ SELECT COUNT(*) FROM datascience.staging.stg_fact_exam_requests;
 
 ```sql
 -- Check if code mapping functions exist
-SHOW FUNCTIONS LIKE 'fn_map_specialty_code' IN SCHEMA datascience.reference;
-SHOW FUNCTIONS LIKE 'fn_map_request_type_code' IN SCHEMA datascience.reference;
-SHOW FUNCTIONS LIKE 'fn_map_appointment_status_code' IN SCHEMA datascience.reference;
+SHOW FUNCTIONS LIKE 'fn_map_specialty_code' IN SCHEMA IDENTIFIER($dw_database || '.REFERENCE');
+SHOW FUNCTIONS LIKE 'fn_map_request_type_code' IN SCHEMA IDENTIFIER($dw_database || '.REFERENCE');
+SHOW FUNCTIONS LIKE 'fn_map_appointment_status_code' IN SCHEMA IDENTIFIER($dw_database || '.REFERENCE');
 ```
 
 **If functions are missing:**
@@ -81,7 +85,7 @@ If you're testing first (recommended!), you need sample ODS data:
 
 ```sql
 -- Create a test batch
-INSERT INTO datascience.ods.ods_veterans_source (
+INSERT INTO IDENTIFIER($ods_database || '.ODS.ods_veterans_source (
     batch_id, source_system, source_record_id, veteran_ssn, first_name, last_name,
     date_of_birth, gender, email, phone, disability_rating, extraction_timestamp
 )
@@ -95,7 +99,7 @@ VALUES
 
 -- Verify data loaded
 SELECT source_system, COUNT(*)
-FROM datascience.ods.ods_veterans_source
+FROM IDENTIFIER($ods_database || '.ODS.ods_veterans_source
 WHERE batch_id = 'TEST_BATCH_001'
 GROUP BY source_system;
 -- Should show: OMS (2 records), VEMS (2 records)
@@ -182,7 +186,7 @@ Staging Record:
 \@snowflake/staging/02_staging_layer_oms_vems_merge_simplified.sql
 
 -- Verify procedures created
-SHOW PROCEDURES LIKE 'sp_%' IN SCHEMA datascience.staging;
+SHOW PROCEDURES LIKE 'sp_%' IN SCHEMA IDENTIFIER($dw_database || '.STAGING');
 ```
 
 **Expected Output:** Should see 8 procedures:
@@ -240,7 +244,7 @@ SELECT
     SUM(CASE WHEN match_method = 'SSN_OMS_ONLY' THEN 1 ELSE 0 END) AS oms_only,
     SUM(CASE WHEN match_method = 'SSN_VEMS_ONLY' THEN 1 ELSE 0 END) AS vems_only,
     ROUND(AVG(match_confidence), 2) AS avg_confidence
-FROM datascience.reference.ref_entity_crosswalk_veteran
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran
 WHERE batch_id = 'TEST_BATCH_20251117_001';
 ```
 
@@ -294,7 +298,7 @@ SELECT
     match_confidence,
     dq_score,
     conflict_type
-FROM datascience.staging.stg_veterans
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
 WHERE batch_id = 'TEST_BATCH_20251117_001'
 ORDER BY master_veteran_id;
 ```
@@ -331,7 +335,7 @@ SELECT
     END AS dq_category,
     COUNT(*) AS record_count,
     ROUND(AVG(dq_score), 2) AS avg_dq_score
-FROM datascience.staging.stg_veterans
+FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
 WHERE batch_id = 'TEST_BATCH_20251117_001'
 GROUP BY
     CASE
@@ -362,7 +366,7 @@ SELECT
     conflict_type,
     COUNT(*) AS conflict_count,
     resolution_method
-FROM datascience.reference.ref_reconciliation_log
+FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log
 WHERE batch_id = 'TEST_BATCH_20251117_001'
 GROUP BY entity_type, conflict_type, resolution_method;
 ```
@@ -436,13 +440,13 @@ Conflicts Detected       234       conflicts logged ✓ PASS
 
 WITH ods_counts AS (
     SELECT source_system, COUNT(*) AS ods_count
-    FROM datascience.ods.ods_veterans_source
+    FROM IDENTIFIER($ods_database || '.ODS.ods_veterans_source
     WHERE batch_id = 'PROD_BATCH_20251117_001'
     GROUP BY source_system
 ),
 staging_counts AS (
     SELECT source_system, COUNT(*) AS staging_count
-    FROM datascience.staging.stg_veterans
+    FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans
     WHERE batch_id = 'PROD_BATCH_20251117_001'
     GROUP BY source_system
 )
@@ -479,19 +483,19 @@ After each batch run, check:
 
 ```sql
 -- ✓ Checkpoint 1: Crosswalks built
-SELECT COUNT(*) FROM datascience.reference.ref_entity_crosswalk_veteran WHERE batch_id = 'YOUR_BATCH_ID';
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_entity_crosswalk_veteran WHERE batch_id = 'YOUR_BATCH_ID';
 -- Should be > 0
 
 -- ✓ Checkpoint 2: Staging records created
-SELECT COUNT(*) FROM datascience.staging.stg_veterans WHERE batch_id = 'YOUR_BATCH_ID';
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans WHERE batch_id = 'YOUR_BATCH_ID';
 -- Should be > 0
 
 -- ✓ Checkpoint 3: High data quality
-SELECT AVG(dq_score) FROM datascience.staging.stg_veterans WHERE batch_id = 'YOUR_BATCH_ID';
+SELECT AVG(dq_score) FROM IDENTIFIER($dw_database || '.STAGING.stg_veterans WHERE batch_id = 'YOUR_BATCH_ID';
 -- Should be > 80
 
 -- ✓ Checkpoint 4: Conflicts logged
-SELECT COUNT(*) FROM datascience.reference.ref_reconciliation_log WHERE batch_id = 'YOUR_BATCH_ID';
+SELECT COUNT(*) FROM IDENTIFIER($dw_database || '.REFERENCE.ref_reconciliation_log WHERE batch_id = 'YOUR_BATCH_ID';
 -- Can be 0 or higher (conflicts are OK!)
 
 -- ✓ Checkpoint 5: No records lost
