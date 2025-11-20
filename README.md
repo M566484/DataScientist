@@ -135,7 +135,7 @@ LIMIT 10;
 VESODS_PRDDATA_PRD (Operational Data Store)
 ├── VEMS_CORE                    # VEMS Core system data
 ├── VEMS_PNM                     # VEMS Provider Network Management
-└── OMS                          # Order Management System
+└── OMS                          # Operations Management System
 
 VESDW_PRD (Data Warehouse)
 ├── staging                      # Staging layer (multi-source merge)

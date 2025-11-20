@@ -183,7 +183,7 @@ See: **[MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md](MULTI_ENVIRONMENT_DEPLOYMENT_GUID
 │ STEP 1: SOURCE SYSTEMS                                              │
 │                                                                      │
 │  OMS (SQL Server)                  VEMS Core (Salesforce)           │
-│  - Order Management System         - Veteran Evaluation System      │
+│  - Operations Management System    - Veterans Exam Management System│
 │  - Has: veteran_id, name,         - Has: veteran_ssn, demographics, │
 │    contact info                     service history                 │
 │  - Data moved via Mulesoft        - Data moved via Mulesoft         │
@@ -242,7 +242,7 @@ See: **[MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md](MULTI_ENVIRONMENT_DEPLOYMENT_GUID
 
 ## Step 1: Understand Your Source Systems
 
-### Source System 1: OMS (Order Management System)
+### Source System 1: OMS (Operations Management System)
 
 **Location:** SQL Server database
 **What it contains:** Basic veteran information from appointment scheduling (includes Core and PNM data)
@@ -263,7 +263,7 @@ V123456    | John       | Smith     | 555-123-4567   | john@email.com
 V789012    | Jane       | Doe       | 555-987-6543   | jane@email.com
 ```
 
-### Source System 2: VEMS (Veteran Evaluation Management System)
+### Source System 2: VEMS (Veterans Exam Management System)
 
 **Location:** SQL Server database
 **What it contains:** Comprehensive veteran demographics and service history
@@ -324,7 +324,7 @@ USE ROLE DATA_ENGINEER_ROLE;
 
 -- Create schemas for each source system
 CREATE SCHEMA IF NOT EXISTS VESODS_PRDDATA_PRD.OMS
-    COMMENT = 'OMS (Order Management System) data';
+    COMMENT = 'OMS (Operations Management System) data';
 
 CREATE SCHEMA IF NOT EXISTS VESODS_PRDDATA_PRD.VEMS_CORE
     COMMENT = 'VEMS Core system data';

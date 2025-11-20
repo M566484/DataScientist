@@ -318,8 +318,8 @@ END AS disability_rating_category
 
 The VES data pipeline integrates data from **two primary source systems**:
 
-1. **OMS (Order Management System)** - Legacy system containing historical veteran and evaluation data
-2. **VEMS (Veteran Evaluation Management System)** - Modern system with current operational data
+1. **OMS (Operations Management System)** - Legacy system containing historical veteran and evaluation data
+2. **VEMS (Veterans Exam Management System)** - Modern system with current operational data
 
 These systems have different schemas, field naming conventions, and code values. The staging layer performs **data reconciliation and merging** to create a unified view.
 

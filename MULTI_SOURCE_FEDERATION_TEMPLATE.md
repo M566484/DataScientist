@@ -2,7 +2,7 @@
 
 ## Overview
 
-This template provides a comprehensive, reusable framework for federating data from **OMS (Order Management System)** and **VEMS (Veteran Evaluation Management System)** source systems. The template follows the VES Data Warehouse's established medallion architecture and multi-source integration patterns.
+This template provides a comprehensive, reusable framework for federating data from **OMS (Operations Management System)** and **VEMS (Veterans Exam Management System)** source systems. The template follows the VES Data Warehouse's established medallion architecture and multi-source integration patterns.
 
 **Purpose:** Enable consistent, high-quality data federation across multiple source systems with built-in conflict resolution, data quality scoring, and comprehensive validation.
 
