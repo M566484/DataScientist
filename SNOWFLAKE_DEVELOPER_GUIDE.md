@@ -1,8 +1,8 @@
 # Snowflake Development Guide for Data Warehouse Engineers
-## From SQL Server/Redshift/Traditional Databases to Snowflake
+## From SQL Server/Traditional Databases to Snowflake
 
 **Target Audience:** Experienced database developers transitioning to Snowflake
-**Prerequisites:** Strong SQL skills, experience with SQL Server/Redshift/Oracle
+**Prerequisites:** Strong SQL skills, experience with SQL Server/Oracle
 **Purpose:** Bridge the gap between traditional databases and Snowflake development
 
 **Version:** 2.0
@@ -32,11 +32,11 @@
 
 ### Key Paradigm Shifts
 
-| Aspect | SQL Server/Redshift | Snowflake | Impact |
+| Aspect | SQL Server | Snowflake | Impact |
 |--------|---------------------|-----------|--------|
 | **Compute & Storage** | Coupled | Separated | Scale independently, pay separately |
 | **Indexes** | Critical for performance | Not supported | Use clustering keys instead |
-| **Vacuuming** | Manual (Redshift) | Automatic | No maintenance overhead |
+| **Vacuuming** | Manual | Automatic | No maintenance overhead |
 | **Partitioning** | Manual DDL | Automatic micro-partitions | No partition key definition needed |
 | **Statistics** | Manual updates | Automatic | No ANALYZE TABLE needed |
 | **Backups** | Manual/scheduled | Automatic (Time Travel) | Built-in, query-based recovery |
@@ -118,7 +118,7 @@ SHOW WAREHOUSES;
 - Warehouses **share** the same data (unlike separate SQL instances)
 - You can have **multiple warehouses** accessing same database simultaneously
 - **Auto-suspend/resume** means you only pay when running queries
-- **Resizing** is instant (unlike resizing Redshift cluster)
+- **Resizing** is instant (unlike resizing traditional database clusters)
 
 ---
 
@@ -238,7 +238,7 @@ FROM fact_exam_requests
 GROUP BY exam_status;
 
 -- Key difference: Snowflake auto-refreshes materialized views!
--- No need for manual REFRESH like Redshift
+-- No need for manual REFRESH like traditional databases
 ```
 
 ---
@@ -832,20 +832,6 @@ CREATE TABLE fact_exam_requests_yesterday CLONE fact_exam_requests
 
 5. **Linked Servers → External Tables or Snowpipe**
    - No linked servers, use staging approach
-
-### From Redshift
-
-1. **Distribution/Sort Keys → Clustering Keys**
-   - Simpler in Snowflake, just pick filter columns
-
-2. **VACUUM → Automatic**
-   - No manual maintenance needed
-
-3. **WLM → Multiple Warehouses**
-   - Separate warehouses for ETL/reporting/ad-hoc
-
-4. **COPY Command → Same!**
-   - Syntax is nearly identical
 
 ---
 

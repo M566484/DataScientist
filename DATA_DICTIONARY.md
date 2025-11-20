@@ -66,9 +66,9 @@ Database: VESDW_PRD (Production), VESODS_PRDDATA_PRD (Operational Data Store)
 
 | Schema | Purpose | Source System |
 |--------|---------|---------------|
-| `VEMS_CORE` | Core Evaluations | VEMS Core (SQL Server) |
-| `VEMS_PNM` | Provider Network | VEMS PNM (SQL Server) |
-| `OMS` | Order Management | OMS (Redshift) |
+| `VEMS_CORE` | Core Evaluations | VEMS Core (Salesforce via Mulesoft) |
+| `VEMS_PNM` | Provider Network | VEMS PNM (Salesforce via Mulesoft) |
+| `OMS` | Order Management | OMS (SQL Server via Mulesoft) |
 
 ---
 

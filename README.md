@@ -35,7 +35,7 @@ This repository contains a **complete, production-ready data warehousing solutio
 
 ✅ **Enterprise Documentation**
 - 456 total pages of comprehensive documentation
-- 70-page Snowflake developer guide for SQL Server/Redshift teams
+- 70-page Snowflake developer guide for SQL Server teams
 - 68-page structured onboarding guide with hands-on exercises
 - 65-page performance optimization guide with proven strategies
 - 55-page standard operating procedures manual
@@ -148,10 +148,15 @@ VESDW_PRD (Data Warehouse)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  SOURCE SYSTEMS (SQL Server, Redshift)                          │
-│  ├── VEMS Core (Medical evaluations)                            │
-│  ├── VEMS PNM (Provider network)                                │
-│  └── OMS (Orders & scheduling)                                  │
+│  SOURCE SYSTEMS                                                 │
+│  ├── VEMS Core (Salesforce - Medical evaluations)               │
+│  ├── VEMS PNM (Salesforce - Provider network)                   │
+│  └── OMS (SQL Server - Orders, scheduling, Core & PNM data)     │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  MULESOFT ETL (External Process)                                │
+│  └── Moves data from source systems → Snowflake ODS             │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -270,7 +275,7 @@ DataScientist/
 │
 │   ├── 🎯 GETTING STARTED
 │   │   ├── DEVELOPER_ONBOARDING_GUIDE.md        # 68 pages - 5-day structured program
-│   │   ├── SNOWFLAKE_DEVELOPER_GUIDE.md         # 70 pages - SQL Server/Redshift → Snowflake
+│   │   ├── SNOWFLAKE_DEVELOPER_GUIDE.md         # 70 pages - SQL Server → Snowflake
 │   │   └── ORCHESTRATION_QUICKSTART_CHECKLIST.md # Quick reference for tasks/streams
 │
 │   ├── 📊 ARCHITECTURE & DESIGN
@@ -438,7 +443,7 @@ DataScientist/
 | Document | Pages | Purpose | Audience |
 |----------|-------|---------|----------|
 | [DEVELOPER_ONBOARDING_GUIDE.md](DEVELOPER_ONBOARDING_GUIDE.md) | 68 | Structured 5-day onboarding program | New hires |
-| [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) | 70 | SQL Server/Redshift → Snowflake transition | Developers |
+| [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md) | 70 | SQL Server → Snowflake transition | Developers |
 | [PERFORMANCE_OPTIMIZATION_GUIDE.md](PERFORMANCE_OPTIMIZATION_GUIDE.md) | 65 | Query optimization, clustering, cost reduction | Engineers, DBAs |
 | [STANDARD_OPERATING_PROCEDURES.md](STANDARD_OPERATING_PROCEDURES.md) | 55 | Daily/weekly/monthly operations runbook | Operations |
 | [DISASTER_RECOVERY_AND_BUSINESS_CONTINUITY.md](DISASTER_RECOVERY_AND_BUSINESS_CONTINUITY.md) | 50 | DR/BC plan with <4hr RTO | Ops, Management |
@@ -463,7 +468,7 @@ DataScientist/
 - [ ] Virtual warehouse created: `ETL_WH` (XL recommended for initial load)
 - [ ] Virtual warehouse created: `ANALYTICS_WH` (Medium recommended)
 - [ ] Network access confirmed (no IP restrictions blocking Snowflake)
-- [ ] Source system connectivity tested (SQL Server, Redshift)
+- [ ] Source system connectivity tested (Salesforce via Mulesoft, SQL Server via Mulesoft)
 
 ### Step 1: Deploy Database Structure
 
@@ -722,7 +727,7 @@ Follow the structured program in [DEVELOPER_ONBOARDING_GUIDE.md](DEVELOPER_ONBOA
 - Executive analytics development
 - On-call training
 
-### For SQL Server / Redshift Developers
+### For SQL Server Developers
 
 **Transition Guide**: [SNOWFLAKE_DEVELOPER_GUIDE.md](SNOWFLAKE_DEVELOPER_GUIDE.md)
 
@@ -967,7 +972,7 @@ Key differences to learn:
 
 **Network**
 - Snowflake connectivity required (no IP restrictions)
-- Source system connectivity (SQL Server, Redshift)
+- Source system connectivity (Salesforce via Mulesoft, SQL Server via Mulesoft)
 - SMTP for email notifications (optional)
 - Webhook endpoints for Slack/Teams (optional)
 
