@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snowflake Staging Layer: Decision Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .decision-tree {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .question {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .question h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-icon {
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .options {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 25px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .option-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .result-dynamic {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .result-stored {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+
+        .result-either {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .result h2 {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
+        .result-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .check {
+            color: #38ef7d;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #ff6a00;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ffa500;
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-card h4 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .metric-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .calculator {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .calculator-input {
+            margin: 15px 0;
+        }
+
+        .calculator-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .score-display {
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .score-high {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .score-low {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+
+        .code-example {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-example pre {
+            margin: 0;
+        }
+
+        .highlight {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .example-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .example-tab {
+            padding: 10px 20px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .example-tab:hover {
+            border-color: #667eea;
+        }
+
+        .example-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .example-content {
+            display: none;
+        }
+
+        .example-content.active {
+            display: block;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .badge-success {
+            background: #38ef7d;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #ff6a00;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffa500;
+            color: white;
+        }
+
+        .badge-info {
+            background: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .nav-tab {
+                font-size: 0.9em;
+                padding: 15px 10px;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .options {
+                flex-direction: column;
+            }
+
+            .option-btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Snowflake Staging Layer Decision Guide</h1>
+            <p>Dynamic Tables vs. Stored Procedures vs. Views</p>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('interactive')">🤖 Interactive Decision Tree</button>
+            <button class="nav-tab" onclick="showTab('calculator')">📊 Complexity Calculator</button>
+            <button class="nav-tab" onclick="showTab('comparison')">⚖️ Comparison</button>
+            <button class="nav-tab" onclick="showTab('examples')">💡 Examples</button>
+        </nav>
+
+        <div class="content">
+            <!-- Tab 1: Interactive Decision Tree -->
+            <div id="interactive" class="tab-content active">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Interactive Decision Tree</h2>
+                <p style="margin-bottom: 30px;">Answer these questions about your staging component to get a recommendation:</p>
+
+                <div class="decision-tree">
+                    <div class="question">
+                        <h3><span class="question-icon">1</span> Is this a NEW component or migrating existing?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q1', 'new', this)">🆕 New Component</button>
+                            <button class="option-btn" onclick="selectOption('q1', 'existing', this)">🔄 Migrating Existing</button>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <h3><span class="question-icon">2</span> What's the transformation complexity?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q2', 'simple', this)">✅ Simple (Single source, straightforward joins)</button>
+                            <button class="option-btn" onclick="selectOption('q2', 'moderate', this)">🟡 Moderate (2 sources, some conflicts)</button>
+                            <button class="option-btn" onclick="selectOption('q2', 'complex', this)">🔴 Complex (Multiple sources, heavy logic)</button>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <h3><span class="question-icon">3</span> What's the expected conflict rate?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q3', 'low', this)">🟢 Low (&lt;10% conflicts)</button>
+                            <button class="option-btn" onclick="selectOption('q3', 'medium', this)">🟡 Medium (10-20% conflicts)</button>
+                            <button class="option-btn" onclick="selectOption('q3', 'high', this)">🔴 High (&gt;20% conflicts)</button>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <h3><span class="question-icon">4</span> Do you need real-time data?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q4', 'yes', this)">⚡ Yes (&lt;30 min freshness)</button>
+                            <button class="option-btn" onclick="selectOption('q4', 'no', this)">📅 No (hourly/daily is fine)</button>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <h3><span class="question-icon">5</span> Do you need to write to audit tables during processing?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q5', 'yes', this)">📝 Yes (conflict logs, reconciliation)</button>
+                            <button class="option-btn" onclick="selectOption('q5', 'no', this)">❌ No (read-only transformation)</button>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <h3><span class="question-icon">6</span> Do you need to reprocess historical batches?</h3>
+                        <div class="options">
+                            <button class="option-btn" onclick="selectOption('q6', 'yes', this)">🔄 Yes (need batch_id tracking)</button>
+                            <button class="option-btn" onclick="selectOption('q6', 'no', this)">➡️ No (always forward-only)</button>
+                        </div>
+                    </div>
+
+                    <div class="reset-btn">
+                        <button class="btn btn-secondary" onclick="resetQuiz()">🔄 Reset</button>
+                        <button class="btn btn-primary" onclick="calculateRecommendation()">🎯 Get Recommendation</button>
+                    </div>
+                </div>
+
+                <div id="result-dynamic" class="result result-dynamic">
+                    <div class="result-icon">🚀</div>
+                    <h2>Recommendation: Dynamic Tables</h2>
+                    <p style="font-size: 1.1em; margin-top: 15px; line-height: 1.6;">
+                        Your component is a great fit for Dynamic Tables! You'll benefit from:
+                    </p>
+                    <ul style="margin: 20px 0; line-height: 2;">
+                        <li>✅ Automatic refresh when source data changes</li>
+                        <li>✅ Built-in incremental processing (efficient CDC)</li>
+                        <li>✅ Declarative SQL (easier to maintain)</li>
+                        <li>✅ Near real-time capability</li>
+                        <li>✅ Simplified monitoring</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-size: 1.1em;">
+                        <strong>Next Steps:</strong> See the "Examples" tab for Dynamic Tables code templates.
+                    </p>
+                </div>
+
+                <div id="result-stored" class="result result-stored">
+                    <div class="result-icon">⚙️</div>
+                    <h2>Recommendation: Stored Procedures</h2>
+                    <p style="font-size: 1.1em; margin-top: 15px; line-height: 1.6;">
+                        Your component requires the control and flexibility of Stored Procedures:
+                    </p>
+                    <ul style="margin: 20px 0; line-height: 2;">
+                        <li>✅ Complex business logic with branching</li>
+                        <li>✅ Write to audit/reconciliation tables</li>
+                        <li>✅ Explicit error handling (TRY/CATCH)</li>
+                        <li>✅ Batch tracking with batch_id</li>
+                        <li>✅ Reprocess historical data</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-size: 1.1em;">
+                        <strong>Next Steps:</strong> See the "Examples" tab for Stored Procedure patterns.
+                    </p>
+                </div>
+
+                <div id="result-either" class="result result-either">
+                    <div class="result-icon">🤔</div>
+                    <h2>Recommendation: Either Approach Works</h2>
+                    <p style="font-size: 1.1em; margin-top: 15px; line-height: 1.6;">
+                        Your component is in the middle zone. Consider these factors:
+                    </p>
+                    <ul style="margin: 20px 0; line-height: 2;">
+                        <li>🚀 <strong>Choose Dynamic Tables if:</strong> You want real-time updates and simpler maintenance</li>
+                        <li>⚙️ <strong>Choose Stored Procedures if:</strong> You need batch tracking or plan to add complexity</li>
+                        <li>📊 <strong>Recommendation:</strong> Start with Dynamic Tables (easier), migrate to Stored Procs if needed</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-size: 1.1em;">
+                        <strong>Next Steps:</strong> Try the Complexity Calculator to get a more precise score.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tab 2: Calculator -->
+            <div id="calculator" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Complexity Calculator</h2>
+                <p style="margin-bottom: 30px;">Adjust the sliders based on your component's characteristics:</p>
+
+                <div class="calculator">
+                    <div class="calculator-input">
+                        <label>Number of Source Systems:</label>
+                        <div class="slider-container">
+                            <input type="range" id="sources" min="1" max="5" value="1" oninput="updateCalculator()">
+                            <span class="slider-value" id="sources-value">1</span>
+                        </div>
+                    </div>
+
+                    <div class="calculator-input">
+                        <label>Lines of Transformation Logic:</label>
+                        <div class="slider-container">
+                            <input type="range" id="lines" min="10" max="500" value="50" step="10" oninput="updateCalculator()">
+                            <span class="slider-value" id="lines-value">50</span>
+                        </div>
+                    </div>
+
+                    <div class="calculator-input">
+                        <label>Conflict Rate (%):</label>
+                        <div class="slider-container">
+                            <input type="range" id="conflicts" min="0" max="50" value="5" oninput="updateCalculator()">
+                            <span class="slider-value" id="conflicts-value">5%</span>
+                        </div>
+                    </div>
+
+                    <div class="calculator-input">
+                        <label>Number of Audit Tables to Write:</label>
+                        <div class="slider-container">
+                            <input type="range" id="audit" min="0" max="5" value="0" oninput="updateCalculator()">
+                            <span class="slider-value" id="audit-value">0</span>
+                        </div>
+                    </div>
+
+                    <div class="calculator-input">
+                        <label>Required Data Freshness (minutes):</label>
+                        <div class="slider-container">
+                            <input type="range" id="freshness" min="5" max="1440" value="60" step="5" oninput="updateCalculator()">
+                            <span class="slider-value" id="freshness-value">60</span>
+                        </div>
+                    </div>
+
+                    <div class="calculator-input">
+                        <label>Number of Conditional Branches:</label>
+                        <div class="slider-container">
+                            <input type="range" id="branches" min="0" max="20" value="2" oninput="updateCalculator()">
+                            <span class="slider-value" id="branches-value">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="calc-result" class="score-display score-high">
+                    <div>Complexity Score: <span id="complexity-score">0</span></div>
+                    <div style="font-size: 0.8em; margin-top: 10px;" id="complexity-recommendation"></div>
+                </div>
+
+                <div class="card-grid" style="margin-top: 30px;">
+                    <div class="metric-card">
+                        <h4>Dynamic Tables Fit</h4>
+                        <div class="value" id="dt-fit">0%</div>
+                        <p style="font-size: 0.9em; opacity: 0.9;">Suitability Score</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Stored Proc Fit</h4>
+                        <div class="value" id="sp-fit">0%</div>
+                        <p style="font-size: 0.9em; opacity: 0.9;">Suitability Score</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Comparison -->
+            <div id="comparison" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Detailed Comparison</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Dynamic Tables</th>
+                            <th>Stored Procedures</th>
+                            <th>Views/Materialized Views</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Orchestration</strong></td>
+                            <td><span class="check">✓</span> Automatic</td>
+                            <td><span class="cross">✗</span> Manual CALL</td>
+                            <td><span class="check">✓</span> Query-time / Auto</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Refresh Trigger</strong></td>
+                            <td><span class="check">✓</span> Source data change</td>
+                            <td><span class="cross">✗</span> Explicit execution</td>
+                            <td><span class="check">✓</span> Query-time / Schedule</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Incremental Processing</strong></td>
+                            <td><span class="check">✓</span> Built-in CDC</td>
+                            <td><span class="cross">✗</span> Custom logic</td>
+                            <td><span class="check">✓</span> Built-in (MV)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Complex Joins</strong></td>
+                            <td><span class="check">✓</span> Supported</td>
+                            <td><span class="check">✓</span> Supported</td>
+                            <td><span class="warning">⚠</span> Limited (MV)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>UNION Support</strong></td>
+                            <td><span class="warning">⚠</span> UNION ALL only</td>
+                            <td><span class="check">✓</span> Full support</td>
+                            <td><span class="warning">⚠</span> Limited (MV)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>UDFs</strong></td>
+                            <td><span class="warning">⚠</span> Blocks incremental</td>
+                            <td><span class="check">✓</span> Supported</td>
+                            <td><span class="warning">⚠</span> Limited (MV)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Audit Table Writes</strong></td>
+                            <td><span class="cross">✗</span> Need TASK+STREAM</td>
+                            <td><span class="check">✓</span> Direct writes</td>
+                            <td><span class="cross">✗</span> Not supported</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Error Handling</strong></td>
+                            <td><span class="cross">✗</span> Limited</td>
+                            <td><span class="check">✓</span> TRY/CATCH</td>
+                            <td><span class="cross">✗</span> None</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Batch Tracking</strong></td>
+                            <td><span class="warning">⚠</span> Timestamp-based</td>
+                            <td><span class="check">✓</span> batch_id</td>
+                            <td><span class="cross">✗</span> Not applicable</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reprocess Historical</strong></td>
+                            <td><span class="cross">✗</span> Rolling window only</td>
+                            <td><span class="check">✓</span> Any batch</td>
+                            <td><span class="cross">✗</span> Not applicable</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Real-Time Capability</strong></td>
+                            <td><span class="check">✓</span> &lt;5 min lag</td>
+                            <td><span class="cross">✗</span> Batch only</td>
+                            <td><span class="check">✓</span> Query-time</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Code Maintenance</strong></td>
+                            <td><span class="check">✓</span> Declarative SQL</td>
+                            <td><span class="cross">✗</span> Procedural code</td>
+                            <td><span class="check">✓</span> Simple SQL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Performance</strong></td>
+                            <td><span class="check">✓</span> Optimized</td>
+                            <td><span class="check">✓</span> Depends on code</td>
+                            <td><span class="warning">⚠</span> Query-time (Views)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cost Model</strong></td>
+                            <td>Refresh frequency</td>
+                            <td>Execution frequency</td>
+                            <td>Query frequency (Views)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🚀 Best Use Cases: Dynamic Tables</h3>
+                        <ul style="line-height: 2;">
+                            <li>New components (no migration risk)</li>
+                            <li>Simple transformations</li>
+                            <li>Single source or straightforward merge</li>
+                            <li>Low conflict rate (&lt;10%)</li>
+                            <li>Real-time requirements</li>
+                            <li>Reference/lookup data</li>
+                            <li>Fact tables (transactional events)</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>⚙️ Best Use Cases: Stored Procedures</h3>
+                        <ul style="line-height: 2;">
+                            <li>Complex multi-step logic</li>
+                            <li>High conflict resolution (&gt;20%)</li>
+                            <li>Write to audit/log tables</li>
+                            <li>Explicit error handling needed</li>
+                            <li>Batch reprocessing required</li>
+                            <li>Conditional branching</li>
+                            <li>Transaction control</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Examples -->
+            <div id="examples" class="tab-content">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Real-World Examples</h2>
+
+                <div class="example-tabs">
+                    <button class="example-tab active" onclick="showExample('facilities')">Facilities (Dynamic Tables)</button>
+                    <button class="example-tab" onclick="showExample('veterans')">Veterans (Stored Proc)</button>
+                    <button class="example-tab" onclick="showExample('facts')">Appointment Events (Dynamic)</button>
+                </div>
+
+                <!-- Facilities Example -->
+                <div id="example-facilities" class="example-content active">
+                    <div class="card">
+                        <h3>Example: Facilities Staging (Dynamic Tables)</h3>
+                        <p><strong>Characteristics:</strong></p>
+                        <ul style="margin: 10px 0 20px 20px; line-height: 1.8;">
+                            <li><span class="badge badge-success">Simple</span> Single join key (facility_id)</li>
+                            <li><span class="badge badge-success">Low Conflicts</span> &lt;5% conflict rate</li>
+                            <li><span class="badge badge-info">Reference Data</span> ~500 facilities</li>
+                            <li><span class="badge badge-info">Real-Time</span> 30-minute freshness</li>
+                        </ul>
+
+                        <p><strong>Implementation:</strong></p>
+                        <div class="code-example">
+<pre>CREATE OR REPLACE DYNAMIC TABLE dt_stg_facilities
+    <span class="highlight">TARGET_LAG = '30 minutes'</span>
+    WAREHOUSE = compute_wh
+    REFRESH_MODE = AUTO
+AS
+WITH oms_latest AS (
+    SELECT *
+    FROM ods_raw.ods_facilities_source
+    WHERE source_system = 'OMS'
+      AND ingestion_timestamp >= DATEADD(day, -7, CURRENT_TIMESTAMP())
+    <span class="highlight">QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY facility_id
+        ORDER BY ingestion_timestamp DESC
+    ) = 1</span>
+),
+vems_latest AS (
+    SELECT *
+    FROM ods_raw.ods_facilities_source
+    WHERE source_system = 'VEMS'
+      AND ingestion_timestamp >= DATEADD(day, -7, CURRENT_TIMESTAMP())
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY facility_id
+        ORDER BY ingestion_timestamp DESC
+    ) = 1
+)
+SELECT
+    COALESCE(o.facility_id, v.facility_id) as facility_id,
+    <span class="highlight">-- OMS is primary for facilities
+    COALESCE(o.facility_name, v.facility_name) as facility_name,</span>
+    COALESCE(o.state, v.state) as state,
+    COALESCE(o.phone, v.phone) as phone,
+    -- Data quality scoring
+    (CASE WHEN facility_id IS NOT NULL THEN 30 ELSE 0 END +
+     CASE WHEN facility_name IS NOT NULL THEN 20 ELSE 0 END) as dq_score
+FROM oms_latest o
+FULL OUTER JOIN vems_latest v
+    ON o.facility_id = v.facility_id;</pre>
+                        </div>
+
+                        <p style="margin-top: 20px;"><strong>Why Dynamic Tables:</strong></p>
+                        <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                            <li>✅ Simple logic (no complex branching)</li>
+                            <li>✅ Automatic refresh (no manual orchestration)</li>
+                            <li>✅ Low conflict rate</li>
+                            <li>✅ Real-time capability</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Veterans Example -->
+                <div id="example-veterans" class="example-content">
+                    <div class="card">
+                        <h3>Example: Veterans Staging (Stored Procedures)</h3>
+                        <p><strong>Characteristics:</strong></p>
+                        <ul style="margin: 10px 0 20px 20px; line-height: 1.8;">
+                            <li><span class="badge badge-danger">Complex</span> Multiple match strategies</li>
+                            <li><span class="badge badge-danger">High Conflicts</span> 30% conflict rate</li>
+                            <li><span class="badge badge-warning">Audit Required</span> Write to reconciliation log</li>
+                            <li><span class="badge badge-warning">Batch Tracking</span> Need batch_id</li>
+                        </ul>
+
+                        <p><strong>Implementation:</strong></p>
+                        <div class="code-example">
+<pre>CREATE OR REPLACE PROCEDURE sp_merge_veterans_to_staging(
+    p_batch_id VARCHAR
+)
+RETURNS VARCHAR
+AS
+$$
+BEGIN
+    <span class="highlight">-- Step 1: Clear existing batch</span>
+    DELETE FROM staging.stg_veterans
+    WHERE batch_id = :p_batch_id;
+
+    <span class="highlight">-- Step 2: Merge with complex logic</span>
+    INSERT INTO staging.stg_veterans (...)
+    SELECT
+        xwalk.master_veteran_id,
+        <span class="highlight">-- Complex system-of-record rules</span>
+        COALESCE(oms.ssn, vems.ssn) as ssn,
+        COALESCE(oms.first_name, vems.first_name) as first_name,
+        -- Contact: VEMS preferred (more current)
+        COALESCE(vems.email, oms.email) as email,
+        -- Disability: OMS authoritative
+        COALESCE(oms.disability_rating, vems.disability_rating) as rating,
+
+        <span class="highlight">-- Conflict detection</span>
+        CASE
+            WHEN oms.disability_rating != vems.disability_rating
+                 AND oms.disability_rating IS NOT NULL
+                 AND vems.disability_rating IS NOT NULL
+            THEN 'DISABILITY_RATING_MISMATCH'
+            ELSE NULL
+        END as conflict_type,
+
+        :p_batch_id as batch_id
+    FROM reference.ref_entity_crosswalk_veteran xwalk
+    LEFT JOIN ods.oms_veterans oms ON ...
+    LEFT JOIN ods.vems_veterans vems ON ...;
+
+    <span class="highlight">-- Step 3: Log conflicts to audit table</span>
+    INSERT INTO reference.ref_reconciliation_log (...)
+    SELECT
+        :p_batch_id,
+        'VETERAN',
+        master_veteran_id,
+        conflict_type,
+        oms_value,
+        vems_value
+    FROM staging.stg_veterans
+    WHERE conflict_type IS NOT NULL
+      AND batch_id = :p_batch_id;
+
+    RETURN 'Processed: ' || SQLROWCOUNT || ' veterans';
+END;
+$$;</pre>
+                        </div>
+
+                        <p style="margin-top: 20px;"><strong>Why Stored Procedures:</strong></p>
+                        <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                            <li>✅ Complex conflict resolution (30% conflict rate)</li>
+                            <li>✅ Write to audit tables (reconciliation log)</li>
+                            <li>✅ Explicit batch tracking</li>
+                            <li>✅ Multi-step workflow with validation</li>
+                            <li>✅ Error handling with TRY/CATCH</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Appointment Events Example -->
+                <div id="example-facts" class="example-content">
+                    <div class="card">
+                        <h3>Example: Appointment Events Fact (Dynamic Tables)</h3>
+                        <p><strong>Characteristics:</strong></p>
+                        <ul style="margin: 10px 0 20px 20px; line-height: 1.8;">
+                            <li><span class="badge badge-success">Simple</span> Single source (VEMS only)</li>
+                            <li><span class="badge badge-success">No Conflicts</span> No merging needed</li>
+                            <li><span class="badge badge-info">Fact Table</span> Transactional events</li>
+                            <li><span class="badge badge-info">Real-Time</span> 20-minute freshness</li>
+                        </ul>
+
+                        <p><strong>Implementation:</strong></p>
+                        <div class="code-example">
+<pre>CREATE OR REPLACE DYNAMIC TABLE dt_stg_fact_appointment_events
+    <span class="highlight">TARGET_LAG = '20 minutes'</span>
+    WAREHOUSE = compute_wh
+    REFRESH_MODE = AUTO
+AS
+WITH vems_appointments AS (
+    SELECT *
+    FROM ods_raw.ods_appointment_events_source
+    WHERE source_system = 'VEMS'
+      AND ingestion_timestamp >= DATEADD(day, -7, CURRENT_TIMESTAMP())
+    <span class="highlight">-- Keep only latest version of each event</span>
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY event_id
+        ORDER BY ingestion_timestamp DESC
+    ) = 1
+)
+SELECT
+    event_id,
+    appointment_id,
+    <span class="highlight">-- Enrich with master IDs from crosswalks</span>
+    vet_xwalk.master_veteran_id,
+    eval_xwalk.master_evaluator_id,
+    fac_xwalk.master_facility_id,
+
+    -- Event details
+    event_type,  -- SCHEDULED, CONFIRMED, CANCELLED, NO_SHOW
+    event_timestamp,
+    scheduled_date,
+
+    <span class="highlight">-- Derive sequence number</span>
+    ROW_NUMBER() OVER (
+        PARTITION BY appointment_id
+        ORDER BY event_timestamp
+    ) as event_sequence_number,
+
+    -- Flags
+    IFF(event_type = 'NO_SHOW', TRUE, FALSE) as no_show_flag,
+
+    -- Metadata
+    'VEMS' as source_system,
+    CURRENT_TIMESTAMP() as staging_processed_timestamp
+FROM vems_appointments apt
+<span class="highlight">-- Join to crosswalks for master IDs</span>
+LEFT JOIN reference.dt_crosswalk_veterans vet_xwalk
+    ON apt.veteran_ssn = vet_xwalk.master_veteran_id
+LEFT JOIN reference.dt_crosswalk_evaluators eval_xwalk
+    ON apt.evaluator_npi = eval_xwalk.master_evaluator_id
+LEFT JOIN reference.dt_crosswalk_facilities fac_xwalk
+    ON apt.facility_id = fac_xwalk.master_facility_id;</pre>
+                        </div>
+
+                        <p style="margin-top: 20px;"><strong>Why Dynamic Tables:</strong></p>
+                        <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                            <li>✅ Single source (VEMS) - no merge conflicts</li>
+                            <li>✅ Straightforward extraction + enrichment</li>
+                            <li>✅ Real-time requirement (20 min)</li>
+                            <li>✅ Automatic dependency on crosswalks</li>
+                            <li>✅ No audit table writes needed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 30px; background: #f8f9fa;">
+                    <h3>📚 More Examples in Your Codebase</h3>
+                    <ul style="line-height: 2;">
+                        <li><strong>Dynamic Tables:</strong> <code>snowflake/staging/03_dynamic_tables_staging_layer.sql</code></li>
+                        <li><strong>Stored Procedures:</strong> <code>snowflake/staging/02_staging_layer_oms_vems_merge_simplified.sql</code></li>
+                        <li><strong>Implementation Guide:</strong> <code>DYNAMIC_TABLES_IMPLEMENTATION_GUIDE.md</code></li>
+                        <li><strong>Architecture Review:</strong> <code>SNOWFLAKE_STAGING_LAYER_REVIEW.md</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                <strong>VES Data Pipeline - Staging Layer Decision Guide</strong><br>
+                For more information, see:
+                <a href="#">Implementation Guide</a> |
+                <a href="#">Architecture Review</a> |
+                <a href="#">Monitoring Guide</a>
+            </p>
+            <p style="margin-top: 10px; opacity: 0.7;">
+                Generated: 2025-11-20 | Snowflake Enterprise Edition Required
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Quiz state
+        let answers = {
+            q1: null,
+            q2: null,
+            q3: null,
+            q4: null,
+            q5: null,
+            q6: null
+        };
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Quiz functions
+        function selectOption(question, value, button) {
+            answers[question] = value;
+
+            // Remove selected class from siblings
+            button.parentElement.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Add selected class to clicked button
+            button.classList.add('selected');
+        }
+
+        function calculateRecommendation() {
+            // Check if all questions answered
+            if (Object.values(answers).some(v => v === null)) {
+                alert('Please answer all questions first!');
+                return;
+            }
+
+            // Hide all results
+            document.querySelectorAll('.result').forEach(r => r.classList.remove('show'));
+
+            // Calculate score
+            let dtScore = 0;
+            let spScore = 0;
+
+            // Q1: New vs Existing
+            if (answers.q1 === 'new') dtScore += 2;
+            else spScore += 1;
+
+            // Q2: Complexity
+            if (answers.q2 === 'simple') dtScore += 3;
+            else if (answers.q2 === 'moderate') { dtScore += 1; spScore += 1; }
+            else spScore += 3;
+
+            // Q3: Conflicts
+            if (answers.q3 === 'low') dtScore += 2;
+            else if (answers.q3 === 'medium') { dtScore += 1; spScore += 1; }
+            else spScore += 3;
+
+            // Q4: Real-time
+            if (answers.q4 === 'yes') dtScore += 3;
+            else dtScore += 1;
+
+            // Q5: Audit writes
+            if (answers.q5 === 'yes') spScore += 4;
+            else dtScore += 2;
+
+            // Q6: Reprocess
+            if (answers.q6 === 'yes') spScore += 3;
+            else dtScore += 1;
+
+            // Show result
+            if (dtScore > spScore + 3) {
+                document.getElementById('result-dynamic').classList.add('show');
+            } else if (spScore > dtScore + 3) {
+                document.getElementById('result-stored').classList.add('show');
+            } else {
+                document.getElementById('result-either').classList.add('show');
+            }
+
+            // Scroll to result
+            setTimeout(() => {
+                document.querySelector('.result.show').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function resetQuiz() {
+            answers = { q1: null, q2: null, q3: null, q4: null, q5: null, q6: null };
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.querySelectorAll('.result').forEach(r => {
+                r.classList.remove('show');
+            });
+        }
+
+        // Calculator functions
+        function updateCalculator() {
+            const sources = parseInt(document.getElementById('sources').value);
+            const lines = parseInt(document.getElementById('lines').value);
+            const conflicts = parseInt(document.getElementById('conflicts').value);
+            const audit = parseInt(document.getElementById('audit').value);
+            const freshness = parseInt(document.getElementById('freshness').value);
+            const branches = parseInt(document.getElementById('branches').value);
+
+            // Update displayed values
+            document.getElementById('sources-value').textContent = sources;
+            document.getElementById('lines-value').textContent = lines;
+            document.getElementById('conflicts-value').textContent = conflicts + '%';
+            document.getElementById('audit-value').textContent = audit;
+            document.getElementById('freshness-value').textContent = freshness + ' min';
+            document.getElementById('branches-value').textContent = branches;
+
+            // Calculate complexity score (0-100)
+            let complexity = 0;
+            complexity += (sources - 1) * 15;  // Multiple sources increase complexity
+            complexity += Math.min(lines / 5, 40);  // More lines = more complex (max 40 points)
+            complexity += Math.min(conflicts * 0.5, 15);  // Conflicts add complexity
+            complexity += audit * 5;  // Audit writes add complexity
+            complexity += branches * 2;  // Branching adds complexity
+            complexity -= Math.min(freshness / 60, 10);  // Real-time reduces DT fit
+
+            complexity = Math.round(Math.min(complexity, 100));
+
+            // Calculate Dynamic Tables fit (inverse of complexity, adjusted)
+            let dtFit = 100;
+            dtFit -= (sources - 1) * 20;  // Multiple sources hurt DT fit
+            dtFit -= Math.min(lines / 10, 30);  // Lots of logic hurts DT fit
+            dtFit -= Math.min(conflicts * 1.5, 30);  // Conflicts hurt DT fit
+            dtFit -= audit * 20;  // Audit writes are major DT blocker
+            dtFit -= branches * 5;  // Branching hurts DT fit
+            dtFit += (freshness < 60) ? 10 : 0;  // Real-time helps DT fit
+
+            dtFit = Math.max(0, Math.min(dtFit, 100));
+
+            // Calculate Stored Proc fit
+            let spFit = 50;
+            spFit += (sources - 1) * 10;  // Multiple sources help SP fit
+            spFit += Math.min(lines / 10, 20);  // Complex logic helps SP fit
+            spFit += Math.min(conflicts * 1, 20);  // Conflicts help SP fit
+            spFit += audit * 15;  // Audit writes strongly favor SP
+            spFit += branches * 3;  // Branching helps SP fit
+
+            spFit = Math.min(spFit, 100);
+
+            // Update display
+            const scoreDisplay = document.getElementById('complexity-score');
+            const resultDiv = document.getElementById('calc-result');
+            const recommendation = document.getElementById('complexity-recommendation');
+
+            scoreDisplay.textContent = complexity;
+
+            if (complexity < 30) {
+                resultDiv.className = 'score-display score-high';
+                recommendation.textContent = '✅ Low Complexity - Great for Dynamic Tables';
+            } else if (complexity < 60) {
+                resultDiv.className = 'score-display';
+                resultDiv.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                resultDiv.style.color = 'white';
+                recommendation.textContent = '🤔 Moderate Complexity - Either approach works';
+            } else {
+                resultDiv.className = 'score-display score-low';
+                recommendation.textContent = '⚙️ High Complexity - Better for Stored Procedures';
+            }
+
+            document.getElementById('dt-fit').textContent = Math.round(dtFit) + '%';
+            document.getElementById('sp-fit').textContent = Math.round(spFit) + '%';
+        }
+
+        // Example tab management
+        function showExample(exampleName) {
+            // Hide all examples
+            document.querySelectorAll('.example-content').forEach(ex => {
+                ex.classList.remove('active');
+            });
+            document.querySelectorAll('.example-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected example
+            document.getElementById('example-' + exampleName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Initialize calculator
+        updateCalculator();
+    </script>
+</body>
+</html>
