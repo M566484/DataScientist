@@ -5,7 +5,9 @@
 -- SCD Type: Type 2
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
+USE SCHEMA WAREHOUSE;
 
 CREATE OR REPLACE TABLE dim_facilities (
     facility_sk INTEGER AUTOINCREMENT PRIMARY KEY,

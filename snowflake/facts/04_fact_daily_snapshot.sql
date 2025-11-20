@@ -6,7 +6,9 @@
 -- Type: Periodic Snapshot Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
+USE SCHEMA WAREHOUSE;
 
 CREATE OR REPLACE TABLE fact_daily_facility_snapshot (
     daily_snapshot_sk INTEGER AUTOINCREMENT PRIMARY KEY,
@@ -90,8 +92,8 @@ CREATE OR REPLACE TABLE fact_daily_facility_snapshot (
     UNIQUE (facility_sk, snapshot_date_sk),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (facility_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities(facility_sk),
-    FOREIGN KEY (snapshot_date_sk) REFERENCES VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates(date_sk)
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
+    FOREIGN KEY (snapshot_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
 )
 COMMENT = 'Periodic snapshot fact table with daily performance metrics by facility'
 CLUSTER BY (snapshot_date_sk, facility_sk);

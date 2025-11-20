@@ -5,7 +5,8 @@
 -- Pattern: ODS → Staging → Warehouse (with surrogate key lookups)
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE DATABASE VETERAN_EVALUATION_DW;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
 -- =====================================================
@@ -19,10 +20,13 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    TRUNCATE TABLE VETERAN_EVALUATION_DW.STAGING.stg_fact_exam_requests;
+    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests');
 
-    INSERT INTO VETERAN_EVALUATION_DW.STAGING.stg_fact_exam_requests (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests') (
         exam_request_id,
         va_request_number,
         veteran_id,
@@ -124,11 +128,11 @@ BEGIN
         source_system,
         :p_batch_id AS batch_id
 
-    FROM VETERAN_EVALUATION_DW.ODS_RAW.ods_exam_requests_source
+    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_exam_requests_source')
     WHERE batch_id = :p_batch_id
       AND extraction_timestamp = (
           SELECT MAX(extraction_timestamp)
-          FROM VETERAN_EVALUATION_DW.ODS_RAW.ods_exam_requests_source
+          FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_exam_requests_source')
           WHERE batch_id = :p_batch_id
       );
 
@@ -151,7 +155,7 @@ DECLARE
     v_rows_merged INTEGER;
 BEGIN
     -- Merge staging into fact table (accumulating snapshot pattern)
-    MERGE INTO VETERAN_EVALUATION_DW.WAREHOUSE.fact_exam_requests tgt
+    MERGE INTO IDENTIFIER(:v_dw_database || '.WAREHOUSE.fact_exam_requests') tgt
     USING (
         SELECT
             stg.*,
@@ -167,29 +171,29 @@ BEGIN
             d_sched.date_sk AS appointment_scheduled_date_sk,
             d_comp.date_sk AS exam_completed_date_sk,
             d_close.date_sk AS request_closed_date_sk
-        FROM VETERAN_EVALUATION_DW.STAGING.stg_fact_exam_requests stg
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans vet
+        FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests') stg
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') vet
             ON stg.veteran_id = vet.veteran_id
             AND vet.is_current = TRUE
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators eval
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') eval
             ON stg.assigned_evaluator_id = eval.evaluator_id
             AND eval.is_current = TRUE
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities fac
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_facilities') fac
             ON stg.facility_id = fac.facility_id
             AND fac.is_current = TRUE
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_exam_request_types req_type
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_exam_request_types') req_type
             ON stg.exam_request_type_id = req_type.exam_request_type_id
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_req
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_req
             ON stg.request_received_date = d_req.full_date
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_elig
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_elig
             ON stg.eligibility_confirmed_date = d_elig.full_date
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_assign
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_assign
             ON stg.examiner_assigned_date = d_assign.full_date
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_sched
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_sched
             ON stg.appointment_scheduled_date = d_sched.full_date
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_comp
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_comp
             ON stg.exam_completed_date = d_comp.full_date
-        LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_close
+        LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_close
             ON stg.request_closed_date = d_close.full_date
         WHERE stg.batch_id = :p_batch_id
     ) src
@@ -308,6 +312,9 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
     -- Transform ODS to Staging
     CALL sp_transform_ods_to_staging_exam_requests(:p_batch_id);
@@ -318,7 +325,7 @@ BEGIN
     RETURN 'Exam requests ETL pipeline completed successfully';
 EXCEPTION
     WHEN OTHER THEN
-        INSERT INTO VETERAN_EVALUATION_DW.ODS_RAW.ods_error_log (
+        INSERT INTO IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_error_log') (
             batch_id,
             source_table,
             error_type,
@@ -344,10 +351,13 @@ RETURNS VARCHAR
 LANGUAGE SQL
 AS
 $$
+DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
 BEGIN
-    TRUNCATE TABLE VETERAN_EVALUATION_DW.STAGING.stg_fact_evaluations;
+    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations');
 
-    INSERT INTO VETERAN_EVALUATION_DW.STAGING.stg_fact_evaluations (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations') (
         evaluation_id,
         exam_request_id,
         dbq_form_id,
@@ -434,11 +444,11 @@ BEGIN
         source_system,
         :p_batch_id AS batch_id
 
-    FROM VETERAN_EVALUATION_DW.ODS_RAW.ods_evaluations_source
+    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluations_source')
     WHERE batch_id = :p_batch_id
       AND extraction_timestamp = (
           SELECT MAX(extraction_timestamp)
-          FROM VETERAN_EVALUATION_DW.ODS_RAW.ods_evaluations_source
+          FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluations_source')
           WHERE batch_id = :p_batch_id
       );
 
@@ -461,7 +471,7 @@ DECLARE
     v_rows_inserted INTEGER;
 BEGIN
     -- Insert new evaluations (transaction fact - insert only)
-    INSERT INTO VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed (
+    INSERT INTO IDENTIFIER(:v_dw_database || '.WAREHOUSE.fact_evaluations_completed') (
         evaluation_id,
         exam_request_id,
         dbq_form_id,
@@ -526,26 +536,26 @@ BEGIN
         stg.source_system,
         CURRENT_TIMESTAMP(),
         CURRENT_TIMESTAMP()
-    FROM VETERAN_EVALUATION_DW.STAGING.stg_fact_evaluations stg
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans vet
+    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations') stg
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') vet
         ON stg.veteran_id = vet.veteran_id AND vet.is_current = TRUE
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluators eval
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') eval
         ON stg.evaluator_id = eval.evaluator_id AND eval.is_current = TRUE
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_facilities fac
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_facilities') fac
         ON stg.facility_id = fac.facility_id AND fac.is_current = TRUE
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_evaluation_types eval_type
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluation_types') eval_type
         ON stg.evaluation_type_id = eval_type.evaluation_type_code
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_medical_conditions med_cond
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_medical_conditions') med_cond
         ON stg.medical_condition_code = med_cond.condition_code
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_eval
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_eval
         ON stg.evaluation_date = d_eval.full_date
-    LEFT JOIN VETERAN_EVALUATION_DW.WAREHOUSE.dim_dates d_sched
+    LEFT JOIN IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_dates') d_sched
         ON stg.scheduled_date = d_sched.full_date
     WHERE stg.batch_id = :p_batch_id
       AND NOT EXISTS (
           -- Prevent duplicates
           SELECT 1
-          FROM VETERAN_EVALUATION_DW.WAREHOUSE.fact_evaluations_completed fact
+          FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.fact_evaluations_completed') fact
           WHERE fact.evaluation_id = stg.evaluation_id
       );
 
@@ -573,17 +583,17 @@ BEGIN
     -- Check for orphan veteran records (no SK resolved)
     SELECT COUNT(*)
     INTO v_orphan_count
-    FROM VETERAN_EVALUATION_DW.STAGING.stg_fact_exam_requests stg
+    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests') stg
     WHERE stg.batch_id = :p_batch_id
       AND NOT EXISTS (
           SELECT 1
-          FROM VETERAN_EVALUATION_DW.WAREHOUSE.dim_veterans dim
+          FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') dim
           WHERE dim.veteran_id = stg.veteran_id
             AND dim.is_current = TRUE
       );
 
     IF (v_orphan_count > 0) THEN
-        INSERT INTO VETERAN_EVALUATION_DW.ODS_RAW.ods_error_log (
+        INSERT INTO IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_error_log') (
             batch_id,
             source_table,
             error_type,

@@ -5,7 +5,8 @@
 -- Usage: Deploy this first, then load test definitions
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE DATABASE VETERAN_EVALUATION_DW;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 
 -- Create QA schema for test framework
 CREATE SCHEMA IF NOT EXISTS QA_FRAMEWORK;

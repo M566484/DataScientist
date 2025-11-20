@@ -5,7 +5,8 @@
 -- Pattern: One-to-one with dimensions and facts, with transformations applied
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE DATABASE VETERAN_EVALUATION_DW;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 
 -- =====================================================
 -- Create Staging Schema
@@ -481,7 +482,7 @@ SELECT
     row_count,
     bytes / (1024*1024) AS size_mb,
     comment
-FROM VETERAN_EVALUATION_DW.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
 WHERE table_schema = 'STAGING'
   AND table_type = 'BASE TABLE'
 ORDER BY table_name;

@@ -182,7 +182,7 @@ BEGIN
   v_batch_id := 'PROD_BATCH_' || TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD') || '_001';
 
   -- Log task start
-  INSERT INTO VESDW_PRD.metadata.etl_task_log (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     task_name, batch_id, status, start_time
   ) VALUES (
     'task_daily_ods_extraction', :v_batch_id, 'RUNNING', CURRENT_TIMESTAMP()
@@ -193,11 +193,11 @@ BEGIN
 
   -- Validate ODS data loaded
   SELECT COUNT(*) INTO :v_oms_count
-  FROM VESODS_PRDDATA_PRD.ods_veterans_source
+  FROM IDENTIFIER(get_ods_database() || '.ods_veterans_source
   WHERE batch_id = :v_batch_id AND source_system = 'OMS';
 
   SELECT COUNT(*) INTO :v_vems_count
-  FROM VESODS_PRDDATA_PRD.ods_veterans_source
+  FROM IDENTIFIER(get_ods_database() || '.ods_veterans_source
   WHERE batch_id = :v_batch_id AND source_system = 'VEMS';
 
   -- Alert if no data extracted
@@ -215,7 +215,7 @@ BEGIN
     );
 
     -- Log failure
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = :v_error_message, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_ods_extraction' AND batch_id = :v_batch_id;
 
@@ -224,14 +224,14 @@ BEGIN
   END IF;
 
   -- Log success
-  UPDATE VESDW_PRD.metadata.etl_task_log
+  UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
   SET status = 'SUCCESS', records_processed = :v_oms_count + :v_vems_count, end_time = CURRENT_TIMESTAMP()
   WHERE task_name = 'task_daily_ods_extraction' AND batch_id = :v_batch_id;
 
 EXCEPTION
   WHEN OTHER THEN
     -- Log error
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = SQLERRM, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_ods_extraction' AND batch_id = :v_batch_id;
 
@@ -263,7 +263,7 @@ BEGIN
   v_batch_id := 'PROD_BATCH_' || TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD') || '_001';
 
   -- Log task start
-  INSERT INTO VESDW_PRD.metadata.etl_task_log (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     task_name, batch_id, status, start_time
   ) VALUES (
     'task_daily_staging_layer', :v_batch_id, 'RUNNING', CURRENT_TIMESTAMP()
@@ -275,7 +275,7 @@ BEGIN
   -- Validate staging layer results
   SELECT COUNT(*), AVG(dq_score)
   INTO :v_staging_count, :v_dq_avg
-  FROM VESDW_PRD.staging.stg_veterans
+  FROM IDENTIFIER(get_dw_database() || '.staging.stg_veterans')
   WHERE batch_id = :v_batch_id;
 
   -- Alert if data quality is low
@@ -292,7 +292,7 @@ BEGIN
   END IF;
 
   -- Log success
-  UPDATE VESDW_PRD.metadata.etl_task_log
+  UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
   SET status = 'SUCCESS', records_processed = :v_staging_count, end_time = CURRENT_TIMESTAMP()
   WHERE task_name = 'task_daily_staging_layer' AND batch_id = :v_batch_id;
 
@@ -308,7 +308,7 @@ EXCEPTION
       ARRAY_CONSTRUCT('data-team@company.com', 'ops-team@company.com')
     );
 
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = SQLERRM, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_staging_layer' AND batch_id = :v_batch_id;
 
@@ -330,7 +330,7 @@ DECLARE
 BEGIN
   v_batch_id := 'PROD_BATCH_' || TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD') || '_001';
 
-  INSERT INTO VESDW_PRD.metadata.etl_task_log (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     task_name, batch_id, status, start_time
   ) VALUES (
     'task_daily_dimensions', :v_batch_id, 'RUNNING', CURRENT_TIMESTAMP()
@@ -338,8 +338,8 @@ BEGIN
 
   -- Load dimension tables (example: dim_veteran)
   -- TODO: Replace with actual dimension loading procedures
-  MERGE INTO VESDW_PRD.warehouse.dim_veteran tgt
-  USING VESDW_PRD.staging.stg_veterans src
+  MERGE INTO IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran') tgt
+  USING IDENTIFIER(get_dw_database() || '.staging.stg_veterans') src
   ON tgt.veteran_ssn = src.veteran_ssn
   WHEN MATCHED THEN
     UPDATE SET
@@ -349,12 +349,12 @@ BEGIN
       updated_timestamp = CURRENT_TIMESTAMP()
   WHEN NOT MATCHED THEN
     INSERT (veteran_sk, veteran_ssn, first_name, last_name, disability_rating, created_timestamp)
-    VALUES (VESDW_PRD.warehouse.seq_veteran_sk.NEXTVAL, src.veteran_ssn, src.first_name, src.last_name, src.disability_rating, CURRENT_TIMESTAMP())
+    VALUES (IDENTIFIER(get_dw_database() || '.warehouse.seq_veteran_sk').NEXTVAL, src.veteran_ssn, src.first_name, src.last_name, src.disability_rating, CURRENT_TIMESTAMP())
   WHERE src.batch_id = :v_batch_id;
 
   v_dim_veteran_count := SQLROWCOUNT;
 
-  UPDATE VESDW_PRD.metadata.etl_task_log
+  UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
   SET status = 'SUCCESS', records_processed = :v_dim_veteran_count, end_time = CURRENT_TIMESTAMP()
   WHERE task_name = 'task_daily_dimensions' AND batch_id = :v_batch_id;
 
@@ -368,7 +368,7 @@ EXCEPTION
       ARRAY_CONSTRUCT('data-team@company.com')
     );
 
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = SQLERRM, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_dimensions' AND batch_id = :v_batch_id;
 
@@ -390,7 +390,7 @@ DECLARE
 BEGIN
   v_batch_id := 'PROD_BATCH_' || TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD') || '_001';
 
-  INSERT INTO VESDW_PRD.metadata.etl_task_log (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     task_name, batch_id, status, start_time
   ) VALUES (
     'task_daily_facts', :v_batch_id, 'RUNNING', CURRENT_TIMESTAMP()
@@ -398,24 +398,24 @@ BEGIN
 
   -- Load fact tables
   -- TODO: Replace with actual fact loading procedures
-  INSERT INTO VESDW_PRD.warehouse.fact_exam_requests (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') (
     exam_request_sk, veteran_dim_sk, facility_dim_sk, request_date_sk, -- ... other columns
   )
   SELECT
-    VESDW_PRD.warehouse.seq_exam_request_sk.NEXTVAL,
+    IDENTIFIER(get_dw_database() || '.warehouse.seq_exam_request_sk').NEXTVAL,
     dv.veteran_sk,
     df.facility_sk,
     dd.date_sk
     -- ... other columns
-  FROM VESDW_PRD.staging.stg_fact_exam_requests ser
-  JOIN VESDW_PRD.warehouse.dim_veteran dv ON ser.master_veteran_id = dv.veteran_ssn
-  JOIN VESDW_PRD.warehouse.dim_facility df ON ser.master_facility_id = df.facility_id
-  JOIN VESDW_PRD.warehouse.dim_date dd ON ser.request_date = dd.full_date
+  FROM IDENTIFIER(get_dw_database() || '.staging.stg_fact_exam_requests') ser
+  JOIN IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran') dv ON ser.master_veteran_id = dv.veteran_ssn
+  JOIN IDENTIFIER(get_dw_database() || '.warehouse.dim_facility') df ON ser.master_facility_id = df.facility_id
+  JOIN IDENTIFIER(get_dw_database() || '.warehouse.dim_date') dd ON ser.request_date = dd.full_date
   WHERE ser.batch_id = :v_batch_id;
 
   v_fact_count := SQLROWCOUNT;
 
-  UPDATE VESDW_PRD.metadata.etl_task_log
+  UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
   SET status = 'SUCCESS', records_processed = :v_fact_count, end_time = CURRENT_TIMESTAMP()
   WHERE task_name = 'task_daily_facts' AND batch_id = :v_batch_id;
 
@@ -429,7 +429,7 @@ EXCEPTION
       ARRAY_CONSTRUCT('data-team@company.com')
     );
 
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = SQLERRM, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_facts' AND batch_id = :v_batch_id;
 
@@ -455,7 +455,7 @@ DECLARE
 BEGIN
   v_batch_id := 'PROD_BATCH_' || TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD') || '_001';
 
-  INSERT INTO VESDW_PRD.metadata.etl_task_log (
+  INSERT INTO IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     task_name, batch_id, status, start_time
   ) VALUES (
     'task_daily_dq_validation', :v_batch_id, 'RUNNING', CURRENT_TIMESTAMP()
@@ -464,17 +464,17 @@ BEGIN
   -- Gather statistics
   SELECT COUNT(*), AVG(dq_score)
   INTO :v_total_veterans, :v_dq_avg
-  FROM VESDW_PRD.staging.stg_veterans
+  FROM IDENTIFIER(get_dw_database() || '.staging.stg_veterans')
   WHERE batch_id = :v_batch_id;
 
   SELECT COUNT(*)
   INTO :v_conflicts
-  FROM VESDW_PRD.reference.ref_reconciliation_log
+  FROM IDENTIFIER(get_dw_database() || '.reference.ref_reconciliation_log')
   WHERE batch_id = :v_batch_id;
 
   SELECT COUNT(*)
   INTO :v_sla_breaches
-  FROM VESDW_PRD.warehouse.fact_exam_processing_bottlenecks
+  FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_processing_bottlenecks')
   WHERE request_date_sk = TO_NUMBER(TO_VARCHAR(CURRENT_DATE(), 'YYYYMMDD'))
     AND sla_breach_flag = TRUE;
 
@@ -498,7 +498,7 @@ BEGIN
     '<hr>' ||
     '<h3>Task Execution Log</h3>' ||
     '<p>All tasks completed successfully.</p>' ||
-    '<p><em>For detailed logs, query: VESDW_PRD.metadata.etl_task_log WHERE batch_id = \'' || :v_batch_id || '\'</em></p>' ||
+    '<p><em>For detailed logs, query: IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') WHERE batch_id = \'' || :v_batch_id || '\'</em></p>' ||
     '</body></html>';
 
   -- Send summary email
@@ -508,13 +508,13 @@ BEGIN
     ARRAY_CONSTRUCT('data-team@company.com')
   );
 
-  UPDATE VESDW_PRD.metadata.etl_task_log
+  UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
   SET status = 'SUCCESS', end_time = CURRENT_TIMESTAMP()
   WHERE task_name = 'task_daily_dq_validation' AND batch_id = :v_batch_id;
 
 EXCEPTION
   WHEN OTHER THEN
-    UPDATE VESDW_PRD.metadata.etl_task_log
+    UPDATE IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
     SET status = 'FAILED', error_message = SQLERRM, end_time = CURRENT_TIMESTAMP()
     WHERE task_name = 'task_daily_dq_validation' AND batch_id = :v_batch_id;
 
@@ -728,7 +728,7 @@ ALTER TASK task_hourly_monitoring RESUME;
 -- =====================================================================================
 
 -- Create table to track task execution (referenced in tasks above)
-CREATE TABLE IF NOT EXISTS VESDW_PRD.metadata.etl_task_log (
+CREATE TABLE IF NOT EXISTS IDENTIFIER(get_dw_database() || '.metadata.etl_task_log') (
     log_id NUMBER AUTOINCREMENT PRIMARY KEY,
     task_name VARCHAR(200),
     batch_id VARCHAR(100),
@@ -751,7 +751,7 @@ SELECT
     DATEDIFF(second, start_time, end_time) AS duration_seconds,
     records_processed,
     error_message
-FROM VESDW_PRD.metadata.etl_task_log
+FROM IDENTIFIER(get_dw_database() || '.metadata.etl_task_log')
 WHERE start_time >= DATEADD(day, -7, CURRENT_TIMESTAMP())
 ORDER BY start_time DESC;
 

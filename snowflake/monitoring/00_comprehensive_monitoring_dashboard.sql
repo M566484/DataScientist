@@ -16,7 +16,8 @@
 -- Version: 2.0 (Enhanced)
 -- =====================================================================================
 
-USE DATABASE VESDW_PRD;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA metadata;
 
 -- =====================================================================================

@@ -5,7 +5,9 @@
 -- Range: 2020-01-01 to 2029-12-31
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-USE SCHEMA VETERAN_EVALUATION_DW.WAREHOUSE;
+SET dw_database = (SELECT get_dw_database());
+USE DATABASE IDENTIFIER($dw_database);
+USE SCHEMA WAREHOUSE;
 
 -- Create a procedure to populate the date dimension
 CREATE OR REPLACE PROCEDURE populate_dim_dates(
