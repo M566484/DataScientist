@@ -34,7 +34,7 @@ This repository contains a **complete, production-ready data warehousing solutio
 - 48-page troubleshooting playbook with 50+ common scenarios
 
 ✅ **Enterprise Documentation**
-- 456 total pages of comprehensive documentation
+- 500+ total pages of comprehensive documentation
 - 70-page Snowflake developer guide for SQL Server teams
 - 68-page structured onboarding guide with hands-on exercises
 - 65-page performance optimization guide with proven strategies
@@ -245,9 +245,14 @@ DataScientist/
 │   │   └── 02_staging_layer_oms_vems_merge_simplified.sql  # Multi-source merge
 │   │
 │   ├── etl/
+│   │   ├── 00_generic_scd_procedures.sql        # Generic SCD Type 2 procedures
 │   │   ├── 01_etl_procedures_dimensions.sql     # Dimension load procedures
 │   │   ├── 02_etl_procedures_facts.sql          # Fact load procedures
 │   │   └── 03_etl_procedures_multi_source.sql   # Cross-source integration
+│   │
+│   ├── functions/
+│   │   ├── 00_common_data_functions.sql         # Reusable data transformation functions
+│   │   └── 01_rename_environment_functions.sql  # Environment-specific renaming utilities
 │   │
 │   ├── orchestration/
 │   │   └── 01_snowflake_native_orchestration.sql # Tasks, streams, notifications
@@ -256,22 +261,28 @@ DataScientist/
 │   │   ├── 00_comprehensive_monitoring_dashboard.sql # Real-time monitoring
 │   │   ├── data_lineage_queries.sql             # Impact analysis queries
 │   │   ├── bottleneck_analysis_queries.sql      # Performance bottleneck detection
+│   │   ├── dynamic_tables_monitoring.sql        # Dynamic tables monitoring queries
 │   │   └── staging_layer_validation_queries.sql # Staging validation
 │   │
 │   ├── quality/
 │   │   └── 00_advanced_data_quality_framework.sql # 40+ DQ rules, anomaly detection
+│   │
+│   ├── metadata/
+│   │   └── 01_create_metadata_tables.sql        # Metadata tracking infrastructure
 │   │
 │   ├── marts/
 │   │   ├── 01_create_marts_clinical.sql         # Clinical analytics mart
 │   │   └── 02_executive_analytics_dashboard.sql # Executive KPIs and reports
 │   │
 │   ├── reference/
-│   │   └── 01_create_reference_tables.sql       # Reference/lookup tables
+│   │   ├── 01_create_reference_tables.sql       # Reference/lookup tables
+│   │   ├── 02_ref_disability_rating_categories.sql # Disability rating reference data
+│   │   └── 03_ref_priority_groups.sql           # Priority groups reference data
 │   │
 │   └── testing/
 │       └── 01_create_qa_framework.sql           # Automated testing framework
 │
-├── 📁 Documentation Library/                    # 456 pages of enterprise documentation
+├── 📁 Documentation Library/                    # 500+ pages of enterprise documentation
 │
 │   ├── 🎯 GETTING STARTED
 │   │   ├── DEVELOPER_ONBOARDING_GUIDE.md        # 68 pages - 5-day structured program
@@ -306,14 +317,43 @@ DataScientist/
 │   │   ├── NAMING_CONVENTION_ALIGNMENT_REPORT.md # Naming standards
 │   │   └── PROCESS_FLOW_GAP_ANALYSIS.md          # Gap analysis and recommendations
 │
-│   └── 🎨 VISUALIZATION
-│       ├── DIAGRAM_TEMPLATES.md                  # Mermaid diagram templates
-│       ├── LUCIDCHART_GUIDE.md                   # Lucidchart integration
-│       └── VES_PROCESS_FLOW_REFERENCE.md         # Process flow documentation
+│   ├── 🎨 VISUALIZATION
+│   │   ├── DIAGRAM_TEMPLATES.md                  # Mermaid diagram templates
+│   │   ├── LUCIDCHART_GUIDE.md                   # Lucidchart integration
+│   │   └── VES_PROCESS_FLOW_REFERENCE.md         # Process flow documentation
 │
-└── 📁 Validation & Testing/
-    ├── deployment_validation.sql                 # Post-deployment validation (coming)
-    └── health_check_suite.sql                    # Comprehensive health checks (coming)
+│   ├── 🔄 REFACTORING & IMPROVEMENTS
+│   │   ├── ARCHITECTURAL_IMPROVEMENTS.md         # Architecture enhancement proposals
+│   │   ├── COMMON_FUNCTIONS_ANALYSIS.md          # Common functions refactoring analysis
+│   │   ├── FUNCTION_NAMING_MIGRATION_GUIDE.md    # Function naming standardization guide
+│   │   ├── FUNCTION_NAMING_STANDARDIZATION_SUMMARY.md # Summary of naming changes
+│   │   ├── PROOF_OF_CONCEPT_REFACTORING.md       # Refactoring POC documentation
+│   │   ├── README_REFACTORING_PROJECT.md         # Refactoring project overview
+│   │   └── REFACTORING_EXAMPLE.md                # Refactoring examples
+│
+│   └── 📚 ADDITIONAL GUIDES
+│       ├── DATA_DICTIONARY.md                    # Complete data dictionary
+│       ├── DEPLOYMENT_GUIDE.md                   # Comprehensive deployment guide
+│       ├── DIM_VETERAN_LOADING_GUIDE.md          # Veteran dimension loading details
+│       ├── DOCUMENTATION_INDEX.md                # Master documentation index
+│       ├── DYNAMIC_TABLES_IMPLEMENTATION_GUIDE.md # Dynamic tables implementation
+│       ├── FACT_TABLE_TYPES_GUIDE.md             # Fact table patterns guide
+│       ├── MULTI_ENVIRONMENT_DEPLOYMENT_GUIDE.md # Multi-environment strategy
+│       ├── MULTI_SOURCE_FEDERATION_TEMPLATE.md   # Multi-source integration template
+│       └── SNOWFLAKE_STAGING_LAYER_REVIEW.md     # Staging layer review
+│
+├── 📁 Validation & Testing/
+│   ├── DEPLOYMENT_VALIDATION.sql                # Post-deployment validation
+│   └── health_check_suite.sql                    # Comprehensive health checks (coming)
+│
+└── 📁 Artifacts & Resources/
+    ├── process_flow.png                          # Visual process flow diagram
+    ├── VES_Multi_Source_Integration_Guide.html   # Multi-source integration HTML guide
+    ├── staging-layer-decision-guide.html         # Staging layer decision guide
+    ├── lucidchart_tables.csv                     # Lucidchart table definitions
+    ├── lucidchart_columns_detailed.csv           # Lucidchart column definitions
+    ├── lucidchart_relationships.csv              # Lucidchart relationships
+    └── JIRA_IMPORT.csv                           # JIRA project import data
 ```
 
 ---
@@ -455,7 +495,9 @@ DataScientist/
 | [BOTTLENECK_DETECTION_GUIDE.md](BOTTLENECK_DETECTION_GUIDE.md) | 15 | Performance bottleneck analysis | Analysts, Engineers |
 | [SNOWFLAKE_STREAMS_BENEFITS_GUIDE.md](SNOWFLAKE_STREAMS_BENEFITS_GUIDE.md) | 12 | CDC and incremental processing | Engineers |
 | [SCD_TYPE2_DESIGN_GUIDE.md](SCD_TYPE2_DESIGN_GUIDE.md) | 10 | Slowly Changing Dimension patterns | Engineers |
-| **Total** | **456** | **Complete enterprise documentation** | **All roles** |
+| **Total (Primary Docs)** | **456** | **Complete enterprise documentation** | **All roles** |
+
+**Note**: Additional documentation includes 16+ guides covering refactoring, architectural improvements, multi-environment deployment, dynamic tables, and specialized topics, bringing the total documentation to 500+ pages.
 
 ---
 
@@ -873,7 +915,7 @@ Key differences to learn:
 - [x] Snowflake implementation (all DDL)
 - [x] ETL procedures (dimensions, facts, multi-source)
 - [x] SCD Type 2 implementation
-- [x] Comprehensive documentation (456 pages)
+- [x] Comprehensive documentation (500+ pages)
 
 ### Phase 2: Automation ✅ COMPLETE
 - [x] Snowflake Streams (CDC)
