@@ -19,7 +19,7 @@
 --   CALL sp_load_scd_type2_generic('dim_evaluators', :batch_id);
 -- =====================================================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -321,7 +321,7 @@ COMMENT = 'Validates SCD Type 2 data integrity for a dimension table. Checks for
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
     v_full_table_name VARCHAR;
     v_business_keys ARRAY;
     v_key_join VARCHAR;
