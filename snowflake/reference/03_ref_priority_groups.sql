@@ -166,62 +166,52 @@ CREATE OR REPLACE FUNCTION fn_determine_priority_group(
     special_flags ARRAY    -- e.g., ['POW', 'PURPLE_HEART']
 )
 RETURNS INTEGER
-LANGUAGE JAVASCRIPT
-COMMENT = 'Determines appropriate VA priority group based on veteran characteristics. Returns priority group number (1-8).'
+LANGUAGE SQL
+COMMENT = 'Determines appropriate VA priority group based on veteran characteristics (SQL version). Returns priority group number (1-8).'
 AS
 $$
-    // Priority Group 1: SC >= 50%
-    if (SERVICE_CONNECTED_FLAG && DISABILITY_RATING >= 50) {
-        return 1;
-    }
+    CASE
+        -- Priority Group 1: SC >= 50%
+        WHEN service_connected_flag AND disability_rating >= 50 THEN 1
 
-    // Priority Group 2: SC 30-40%
-    if (SERVICE_CONNECTED_FLAG && DISABILITY_RATING >= 30 && DISABILITY_RATING <= 40) {
-        return 2;
-    }
+        -- Priority Group 2: SC 30-40%
+        WHEN service_connected_flag AND disability_rating >= 30 AND disability_rating <= 40 THEN 2
 
-    // Priority Group 3: Special eligibility
-    if (SPECIAL_FLAGS && SPECIAL_FLAGS.length > 0) {
-        var group3_flags = ['POW', 'PURPLE_HEART', 'MOH', 'CATASTROPHIC_DISABILITY'];
-        for (var i = 0; i < SPECIAL_FLAGS.length; i++) {
-            if (group3_flags.includes(SPECIAL_FLAGS[i])) {
-                return 3;
-            }
-        }
-    }
+        -- Priority Group 3: Special eligibility flags
+        WHEN special_flags IS NOT NULL AND (
+            ARRAY_CONTAINS('POW'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('PURPLE_HEART'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('MOH'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('CATASTROPHIC_DISABILITY'::VARIANT, special_flags)
+        ) THEN 3
 
-    // Priority Group 3: SC 10-20%
-    if (SERVICE_CONNECTED_FLAG && DISABILITY_RATING >= 10 && DISABILITY_RATING <= 20) {
-        return 3;
-    }
+        -- Priority Group 3: SC 10-20%
+        WHEN service_connected_flag AND disability_rating >= 10 AND disability_rating <= 20 THEN 3
 
-    // Priority Group 4: Aid and attendance
-    if (SPECIAL_FLAGS && (SPECIAL_FLAGS.includes('AID_ATTENDANCE') || SPECIAL_FLAGS.includes('HOUSEBOUND'))) {
-        return 4;
-    }
+        -- Priority Group 4: Aid and attendance
+        WHEN special_flags IS NOT NULL AND (
+            ARRAY_CONTAINS('AID_ATTENDANCE'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('HOUSEBOUND'::VARIANT, special_flags)
+        ) THEN 4
 
-    // Priority Group 5: Non-SC with low income
-    if (!SERVICE_CONNECTED_FLAG && INCOME_LEVEL === 'LOW') {
-        return 5;
-    }
+        -- Priority Group 5: Non-SC with low income
+        WHEN NOT service_connected_flag AND income_level = 'LOW' THEN 5
 
-    // Priority Group 6: Special exposures
-    if (SPECIAL_FLAGS) {
-        var group6_flags = ['AGENT_ORANGE', 'RADIATION', 'GULF_WAR', 'COMBAT_VETERAN', 'CAMP_LEJEUNE'];
-        for (var i = 0; i < SPECIAL_FLAGS.length; i++) {
-            if (group6_flags.includes(SPECIAL_FLAGS[i])) {
-                return 6;
-            }
-        }
-    }
+        -- Priority Group 6: Special exposures
+        WHEN special_flags IS NOT NULL AND (
+            ARRAY_CONTAINS('AGENT_ORANGE'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('RADIATION'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('GULF_WAR'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('COMBAT_VETERAN'::VARIANT, special_flags) OR
+            ARRAY_CONTAINS('CAMP_LEJEUNE'::VARIANT, special_flags)
+        ) THEN 6
 
-    // Priority Group 7: Moderate income
-    if (INCOME_LEVEL === 'MODERATE') {
-        return 7;
-    }
+        -- Priority Group 7: Moderate income
+        WHEN income_level = 'MODERATE' THEN 7
 
-    // Priority Group 8: Default (high income)
-    return 8;
+        -- Priority Group 8: Default (high income)
+        ELSE 8
+    END
 $$;
 
 -- =====================================================================================================================
