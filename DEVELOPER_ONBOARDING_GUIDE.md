@@ -30,10 +30,10 @@
 ### What You'll Be Working On
 
 The **VES (Veteran Evaluation Services) Data Warehouse** is a mission-critical system that tracks:
-- 📋 Exam requests and processing
-- 👨‍⚕️ Medical evaluations and quality metrics
-- 🏥 Healthcare facility operations
-- 📊 Performance analytics and bottleneck detection
+- Exam requests and processing
+- Medical evaluations and quality metrics
+- Healthcare facility operations
+- Performance analytics and bottleneck detection
 
 **Our Impact:** We help ensure veterans receive timely, high-quality medical evaluations for disability claims.
 
@@ -57,12 +57,12 @@ The **VES (Veteran Evaluation Services) Data Warehouse** is a mission-critical s
 ### Your First Week Goals
 
 By end of week 1, you will:
-- ✅ Have full access to all systems
-- ✅ Understand the data architecture
-- ✅ Run your first Snowflake queries
-- ✅ Deploy code to dev environment
-- ✅ Complete a small starter ticket
-- ✅ Know how to get help when stuck
+- Have full access to all systems
+- Understand the data architecture
+- Run your first Snowflake queries
+- Deploy code to dev environment
+- Complete a small starter ticket
+- Know how to get help when stuck
 
 ---
 
@@ -99,7 +99,9 @@ Create `~/.snowsql/config`:
 accountname = ABC12345.us-east-1
 username = YOUR_USERNAME
 password = YOUR_PASSWORD
-dbname = VESDW_DEV
+# Note: Database name is retrieved dynamically via fn_get_dw_database()
+# Configure your default database based on your environment
+dbname = YOUR_DEV_DATABASE
 schemaname = warehouse
 warehousename = DEV_WH
 rolename = DATA_ENGINEER_DEV
@@ -107,7 +109,9 @@ rolename = DATA_ENGINEER_DEV
 [connections.prod]
 accountname = ABC12345.us-east-1
 username = YOUR_USERNAME
-dbname = VESDW_PRD
+# Note: Database name is retrieved dynamically via fn_get_dw_database()
+# Configure your default database based on your environment
+dbname = YOUR_PROD_DATABASE
 warehousename = ANALYTICS_WH
 rolename = DATA_ANALYST  # Read-only in prod initially
 ```
@@ -187,7 +191,7 @@ VES-DataWarehouse/
          │                         │
          ▼                         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              ODS LAYER (VESODS_PRDDATA_PRD)                     │
+│              ODS LAYER (fn_get_ods_database())                  │
 │  Raw operational data, minimal transformation                    │
 │  - VEMS_CORE schema (new system)                                │
 │  - VEMS_PNM schema (provider network)                           │
@@ -196,7 +200,7 @@ VES-DataWarehouse/
          │
          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              STAGING LAYER (VESDW_PRD.staging)                  │
+│         STAGING LAYER (fn_get_dw_database().staging)            │
 │  Data integration and cleansing                                  │
 │  - Merge OMS + VEMS data                                        │
 │  - Entity crosswalks (match veterans across systems)            │
@@ -206,7 +210,7 @@ VES-DataWarehouse/
          │
          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│           WAREHOUSE LAYER (VESDW_PRD.warehouse)                 │
+│        WAREHOUSE LAYER (fn_get_dw_database().warehouse)         │
 │  Dimensional model (Kimball methodology)                         │
 │  - Dimensions: Veterans, Evaluators, Facilities, Dates          │
 │  - Facts: Exam Requests, Evaluations, Appointments              │
@@ -215,7 +219,7 @@ VES-DataWarehouse/
          │
          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              MARTS LAYER (VESDW_PRD.marts)                      │
+│           MARTS LAYER (fn_get_dw_database().marts)              │
 │  Business-friendly analytics                                     │
 │  - Executive dashboards                                         │
 │  - Operational reports                                          │
@@ -227,23 +231,36 @@ VES-DataWarehouse/
 
 **Goal:** Follow a single exam request through all layers
 
+**Note:** The following examples use configuration functions to retrieve database names dynamically:
+- `fn_get_ods_database()` returns the ODS database name
+- `fn_get_dw_database()` returns the data warehouse database name
+
 ```sql
+-- First, let's see what databases we're working with
+SELECT
+    fn_get_ods_database() AS ods_database,
+    fn_get_dw_database() AS dw_database,
+    fn_get_dw_environment() AS current_environment;
+
 -- 1. Find a recent exam request in ODS
+-- Replace IDENTIFIER() usage with your actual database name from configuration
+SET ods_db = (SELECT fn_get_ods_database());
 SELECT *
-FROM VESODS_PRDDATA_PRD.VEMS_CORE.exam_requests
+FROM IDENTIFIER($ods_db || '.VEMS_CORE.exam_requests')
 WHERE request_date >= CURRENT_DATE() - 7
 LIMIT 1;
 -- Note the exam_request_id: _____________
 
 -- 2. Find it in staging (merged OMS+VEMS)
+SET dw_db = (SELECT fn_get_dw_database());
 SELECT *
-FROM VESDW_PRD.staging.stg_fact_exam_requests
+FROM IDENTIFIER($dw_db || '.staging.stg_fact_exam_requests')
 WHERE source_exam_request_id = '<ID_FROM_STEP_1>';
 -- Check: Is source_system = 'VEMS'? ___________
 
 -- 3. Find it in the fact table (warehouse)
 SELECT *
-FROM VESDW_PRD.warehouse.fact_exam_requests
+FROM IDENTIFIER($dw_db || '.warehouse.fact_exam_requests')
 WHERE source_exam_request_id = '<ID_FROM_STEP_1>';
 -- Note the exam_request_sk (surrogate key): _____________
 
@@ -256,14 +273,14 @@ SELECT
     f.facility_name,
     er.exam_status,
     er.sla_met
-FROM VESDW_PRD.warehouse.fact_exam_requests er
-INNER JOIN VESDW_PRD.warehouse.dim_date d
+FROM IDENTIFIER($dw_db || '.warehouse.fact_exam_requests') er
+INNER JOIN IDENTIFIER($dw_db || '.warehouse.dim_date') d
     ON er.request_date_sk = d.date_sk
-INNER JOIN VESDW_PRD.warehouse.dim_veteran v
+INNER JOIN IDENTIFIER($dw_db || '.warehouse.dim_veteran') v
     ON er.veteran_dim_sk = v.veteran_sk
-LEFT JOIN VESDW_PRD.warehouse.dim_evaluator e
+LEFT JOIN IDENTIFIER($dw_db || '.warehouse.dim_evaluator') e
     ON er.assigned_evaluator_sk = e.evaluator_sk
-LEFT JOIN VESDW_PRD.warehouse.dim_facility f
+LEFT JOIN IDENTIFIER($dw_db || '.warehouse.dim_facility') f
     ON er.facility_dim_sk = f.facility_sk
 WHERE er.source_exam_request_id = '<ID_FROM_STEP_1>';
 ```
@@ -288,6 +305,9 @@ WHERE er.source_exam_request_id = '<ID_FROM_STEP_1>';
 
 **Exercise:** Query each dimension
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Veterans: Check SCD Type 2
 SELECT
     veteran_ssn,
@@ -296,7 +316,7 @@ SELECT
     is_current,
     effective_start_date,
     effective_end_date
-FROM VESDW_PRD.warehouse.dim_veteran
+FROM IDENTIFIER($dw_db || '.warehouse.dim_veteran')
 WHERE veteran_ssn = '123456789'  -- Example SSN
 ORDER BY effective_start_date;
 
@@ -307,7 +327,7 @@ SELECT
     specialty,
     city,
     state
-FROM VESDW_PRD.warehouse.dim_evaluator
+FROM IDENTIFIER($dw_db || '.warehouse.dim_evaluator')
 WHERE state = 'CA'
   AND is_current = TRUE
 ORDER BY specialty, last_name;
@@ -325,12 +345,15 @@ ORDER BY specialty, last_name;
 
 **Exercise:** Run sample analytics
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Exam volume by status (last 30 days)
 SELECT
     exam_status,
     COUNT(*) AS exam_count,
     ROUND(AVG(DATEDIFF(day, request_date, completion_date)), 1) AS avg_cycle_days
-FROM VESDW_PRD.warehouse.fact_exam_requests
+FROM IDENTIFIER($dw_db || '.warehouse.fact_exam_requests')
 WHERE request_date >= CURRENT_DATE() - 30
 GROUP BY exam_status
 ORDER BY exam_count DESC;
@@ -341,8 +364,8 @@ SELECT
     e.first_name || ' ' || e.last_name AS evaluator_name,
     COUNT(*) AS exams_completed,
     AVG(eval.exam_quality_score) AS avg_quality_score
-FROM VESDW_PRD.warehouse.fact_evaluation eval
-INNER JOIN VESDW_PRD.warehouse.dim_evaluator e
+FROM IDENTIFIER($dw_db || '.warehouse.fact_evaluation') eval
+INNER JOIN IDENTIFIER($dw_db || '.warehouse.dim_evaluator') e
     ON eval.evaluator_dim_sk = e.evaluator_sk
 WHERE eval.completion_date >= DATE_TRUNC('month', CURRENT_DATE())
   AND e.is_current = TRUE
@@ -360,29 +383,34 @@ LIMIT 10;
 #### Exercise 1: Time Travel
 
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Create a test table
-CREATE OR REPLACE TABLE VESDW_DEV.warehouse.test_time_travel (
+CREATE OR REPLACE TABLE IDENTIFIER($dw_db || '.warehouse.test_time_travel') (
     id NUMBER,
     value VARCHAR,
     updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
 
 -- Insert data
-INSERT INTO test_time_travel VALUES (1, 'original', CURRENT_TIMESTAMP());
+INSERT INTO IDENTIFIER($dw_db || '.warehouse.test_time_travel')
+VALUES (1, 'original', CURRENT_TIMESTAMP());
 
 -- Wait 1 minute, then update
--- (Go get coffee ☕)
-
-UPDATE test_time_travel SET value = 'updated' WHERE id = 1;
+UPDATE IDENTIFIER($dw_db || '.warehouse.test_time_travel')
+SET value = 'updated' WHERE id = 1;
 
 -- Query as of 2 minutes ago
-SELECT * FROM test_time_travel AT(OFFSET => -120);  -- Original value
+SELECT * FROM IDENTIFIER($dw_db || '.warehouse.test_time_travel')
+AT(OFFSET => -120);  -- Original value
 
 -- Query current state
-SELECT * FROM test_time_travel;  -- Updated value
+SELECT * FROM IDENTIFIER($dw_db || '.warehouse.test_time_travel');  -- Updated value
 
 -- Recover from mistake
-CREATE TABLE test_time_travel_backup CLONE test_time_travel AT(OFFSET => -120);
+CREATE TABLE IDENTIFIER($dw_db || '.warehouse.test_time_travel_backup')
+CLONE IDENTIFIER($dw_db || '.warehouse.test_time_travel') AT(OFFSET => -120);
 ```
 
 #### Exercise 2: Streams for CDC
@@ -447,6 +475,9 @@ ORDER BY SCHEDULED_TIME DESC;
 **Business Question:** "Show me the top 5 states by exam volume this month, with average cycle time."
 
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Your turn! Write the query here:
 
 
@@ -459,8 +490,8 @@ SELECT
     COUNT(*) AS exam_count,
     ROUND(AVG(DATEDIFF(day, er.request_date, er.completion_date)), 1) AS avg_cycle_days,
     SUM(CASE WHEN er.sla_met = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS sla_compliance_pct
-FROM VESDW_PRD.warehouse.fact_exam_requests er
-INNER JOIN VESDW_PRD.warehouse.dim_veteran v
+FROM IDENTIFIER($dw_db || '.warehouse.fact_exam_requests') er
+INNER JOIN IDENTIFIER($dw_db || '.warehouse.dim_veteran') v
     ON er.veteran_dim_sk = v.veteran_sk
 WHERE er.request_date >= DATE_TRUNC('month', CURRENT_DATE())
   AND v.is_current = TRUE
@@ -475,6 +506,9 @@ LIMIT 5;
 **Task:** Find veterans with incomplete profiles (missing critical fields)
 
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Your query:
 
 
@@ -490,7 +524,7 @@ SELECT
     CASE WHEN phone IS NULL THEN 'Missing' ELSE 'OK' END AS phone_status,
     CASE WHEN state IS NULL THEN 'Missing' ELSE 'OK' END AS state_status,
     CASE WHEN disability_rating IS NULL THEN 'Missing' ELSE 'OK' END AS rating_status
-FROM VESDW_PRD.warehouse.dim_veteran
+FROM IDENTIFIER($dw_db || '.warehouse.dim_veteran')
 WHERE is_current = TRUE
   AND (email IS NULL OR phone IS NULL OR state IS NULL OR disability_rating IS NULL)
 ORDER BY last_name, first_name
@@ -501,6 +535,8 @@ LIMIT 100;
 #### Challenge 3: Create a Stored Procedure
 
 **Task:** Write a procedure that takes a state abbreviation and returns exam statistics
+
+**Note:** This example demonstrates using configuration functions within stored procedures to avoid hard-coding database names.
 
 ```sql
 CREATE OR REPLACE PROCEDURE sp_state_exam_summary(p_state VARCHAR)
@@ -513,13 +549,17 @@ AS
 $$
 DECLARE
     res RESULTSET;
+    dw_db VARCHAR;
 BEGIN
+    -- Get database name from configuration function
+    SELECT fn_get_dw_database() INTO :dw_db;
+
     res := (
         SELECT
             'Total Exams' AS metric_name,
             COUNT(*) AS metric_value
-        FROM VESDW_PRD.warehouse.fact_exam_requests er
-        INNER JOIN VESDW_PRD.warehouse.dim_veteran v
+        FROM IDENTIFIER(:dw_db || '.warehouse.fact_exam_requests') er
+        INNER JOIN IDENTIFIER(:dw_db || '.warehouse.dim_veteran') v
             ON er.veteran_dim_sk = v.veteran_sk
         WHERE v.state = :p_state
           AND v.is_current = TRUE
@@ -530,8 +570,8 @@ BEGIN
         SELECT
             'Avg Cycle Time (days)',
             ROUND(AVG(DATEDIFF(day, er.request_date, er.completion_date)), 1)
-        FROM VESDW_PRD.warehouse.fact_exam_requests er
-        INNER JOIN VESDW_PRD.warehouse.dim_veteran v
+        FROM IDENTIFIER(:dw_db || '.warehouse.fact_exam_requests') er
+        INNER JOIN IDENTIFIER(:dw_db || '.warehouse.dim_veteran') v
             ON er.veteran_dim_sk = v.veteran_sk
         WHERE v.state = :p_state
           AND v.is_current = TRUE
@@ -542,8 +582,8 @@ BEGIN
         SELECT
             'SLA Compliance %',
             ROUND(SUM(CASE WHEN er.sla_met = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
-        FROM VESDW_PRD.warehouse.fact_exam_requests er
-        INNER JOIN VESDW_PRD.warehouse.dim_veteran v
+        FROM IDENTIFIER(:dw_db || '.warehouse.fact_exam_requests') er
+        INNER JOIN IDENTIFIER(:dw_db || '.warehouse.dim_veteran') v
             ON er.veteran_dim_sk = v.veteran_sk
         WHERE v.state = :p_state
           AND v.is_current = TRUE
@@ -577,6 +617,9 @@ Read: `snowflake/quality/00_advanced_data_quality_framework.sql`
 #### Exercise: Run Quality Checks
 
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- View all active quality rules
 SELECT
     rule_code,
@@ -584,7 +627,7 @@ SELECT
     quality_dimension,
     severity,
     check_frequency
-FROM VESDW_PRD.metadata.dq_rule_catalog
+FROM IDENTIFIER($dw_db || '.metadata.dq_rule_catalog')
 WHERE is_active = TRUE
 ORDER BY severity DESC, quality_dimension;
 
@@ -599,14 +642,14 @@ SELECT
     expected_value,
     actual_value,
     execution_timestamp
-FROM VESDW_PRD.metadata.dq_rule_execution_history reh
-INNER JOIN VESDW_PRD.metadata.dq_rule_catalog rc
+FROM IDENTIFIER($dw_db || '.metadata.dq_rule_execution_history') reh
+INNER JOIN IDENTIFIER($dw_db || '.metadata.dq_rule_catalog') rc
     ON reh.rule_id = rc.rule_id
 WHERE reh.batch_id = 'ONBOARDING_TEST_' || CURRENT_USER()
 ORDER BY execution_status, rule_code;
 
 -- View quality scorecard
-SELECT * FROM VESDW_PRD.metadata.vw_dq_scorecard;
+SELECT * FROM IDENTIFIER($dw_db || '.metadata.vw_dq_scorecard');
 ```
 
 #### Exercise: Create a Custom Quality Rule
@@ -614,7 +657,10 @@ SELECT * FROM VESDW_PRD.metadata.vw_dq_scorecard;
 **Task:** Add a rule to check that exam cycle time is < 30 days
 
 ```sql
-INSERT INTO VESDW_PRD.metadata.dq_rule_catalog (
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
+INSERT INTO IDENTIFIER($dw_db || '.metadata.dq_rule_catalog') (
     rule_code,
     rule_name,
     rule_description,
@@ -629,7 +675,7 @@ INSERT INTO VESDW_PRD.metadata.dq_rule_catalog (
     check_frequency,
     is_active
 )
-VALUES (
+SELECT
     'TIME_004',
     'Exam Cycle Time Within SLA',
     'Exam cycle time should be under 30 days for 95% of exams',
@@ -638,16 +684,15 @@ VALUES (
     'BUSINESS_RULE',
     'warehouse',
     'fact_exam_requests',
-    'SELECT COUNT(*) FROM VESDW_PRD.warehouse.fact_exam_requests WHERE DATEDIFF(day, request_date, completion_date) > 30 AND completion_date IS NOT NULL',
+    'SELECT COUNT(*) FROM ' || fn_get_dw_database() || '.warehouse.fact_exam_requests WHERE DATEDIFF(day, request_date, completion_date) > 30 AND completion_date IS NOT NULL',
     '<5%',
     5.0,
     'DAILY',
-    TRUE
-);
+    TRUE;
 
 -- Test your new rule
 CALL sp_execute_dq_rule(
-    (SELECT rule_id FROM VESDW_PRD.metadata.dq_rule_catalog WHERE rule_code = 'TIME_004'),
+    (SELECT rule_id FROM IDENTIFIER($dw_db || '.metadata.dq_rule_catalog') WHERE rule_code = 'TIME_004'),
     'TEST_CUSTOM_RULE'
 );
 ```
@@ -667,6 +712,9 @@ Read: `snowflake/monitoring/00_comprehensive_monitoring_dashboard.sql`
 #### Exercise: Explore Monitoring Views
 
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Check pipeline health
 SELECT
     pipeline_name,
@@ -675,22 +723,22 @@ SELECT
     duration_minutes,
     success_rate_pct,
     data_quality_score
-FROM VESDW_PRD.metadata.vw_pipeline_health_dashboard
+FROM IDENTIFIER($dw_db || '.metadata.vw_pipeline_health_dashboard')
 ORDER BY
     CASE health_status
-        WHEN '🔴 CRITICAL' THEN 1
-        WHEN '🟡 WARNING' THEN 2
+        WHEN 'CRITICAL' THEN 1
+        WHEN 'WARNING' THEN 2
         ELSE 3
     END;
 
 -- Review quality summary
-SELECT * FROM VESDW_PRD.metadata.vw_data_quality_summary
-WHERE quality_status != '🟢 PASSING'
+SELECT * FROM IDENTIFIER($dw_db || '.metadata.vw_data_quality_summary')
+WHERE quality_status != 'PASSING'
 ORDER BY overall_quality_score ASC;
 
 -- Check for cost optimization opportunities
-SELECT * FROM VESDW_PRD.metadata.vw_cost_optimization_opportunities
-WHERE optimization_priority IN ('🔴 HIGH PRIORITY', '🟡 MEDIUM PRIORITY')
+SELECT * FROM IDENTIFIER($dw_db || '.metadata.vw_cost_optimization_opportunities')
+WHERE optimization_priority IN ('HIGH PRIORITY', 'MEDIUM PRIORITY')
 ORDER BY potential_annual_savings_usd DESC;
 ```
 
@@ -984,7 +1032,7 @@ Before submitting PR, verify:
 
 ---
 
-## Welcome Aboard! 🚀
+## Welcome Aboard!
 
 You're joining a team that's making a real difference for veterans. Your work will directly impact the quality and timeliness of disability evaluations.
 

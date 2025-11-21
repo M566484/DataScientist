@@ -2,7 +2,7 @@
 ## From SQL Server/Traditional Databases to Snowflake
 
 **Target Audience:** Experienced database developers transitioning to Snowflake
-**Prerequisites:** Strong SQL skills, experience with SQL Server/Oracle
+**Prerequisites:** Strong SQL skills, experience with SQL Server or other traditional relational databases
 **Purpose:** Bridge the gap between traditional databases and Snowflake development
 
 **Version:** 2.0
@@ -145,28 +145,46 @@ ACCOUNT
 
 ### Creating Databases & Schemas
 
+**Important:** Use configuration functions to retrieve database names dynamically rather than hard-coding them.
+
 ```sql
+-- Get database names from configuration
+SELECT
+    fn_get_dw_database() AS dw_database,
+    fn_get_ods_database() AS ods_database,
+    fn_get_dw_environment() AS environment;
+
 -- SQL Server style (works in Snowflake)
-CREATE DATABASE VESDW_PRD;
-USE DATABASE VESDW_PRD;
+-- Note: Replace YOUR_DATABASE with actual database name from configuration
+CREATE DATABASE YOUR_DATABASE;
+USE DATABASE YOUR_DATABASE;
 
 CREATE SCHEMA warehouse;
 USE SCHEMA warehouse;
 
--- Snowflake also supports fully-qualified names (recommended)
-CREATE TABLE VESDW_PRD.warehouse.fact_exam_requests (...);
+-- Using configuration functions in SQL
+SET dw_db = (SELECT fn_get_dw_database());
+
+-- Snowflake supports fully-qualified names with IDENTIFIER (recommended for dynamic database names)
+CREATE TABLE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests') (...);
 
 -- Check objects
 SHOW DATABASES;
-SHOW SCHEMAS IN DATABASE VESDW_PRD;
-SHOW TABLES IN SCHEMA VESDW_PRD.warehouse;
+SHOW SCHEMAS;
+SHOW TABLES;
 ```
 
 ### Tables
 
+**Important:** Use configuration functions to avoid hard-coding database names in DDL statements.
+
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Standard table creation (very similar to SQL Server)
-CREATE TABLE VESDW_PRD.warehouse.fact_exam_requests (
+-- Using IDENTIFIER for dynamic database name
+CREATE TABLE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests') (
     exam_request_sk NUMBER(38,0) NOT NULL,  -- BIGINT equivalent
     veteran_dim_sk NUMBER(38,0),
     request_date DATE,
@@ -292,16 +310,14 @@ SELECT * FROM veterans WHERE email REGEXP '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2
 ### NULL Handling
 
 ```sql
--- ISNULL equivalent: NVL or COALESCE
+-- ISNULL equivalent: COALESCE, NVL, or IFNULL
 -- SQL Server:
 SELECT ISNULL(disability_rating, 0) FROM veterans;
 
--- Snowflake (use COALESCE or NVL):
-SELECT COALESCE(disability_rating, 0) FROM veterans;  -- Standard SQL
-SELECT NVL(disability_rating, 0) FROM veterans;  -- Oracle-style (also supported)
-
--- IFNULL (MySQL-style) also works in Snowflake
-SELECT IFNULL(disability_rating, 0) FROM veterans;
+-- Snowflake supports multiple NULL handling functions:
+SELECT COALESCE(disability_rating, 0) FROM veterans;  -- Standard SQL (recommended)
+SELECT NVL(disability_rating, 0) FROM veterans;  -- Two-argument null handling
+SELECT IFNULL(disability_rating, 0) FROM veterans;  -- MySQL-compatible syntax
 ```
 
 ### CASE Expressions
@@ -375,6 +391,8 @@ SELECT * FROM date_series;
 
 Snowflake introduced Snowflake Scripting - think of it as T-SQL for Snowflake.
 
+**Important:** Use configuration functions within stored procedures to avoid hard-coding database names.
+
 ```sql
 -- Create stored procedure (similar to T-SQL)
 CREATE OR REPLACE PROCEDURE sp_load_veteran_data(
@@ -388,11 +406,18 @@ $$
 DECLARE
     v_row_count INTEGER;
     v_error_message VARCHAR;
+    dw_db VARCHAR;
+    ods_db VARCHAR;
 BEGIN
-    -- Insert data
-    INSERT INTO stg_veterans (veteran_ssn, first_name, last_name, batch_id, load_date)
+    -- Get database names from configuration functions
+    SELECT fn_get_dw_database() INTO :dw_db;
+    SELECT fn_get_ods_database() INTO :ods_db;
+
+    -- Insert data using dynamic database names
+    INSERT INTO IDENTIFIER(:dw_db || '.staging.stg_veterans')
+        (veteran_ssn, first_name, last_name, batch_id, load_date)
     SELECT ssn, fname, lname, :p_batch_id, :p_load_date
-    FROM ods_veterans_source
+    FROM IDENTIFIER(:ods_db || '.source.ods_veterans_source')
     WHERE load_date = :p_load_date;
 
     -- Get row count (use SET not SELECT for assignment)
@@ -411,7 +436,8 @@ EXCEPTION
     WHEN OTHER THEN
         -- Error handling
         v_error_message := SQLERRM;
-        INSERT INTO error_log (procedure_name, error_message, error_timestamp)
+        INSERT INTO IDENTIFIER(:dw_db || '.metadata.error_log')
+            (procedure_name, error_message, error_timestamp)
         VALUES ('sp_load_veteran_data', :v_error_message, CURRENT_TIMESTAMP());
         RAISE;
 END;
@@ -599,16 +625,22 @@ OVERWRITE = TRUE;
 
 ### Role-Based Access Control (RBAC)
 
+**Important:** Use configuration functions to grant permissions dynamically.
+
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Create roles (like SQL Server roles)
 CREATE ROLE data_engineer;
 CREATE ROLE data_analyst;
 CREATE ROLE data_scientist;
 
 -- Grant privileges (similar to SQL Server)
-GRANT USAGE ON DATABASE VESDW_PRD TO ROLE data_analyst;
-GRANT USAGE ON SCHEMA VESDW_PRD.warehouse TO ROLE data_analyst;
-GRANT SELECT ON ALL TABLES IN SCHEMA VESDW_PRD.warehouse TO ROLE data_analyst;
+-- Note: Replace with actual database name from configuration in practice
+GRANT USAGE ON DATABASE IDENTIFIER($dw_db) TO ROLE data_analyst;
+GRANT USAGE ON SCHEMA IDENTIFIER($dw_db || '.warehouse') TO ROLE data_analyst;
+GRANT SELECT ON ALL TABLES IN SCHEMA IDENTIFIER($dw_db || '.warehouse') TO ROLE data_analyst;
 
 -- Grant warehouse access (unique to Snowflake)
 GRANT USAGE ON WAREHOUSE analytics_wh TO ROLE data_analyst;
@@ -618,7 +650,6 @@ GRANT ROLE data_analyst TO USER john_doe;
 
 -- Check grants
 SHOW GRANTS TO ROLE data_analyst;
-SHOW GRANTS ON TABLE fact_exam_requests;
 ```
 
 ### Row-Level Security
@@ -751,13 +782,20 @@ CALL test_load_veterans();
 
 ### Pattern 1: Incremental Loading with Streams
 
+**Important:** Use configuration functions to reference tables in different databases.
+
 ```sql
+-- Set database variables using configuration functions
+SET dw_db = (SELECT fn_get_dw_database());
+SET ods_db = (SELECT fn_get_ods_database());
+
 -- Create stream (CDC - unique to Snowflake!)
-CREATE STREAM stream_veterans_changes ON TABLE ods_veterans_source;
+CREATE STREAM IDENTIFIER($dw_db || '.staging.stream_veterans_changes')
+ON TABLE IDENTIFIER($ods_db || '.source.ods_veterans_source');
 
 -- Process only changes (not full reload)
-MERGE INTO stg_veterans tgt
-USING stream_veterans_changes src
+MERGE INTO IDENTIFIER($dw_db || '.staging.stg_veterans') tgt
+USING IDENTIFIER($dw_db || '.staging.stream_veterans_changes') src
 ON tgt.veteran_ssn = src.veteran_ssn
 WHEN MATCHED AND src.METADATA$ACTION = 'DELETE' THEN DELETE
 WHEN MATCHED THEN UPDATE SET tgt.first_name = src.first_name, ...
@@ -795,15 +833,23 @@ ORDER BY SCHEDULED_TIME DESC;
 
 ### Pattern 3: Zero-Copy Cloning
 
+**Important:** Use configuration functions when cloning databases and tables.
+
 ```sql
+-- Set database variable using configuration function
+SET dw_db = (SELECT fn_get_dw_database());
+
 -- Clone table instantly (no data copy!)
-CREATE TABLE fact_exam_requests_backup CLONE fact_exam_requests;
+CREATE TABLE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests_backup')
+CLONE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests');
 
 -- Clone entire database (for dev environment)
-CREATE DATABASE vesdw_dev CLONE VESDW_PRD;
+-- Note: Provide appropriate database names based on your environment
+CREATE DATABASE your_dev_database CLONE IDENTIFIER($dw_db);
 
 -- Clone at point in time (Time Travel)
-CREATE TABLE fact_exam_requests_yesterday CLONE fact_exam_requests
+CREATE TABLE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests_yesterday')
+CLONE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests')
     AT(OFFSET => -86400);  -- 24 hours ago
 
 -- Zero cost until data diverges!
@@ -813,25 +859,41 @@ CREATE TABLE fact_exam_requests_yesterday CLONE fact_exam_requests
 
 ## Migration Tips
 
-### From SQL Server
+### From SQL Server and Traditional Databases
+
+**General Best Practices:**
+- Always use configuration functions (`fn_get_dw_database()`, `fn_get_ods_database()`) instead of hard-coding database names
+- This ensures portability across environments (DEV, TEST, PROD)
+
+**Migration Steps:**
 
 1. **Indexes → Clustering Keys**
    - Identify most-filtered columns
-   - Add clustering on large tables only
+   - Add clustering on large tables only (>1M rows)
 
 2. **IDENTITY → AUTOINCREMENT or Sequences**
    - Both work, sequences more flexible
+   - Use sequences for multi-table surrogate key generation
 
 3. **T-SQL Procedures → Snowflake SQL Scripting**
    - Most logic translates 1:1
    - Use JavaScript for complex transformations
+   - Always use configuration functions for database references
 
 4. **SQL Agent Jobs → Tasks**
    - Convert job steps to stored procedures
    - Chain tasks with AFTER clause
+   - Use CRON expressions for scheduling
 
 5. **Linked Servers → External Tables or Snowpipe**
    - No linked servers, use staging approach
+   - External tables for cross-database queries
+   - Snowpipe for continuous data ingestion
+
+6. **Database References → Configuration Functions**
+   - Replace hard-coded database names with `fn_get_dw_database()` and `fn_get_ods_database()`
+   - Use IDENTIFIER() function for dynamic object references
+   - Store database names in environment configuration table
 
 ---
 
