@@ -35,6 +35,8 @@
 **Owner:** On-call engineer or designated team member
 **Tools:** Snowflake UI, Monitoring Dashboard, Email
 
+**Note:** All SQL queries in this document use configuration functions (`fn_get_dw_database()`, `fn_get_ods_database()`) to reference databases dynamically. This ensures the queries work across all environments (DEV, TEST, PROD).
+
 #### Checklist
 
 ```sql
@@ -45,7 +47,7 @@ SELECT
     last_run_time,
     execution_status,
     data_quality_score
-FROM VESDW_PRD.metadata.vw_pipeline_health_dashboard
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_pipeline_health_dashboard')
 WHERE health_status IN ('🔴 CRITICAL', '🟡 WARNING')
 ORDER BY
     CASE health_status
@@ -87,7 +89,7 @@ SELECT
     quality_status,
     total_failures,
     total_warnings
-FROM VESDW_PRD.metadata.vw_data_quality_summary
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_data_quality_summary')
 WHERE quality_status IN ('🔴 ACTION REQUIRED', '🟡 REVIEW NEEDED')
 ORDER BY overall_quality_score ASC;
 ```
@@ -123,7 +125,7 @@ SELECT
     compliance_status,
     actual_value,
     target_value
-FROM VESDW_PRD.metadata.vw_sla_compliance_dashboard
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_sla_compliance_dashboard')
 WHERE compliance_status = 'BREACHED'
   AND sla_date >= CURRENT_DATE() - 1
 ORDER BY pipeline_name;
@@ -210,7 +212,7 @@ SELECT
     failed_rules,
     pass_rate_pct,
     quality_grade
-FROM VESDW_PRD.metadata.vw_dq_scorecard
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_dq_scorecard')
 ORDER BY pass_rate_pct ASC;
 ```
 
@@ -234,7 +236,7 @@ SELECT
     deployed_by,
     status,
     rollback_required
-FROM VESDW_PRD.metadata.deployment_log
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.deployment_log')
 WHERE deployment_date >= DATE_TRUNC('week', CURRENT_DATE())
 ORDER BY deployment_date DESC;
 ```
@@ -392,7 +394,7 @@ FROM INFORMATION_SCHEMA.TABLE_STORAGE_METRICS;
    SELECT
        table_name,
        MAX(created_timestamp) AS last_update
-   FROM VESDW_PRD.warehouse.fact_exam_requests
+   FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests')
    GROUP BY table_name;
    ```
 
@@ -420,11 +422,11 @@ FROM INFORMATION_SCHEMA.TABLE_STORAGE_METRICS;
 8. **Verify Resolution**
    ```sql
    -- Verify all pipelines healthy
-   SELECT * FROM VESDW_PRD.metadata.vw_pipeline_health_dashboard
+   SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_pipeline_health_dashboard')
    WHERE health_status != '🟢 HEALTHY';
 
    -- Verify data quality
-   SELECT * FROM VESDW_PRD.metadata.vw_data_quality_summary
+   SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_data_quality_summary')
    WHERE quality_status = '🔴 ACTION REQUIRED';
    ```
 
@@ -574,7 +576,7 @@ CALL sp_create_daily_backup();
 !source deployments/deploy_to_prod.sql
 
 # 4. Verify deployment
-SELECT * FROM VESDW_PRD.metadata.deployment_log
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.metadata.deployment_log')
 ORDER BY deployment_timestamp DESC LIMIT 1;
 
 # 5. Run smoke tests
@@ -637,7 +639,7 @@ SELECT
     actual_value,
     variance_pct,
     severity
-FROM VESDW_PRD.metadata.data_quality_checks
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.data_quality_checks')
 WHERE check_status = 'FAIL'
   AND check_timestamp >= CURRENT_DATE()
 ORDER BY severity DESC, check_timestamp DESC;
@@ -713,7 +715,7 @@ WHERE table_name = '<affected_table>'
 **Option A: Fix at Source**
 ```sql
 -- Update source data
-UPDATE VESODS_PRDDATA_PRD.VEMS_CORE.<table>
+UPDATE IDENTIFIER(fn_get_ods_database() || '.VEMS_CORE.<table>')
 SET <column> = <corrected_value>
 WHERE <condition>;
 
@@ -724,7 +726,7 @@ CALL sp_staging_layer_master('<batch_id>');
 **Option B: Fix in Staging**
 ```sql
 -- Apply transformation in staging
-UPDATE VESDW_PRD.staging.<table>
+UPDATE IDENTIFIER(fn_get_dw_database() || '.staging.<table>')
 SET <column> = CASE
     WHEN <condition1> THEN <value1>
     WHEN <condition2> THEN <value2>

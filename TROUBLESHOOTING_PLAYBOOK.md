@@ -123,7 +123,7 @@ EXECUTE TASK task_daily_ods_extraction;
 SELECT
     COUNT(*) AS row_count,
     MAX(created_timestamp) AS latest_data
-FROM VESODS_PRDDATA_PRD.VEMS_CORE.exam_requests
+FROM IDENTIFIER(fn_get_ods_database() || '.VEMS_CORE.exam_requests')
 WHERE created_date = CURRENT_DATE();
 ```
 
@@ -224,7 +224,7 @@ SELECT
     expected_value,
     actual_value,
     variance_pct
-FROM VESDW_PRD.metadata.data_quality_checks
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.data_quality_checks')
 WHERE check_status = 'FAIL'
   AND check_timestamp >= CURRENT_DATE()
 ORDER BY severity DESC;
@@ -242,14 +242,14 @@ SELECT
     COUNT(*) AS total_records,
     COUNT(CASE WHEN veteran_ssn IS NULL THEN 1 END) AS null_ssns,
     ROUND(COUNT(CASE WHEN veteran_ssn IS NULL THEN 1 END) * 100.0 / COUNT(*), 2) AS null_pct
-FROM VESDW_PRD.staging.stg_veterans
-WHERE batch_id = (SELECT MAX(batch_id) FROM VESDW_PRD.staging.stg_veterans);
+FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
+WHERE batch_id = (SELECT MAX(batch_id) FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans'));
 
 -- Sample bad records
 SELECT *
-FROM VESDW_PRD.staging.stg_veterans
+FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 WHERE veteran_ssn IS NULL
-  AND batch_id = (SELECT MAX(batch_id) FROM VESDW_PRD.staging.stg_veterans)
+  AND batch_id = (SELECT MAX(batch_id) FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans'))
 LIMIT 20;
 ```
 
@@ -259,16 +259,16 @@ LIMIT 20;
 -- Contact source system owner
 
 -- Option B: Filter out bad records
-DELETE FROM VESDW_PRD.staging.stg_veterans
+DELETE FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 WHERE veteran_ssn IS NULL
   AND batch_id = '<current_batch>';
 
 -- Log rejected records
-INSERT INTO VESDW_PRD.metadata.rejected_records (...)
+INSERT INTO IDENTIFIER(fn_get_dw_database() || '.metadata.rejected_records') (...)
 SELECT ... FROM bad_records;
 
 -- Option C: Default/derive value (if business rule allows)
-UPDATE VESDW_PRD.staging.stg_veterans
+UPDATE IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 SET veteran_ssn = 'UNKNOWN_' || LPAD(veteran_id::VARCHAR, 9, '0')
 WHERE veteran_ssn IS NULL
   AND batch_id = '<current_batch>';
@@ -283,7 +283,7 @@ WHERE veteran_ssn IS NULL
 SELECT
     disability_rating,
     COUNT(*) AS occurrence_count
-FROM VESDW_PRD.staging.stg_veterans
+FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 WHERE disability_rating NOT BETWEEN 0 AND 100
 GROUP BY disability_rating
 ORDER BY occurrence_count DESC;
@@ -292,7 +292,7 @@ ORDER BY occurrence_count DESC;
 **Solutions:**
 ```sql
 -- Cap at valid range
-UPDATE VESDW_PRD.staging.stg_veterans
+UPDATE IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 SET disability_rating = CASE
     WHEN disability_rating < 0 THEN 0
     WHEN disability_rating > 100 THEN 100
@@ -301,7 +301,7 @@ END
 WHERE disability_rating NOT BETWEEN 0 AND 100;
 
 -- Or reject if data quality is critical
-DELETE FROM VESDW_PRD.staging.stg_veterans
+DELETE FROM IDENTIFIER(fn_get_dw_database() || '.staging.stg_veterans')
 WHERE disability_rating NOT BETWEEN 0 AND 100;
 ```
 

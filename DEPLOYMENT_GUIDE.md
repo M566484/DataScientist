@@ -89,10 +89,10 @@ Ensure you have all deployment files from the repository:
 -- Verify database context
 SELECT CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_ROLE();
 
--- Verify fn_fn_get_dw_database() function exists
-SELECT fn_fn_get_dw_database();
+-- Verify fn_get_dw_database() function exists
+SELECT fn_get_dw_database();
 
--- Expected: Your data warehouse database name (e.g., 'VES_DW')
+-- Expected: Your data warehouse database name based on environment configuration
 ```
 
 ---
@@ -136,8 +136,8 @@ Phase 3: Full Rollout
 -- 1.1.1: Set database context
 -- ============================================================
 USE ROLE SYSADMIN;  -- Or your admin role
-SELECT fn_fn_get_dw_database();  -- Note the database name
-USE DATABASE IDENTIFIER(fn_fn_get_dw_database());
+SELECT fn_get_dw_database();  -- Note the database name
+USE DATABASE IDENTIFIER(fn_get_dw_database());
 USE SCHEMA WAREHOUSE;
 
 -- ============================================================
