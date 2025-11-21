@@ -32,15 +32,44 @@ CREATE OR REPLACE PROCEDURE sp_load_scd_type2_generic(
     p_batch_id VARCHAR
 )
 RETURNS VARCHAR
-LANGUAGE JAVASCRIPT
-COMMENT = 'Generic SCD Type 2 loader. Loads any dimension table using configuration from metadata.scd_type2_config.'
+LANGUAGE SQL
+COMMENT = 'Generic SCD Type 2 loader (SQL version). Loads any dimension table using configuration from metadata.scd_type2_config.'
 AS
 $$
-    // ================================================================================================================
-    // STEP 1: Get Configuration
-    // ================================================================================================================
+DECLARE
+    -- Configuration variables
+    v_schema VARCHAR;
+    v_staging_schema VARCHAR;
+    v_staging_table VARCHAR;
+    v_business_keys ARRAY;
+    v_hash_column VARCHAR;
+    v_surrogate_key VARCHAR;
+    v_active_flag BOOLEAN;
+    v_enabled BOOLEAN;
 
-    var config_sql = `
+    -- Database and table references
+    v_dw_database VARCHAR;
+    v_target_table VARCHAR;
+    v_source_table VARCHAR;
+
+    -- Dynamic SQL components
+    v_key_join VARCHAR;
+    v_column_list VARCHAR;
+    v_update_sql VARCHAR;
+    v_insert_sql VARCHAR;
+
+    -- Row counts
+    v_rows_updated INTEGER DEFAULT 0;
+    v_rows_inserted INTEGER DEFAULT 0;
+
+    -- Configuration result set
+    config_rs RESULTSET;
+BEGIN
+    -- ================================================================================================================
+    -- STEP 1: Get Configuration
+    -- ================================================================================================================
+
+    config_rs := (
         SELECT
             schema_name,
             staging_schema,
@@ -51,116 +80,101 @@ $$
             active_flag,
             enabled
         FROM metadata.scd_type2_config
-        WHERE table_name = ?
-    `;
+        WHERE table_name = :p_table_name
+    );
 
-    var config_stmt = snowflake.createStatement({
-        sqlText: config_sql,
-        binds: [P_TABLE_NAME]
-    });
+    -- Check if configuration exists
+    LET c1 CURSOR FOR config_rs;
+    OPEN c1;
+    FETCH c1 INTO v_schema, v_staging_schema, v_staging_table, v_business_keys,
+                  v_hash_column, v_surrogate_key, v_active_flag, v_enabled;
 
-    var config_result = config_stmt.execute();
+    IF (SQLCODE <> 0) THEN
+        RETURN 'ERROR: No configuration found for table ''' || :p_table_name || ''' in metadata.scd_type2_config';
+    END IF;
 
-    if (!config_result.next()) {
-        return "ERROR: No configuration found for table '" + P_TABLE_NAME + "' in metadata.scd_type2_config";
-    }
+    CLOSE c1;
 
-    // Check if enabled
-    if (!config_result.getColumnValue('ENABLED')) {
-        return "SKIPPED: Table '" + P_TABLE_NAME + "' is disabled in metadata.scd_type2_config";
-    }
+    -- Check if enabled
+    IF (NOT v_enabled) THEN
+        RETURN 'SKIPPED: Table ''' || :p_table_name || ''' is disabled in metadata.scd_type2_config';
+    END IF;
 
-    if (!config_result.getColumnValue('ACTIVE_FLAG')) {
-        return "SKIPPED: Table '" + P_TABLE_NAME + "' is inactive in metadata.scd_type2_config";
-    }
+    IF (NOT v_active_flag) THEN
+        RETURN 'SKIPPED: Table ''' || :p_table_name || ''' is inactive in metadata.scd_type2_config';
+    END IF;
 
-    // Extract configuration
-    var schema = config_result.getColumnValue('SCHEMA_NAME');
-    var staging_schema = config_result.getColumnValue('STAGING_SCHEMA');
-    var staging_table = config_result.getColumnValue('STAGING_TABLE');
-    var business_keys = config_result.getColumnValue('BUSINESS_KEY_COLUMNS');
-    var hash_column = config_result.getColumnValue('HASH_COLUMN');
-    var surrogate_key = config_result.getColumnValue('SURROGATE_KEY_COLUMN');
+    -- Build database reference
+    BEGIN
+        v_dw_database := (SELECT fn_get_dw_database());
+    EXCEPTION
+        WHEN OTHER THEN
+            v_dw_database := CURRENT_DATABASE();
+    END;
 
-    // Build database reference
-    var dw_database = snowflake.execute({sqlText: "SELECT fn_get_dw_database()"}).next() ?
-                      snowflake.execute({sqlText: "SELECT fn_get_dw_database()"}).getColumnValue(1) :
-                      snowflake.execute({sqlText: "SELECT CURRENT_DATABASE()"}).next() ?
-                      snowflake.execute({sqlText: "SELECT CURRENT_DATABASE()"}).getColumnValue(1) : null;
+    v_target_table := v_dw_database || '.' || v_schema || '.' || :p_table_name;
+    v_source_table := v_dw_database || '.' || v_staging_schema || '.' || v_staging_table;
 
-    var target_table = dw_database + '.' + schema + '.' + P_TABLE_NAME;
-    var source_table = dw_database + '.' + staging_schema + '.' + staging_table;
+    -- ================================================================================================================
+    -- STEP 2: Build Business Key Join Condition
+    -- ================================================================================================================
 
-    // ================================================================================================================
-    // STEP 2: Build Business Key Join Condition
-    // ================================================================================================================
+    -- Convert array to join condition: ['col1', 'col2'] -> 'tgt.col1 = src.col1 AND tgt.col2 = src.col2'
+    SELECT ARRAY_TO_STRING(
+        ARRAY_AGG('tgt.' || value || ' = src.' || value),
+        ' AND '
+    )
+    INTO v_key_join
+    FROM TABLE(FLATTEN(INPUT => v_business_keys));
 
-    var key_conditions = [];
-    for (var i = 0; i < business_keys.length; i++) {
-        key_conditions.push('tgt.' + business_keys[i] + ' = src.' + business_keys[i]);
-    }
-    var key_join = key_conditions.join(' AND ');
+    -- ================================================================================================================
+    -- STEP 3: End-Date Changed Records (SCD Type 2 Logic)
+    -- ================================================================================================================
 
-    // ================================================================================================================
-    // STEP 3: End-Date Changed Records (SCD Type 2 Logic)
-    // ================================================================================================================
-
-    var update_sql = `
-        UPDATE ${target_table} tgt
+    v_update_sql := '
+        UPDATE ' || v_target_table || ' tgt
         SET
             effective_end_date = CURRENT_TIMESTAMP(),
             is_current = FALSE,
             updated_timestamp = CURRENT_TIMESTAMP()
-        FROM ${source_table} src
-        WHERE ${key_join}
+        FROM ' || v_source_table || ' src
+        WHERE ' || v_key_join || '
           AND tgt.is_current = TRUE
-          AND tgt.${hash_column} != src.${hash_column}
-    `;
+          AND tgt.' || v_hash_column || ' != src.' || v_hash_column;
 
-    var update_stmt = snowflake.createStatement({sqlText: update_sql});
-    update_stmt.execute();
-    var rows_updated = update_stmt.getNumRowsAffected();
+    EXECUTE IMMEDIATE v_update_sql;
+    v_rows_updated := SQLROWCOUNT;
 
-    // ================================================================================================================
-    // STEP 4: Get Column List (Exclude Surrogate Key and Metadata Fields)
-    // ================================================================================================================
+    -- ================================================================================================================
+    -- STEP 4: Get Column List (Exclude Surrogate Key and Metadata Fields)
+    -- ================================================================================================================
 
-    var columns_sql = `
-        SELECT LISTAGG(column_name, ', ') WITHIN GROUP (ORDER BY ordinal_position) AS column_list
-        FROM information_schema.columns
-        WHERE table_schema = '${staging_schema}'
-          AND table_name = UPPER('${staging_table}')
-          AND table_catalog = '${dw_database}'
-          AND column_name NOT IN (
-              '${surrogate_key}',
-              'EFFECTIVE_START_DATE',
-              'EFFECTIVE_END_DATE',
-              'IS_CURRENT',
-              'CREATED_TIMESTAMP',
-              'UPDATED_TIMESTAMP'
-          )
-    `;
+    SELECT LISTAGG(column_name, ', ') WITHIN GROUP (ORDER BY ordinal_position)
+    INTO v_column_list
+    FROM information_schema.columns
+    WHERE table_schema = UPPER(v_staging_schema)
+      AND table_name = UPPER(v_staging_table)
+      AND table_catalog = v_dw_database
+      AND column_name NOT IN (
+          UPPER(v_surrogate_key),
+          'EFFECTIVE_START_DATE',
+          'EFFECTIVE_END_DATE',
+          'IS_CURRENT',
+          'CREATED_TIMESTAMP',
+          'UPDATED_TIMESTAMP'
+      );
 
-    var cols_stmt = snowflake.createStatement({sqlText: columns_sql});
-    var cols_result = cols_stmt.execute();
+    IF (v_column_list IS NULL OR TRIM(v_column_list) = '') THEN
+        RETURN 'ERROR: No columns found in staging table ''' || v_staging_table || '''';
+    END IF;
 
-    if (!cols_result.next()) {
-        return "ERROR: Could not determine column list for staging table '" + staging_table + "'";
-    }
+    -- ================================================================================================================
+    -- STEP 5: Insert New and Changed Records
+    -- ================================================================================================================
 
-    var column_list = cols_result.getColumnValue('COLUMN_LIST');
-
-    if (!column_list || column_list.trim() === '') {
-        return "ERROR: No columns found in staging table '" + staging_table + "'";
-    }
-
-    // ================================================================================================================
-    // STEP 5: Insert New and Changed Records
-    // ================================================================================================================
-
-    var insert_sql = `
-        INSERT INTO ${target_table} (
-            ${column_list},
+    v_insert_sql := '
+        INSERT INTO ' || v_target_table || ' (
+            ' || v_column_list || ',
             effective_start_date,
             effective_end_date,
             is_current,
@@ -168,50 +182,44 @@ $$
             updated_timestamp
         )
         SELECT
-            ${column_list},
+            ' || v_column_list || ',
             CURRENT_TIMESTAMP() AS effective_start_date,
-            TO_TIMESTAMP_NTZ('9999-12-31 23:59:59') AS effective_end_date,
+            TO_TIMESTAMP_NTZ(''9999-12-31 23:59:59'') AS effective_end_date,
             TRUE AS is_current,
             CURRENT_TIMESTAMP() AS created_timestamp,
             CURRENT_TIMESTAMP() AS updated_timestamp
-        FROM ${source_table} src
-        WHERE src.batch_id = ?
+        FROM ' || v_source_table || ' src
+        WHERE src.batch_id = ''' || :p_batch_id || '''
           AND (
-              -- New record (doesn't exist in target)
+              -- New record (doesn''t exist in target)
               NOT EXISTS (
                   SELECT 1
-                  FROM ${target_table} tgt
-                  WHERE ${key_join}
+                  FROM ' || v_target_table || ' tgt
+                  WHERE ' || v_key_join || '
               )
               OR
               -- Changed record (was just end-dated in step 3)
               EXISTS (
                   SELECT 1
-                  FROM ${target_table} tgt
-                  WHERE ${key_join}
+                  FROM ' || v_target_table || ' tgt
+                  WHERE ' || v_key_join || '
                     AND tgt.is_current = FALSE
                     AND tgt.effective_end_date >= DATEADD(minute, -5, CURRENT_TIMESTAMP())
               )
-          )
-    `;
+          )';
 
-    var insert_stmt = snowflake.createStatement({
-        sqlText: insert_sql,
-        binds: [P_BATCH_ID]
-    });
-    insert_stmt.execute();
-    var rows_inserted = insert_stmt.getNumRowsAffected();
+    EXECUTE IMMEDIATE v_insert_sql;
+    v_rows_inserted := SQLROWCOUNT;
 
-    // ================================================================================================================
-    // STEP 6: Return Results
-    // ================================================================================================================
+    -- ================================================================================================================
+    -- STEP 6: Return Results
+    -- ================================================================================================================
 
-    var result_message = 'SUCCESS: Loaded ' + P_TABLE_NAME +
-                        ' - Updated: ' + rows_updated +
-                        ', Inserted: ' + rows_inserted +
-                        ' (Batch: ' + P_BATCH_ID + ')';
-
-    return result_message;
+    RETURN 'SUCCESS: Loaded ' || :p_table_name ||
+           ' - Updated: ' || v_rows_updated ||
+           ', Inserted: ' || v_rows_inserted ||
+           ' (Batch: ' || :p_batch_id || ')';
+END;
 $$;
 
 -- =====================================================================================================================
@@ -229,78 +237,133 @@ RETURNS TABLE (
     duration_seconds NUMBER,
     error_message VARCHAR
 )
-LANGUAGE JAVASCRIPT
-COMMENT = 'Loads all enabled dimension tables using generic SCD Type 2 procedure. Returns results table with status for each dimension.'
+LANGUAGE SQL
+COMMENT = 'Loads all enabled dimension tables using generic SCD Type 2 procedure (SQL version). Returns results table with status for each dimension.'
 AS
 $$
-    // ================================================================================================================
-    // Get list of enabled dimension tables from configuration
-    // ================================================================================================================
+DECLARE
+    v_table_name VARCHAR;
+    v_start_time TIMESTAMP;
+    v_end_time TIMESTAMP;
+    v_duration_seconds NUMBER(10,3);
+    v_status VARCHAR DEFAULT 'SUCCESS';
+    v_error_msg VARCHAR DEFAULT NULL;
+    v_result_msg VARCHAR;
+    v_rows_updated INTEGER DEFAULT 0;
+    v_rows_inserted INTEGER DEFAULT 0;
 
-    var config_sql = `
+    -- Result set for configuration
+    config_rs RESULTSET;
+    c_config CURSOR FOR config_rs;
+BEGIN
+    -- Create temporary table to store results
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_load_results (
+        table_name VARCHAR,
+        status VARCHAR,
+        rows_updated NUMBER,
+        rows_inserted NUMBER,
+        duration_seconds NUMBER(10,3),
+        error_message VARCHAR
+    );
+
+    TRUNCATE TABLE temp_load_results;
+
+    -- ================================================================================================================
+    -- Get list of enabled dimension tables from configuration
+    -- ================================================================================================================
+
+    config_rs := (
         SELECT table_name
         FROM metadata.scd_type2_config
         WHERE active_flag = TRUE
           AND enabled = TRUE
         ORDER BY table_name
-    `;
+    );
 
-    var config_stmt = snowflake.createStatement({sqlText: config_sql});
-    var config_result = config_stmt.execute();
+    -- ================================================================================================================
+    -- Load each dimension table
+    -- ================================================================================================================
 
-    var results = [];
+    OPEN c_config;
+    FETCH c_config INTO v_table_name;
 
-    // ================================================================================================================
-    // Load each dimension table
-    // ================================================================================================================
+    WHILE (SQLCODE = 0) DO
+        v_start_time := CURRENT_TIMESTAMP();
+        v_status := 'SUCCESS';
+        v_error_msg := NULL;
+        v_rows_updated := 0;
+        v_rows_inserted := 0;
 
-    while (config_result.next()) {
-        var table_name = config_result.getColumnValue('TABLE_NAME');
-        var start_time = Date.now();
-        var status = 'SUCCESS';
-        var error_msg = null;
-        var result_msg = '';
+        BEGIN
+            -- Call generic SCD procedure
+            CALL sp_load_scd_type2_generic(:v_table_name, :p_batch_id) INTO :v_result_msg;
 
-        try {
-            // Call generic SCD procedure
-            var load_stmt = snowflake.createStatement({
-                sqlText: "CALL sp_load_scd_type2_generic(?, ?)",
-                binds: [table_name, P_BATCH_ID]
-            });
+            -- Parse result message to extract row counts
+            -- Format: "SUCCESS: Loaded dim_veterans - Updated: 5, Inserted: 10 (Batch: ...)"
+            BEGIN
+                v_rows_updated := REGEXP_SUBSTR(:v_result_msg, 'Updated:\\s*(\\d+)', 1, 1, 'e', 1)::INTEGER;
+            EXCEPTION
+                WHEN OTHER THEN
+                    v_rows_updated := 0;
+            END;
 
-            var load_result = load_stmt.execute();
-            if (load_result.next()) {
-                result_msg = load_result.getColumnValue(1);
-            }
+            BEGIN
+                v_rows_inserted := REGEXP_SUBSTR(:v_result_msg, 'Inserted:\\s*(\\d+)', 1, 1, 'e', 1)::INTEGER;
+            EXCEPTION
+                WHEN OTHER THEN
+                    v_rows_inserted := 0;
+            END;
 
-            // Parse result message to extract row counts
-            // Format: "SUCCESS: Loaded dim_veterans - Updated: 5, Inserted: 10 (Batch: ...)"
-            var updated_match = result_msg.match(/Updated:\s*(\d+)/);
-            var inserted_match = result_msg.match(/Inserted:\s*(\d+)/);
+        EXCEPTION
+            WHEN OTHER THEN
+                v_status := 'ERROR';
+                v_error_msg := SQLERRM;
+                v_rows_updated := 0;
+                v_rows_inserted := 0;
+        END;
 
-            var rows_updated = updated_match ? parseInt(updated_match[1]) : 0;
-            var rows_inserted = inserted_match ? parseInt(inserted_match[1]) : 0;
+        v_end_time := CURRENT_TIMESTAMP();
+        v_duration_seconds := DATEDIFF(millisecond, v_start_time, v_end_time) / 1000.0;
 
-        } catch (err) {
-            status = 'ERROR';
-            error_msg = err.message;
-            rows_updated = 0;
-            rows_inserted = 0;
-        }
+        -- Insert result into temp table
+        INSERT INTO temp_load_results VALUES (
+            :v_table_name,
+            :v_status,
+            :v_rows_updated,
+            :v_rows_inserted,
+            :v_duration_seconds,
+            :v_error_msg
+        );
 
-        var duration = (Date.now() - start_time) / 1000;
+        FETCH c_config INTO v_table_name;
+    END WHILE;
 
-        results.push({
-            TABLE_NAME: table_name,
-            STATUS: status,
-            ROWS_UPDATED: rows_updated,
-            ROWS_INSERTED: rows_inserted,
-            DURATION_SECONDS: duration,
-            ERROR_MESSAGE: error_msg
-        });
-    }
+    CLOSE c_config;
 
-    return results;
+    -- ================================================================================================================
+    -- Return Results
+    -- ================================================================================================================
+
+    LET result_query RESULTSET := (
+        SELECT
+            table_name,
+            status,
+            rows_updated,
+            rows_inserted,
+            duration_seconds,
+            error_message
+        FROM temp_load_results
+        ORDER BY
+            CASE status
+                WHEN 'ERROR' THEN 1
+                WHEN 'SKIPPED' THEN 2
+                ELSE 3
+            END,
+            table_name
+    );
+
+    RETURN TABLE(result_query);
+END;
 $$;
 
 -- =====================================================================================================================
