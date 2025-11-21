@@ -482,7 +482,7 @@ SELECT
     row_count,
     bytes / (1024*1024) AS size_mb,
     comment
-FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
 WHERE table_schema = 'STAGING'
   AND table_type = 'BASE TABLE'
 ORDER BY table_name;
