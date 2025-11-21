@@ -153,7 +153,7 @@ $$
 $$;
 
 -- Function to get DW database name
-CREATE OR REPLACE FUNCTION get_dw_database()
+CREATE OR REPLACE FUNCTION fn_get_dw_database()
 RETURNS VARCHAR
 AS
 $$
@@ -163,7 +163,7 @@ $$
 $$;
 
 -- Function to get ODS database name
-CREATE OR REPLACE FUNCTION get_ods_database()
+CREATE OR REPLACE FUNCTION fn_get_ods_database()
 RETURNS VARCHAR
 AS
 $$
@@ -174,8 +174,8 @@ $$;
 
 -- Test the functions
 SELECT get_environment() AS environment;
-SELECT get_dw_database() AS dw_database;
-SELECT get_ods_database() AS ods_database;
+SELECT fn_get_dw_database() AS dw_database;
+SELECT fn_get_ods_database() AS ods_database;
 ```
 
 #### Step 3: Update Stored Procedures to Use Config
@@ -194,8 +194,8 @@ DECLARE
     v_rows_merged INT;
 BEGIN
     -- Get environment-specific database names
-    SELECT get_dw_database() INTO :v_dw_database;
-    SELECT get_ods_database() INTO :v_ods_database;
+    SELECT fn_get_dw_database() INTO :v_dw_database;
+    SELECT fn_get_ods_database() INTO :v_ods_database;
 
     -- Build dynamic SQL with environment databases
     v_merge_sql := '
@@ -566,7 +566,7 @@ Combine multiple strategies for maximum flexibility:
 ### Implementation Checklist
 
 - [ ] Create `environment_config` table in each environment (DEV, TST, PRD)
-- [ ] Create helper functions (`get_environment()`, `get_dw_database()`, etc.)
+- [ ] Create helper functions (`get_environment()`, `fn_get_dw_database()`, `fn_get_ods_database()`, etc.)
 - [ ] Update all stored procedures to use helper functions
 - [ ] Create deployment script templates
 - [ ] Test deployment script in DEV
@@ -764,8 +764,8 @@ SELECT
 -- Test: Verify database names
 SELECT
     CASE
-        WHEN get_dw_database() = 'VESDW_DEV' THEN 'PASS'
-        ELSE 'FAIL: Expected VESDW_DEV, got ' || get_dw_database()
+        WHEN fn_get_dw_database() = 'VESDW_DEV' THEN 'PASS'
+        ELSE 'FAIL: Expected VESDW_DEV, got ' || fn_get_dw_database()
     END AS test_result,
     'DW database check' AS test_name;
 ```
@@ -779,7 +779,7 @@ CALL sp_load_dim_veteran();
 
 -- Verify results
 SELECT COUNT(*) AS record_count
-FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran')
+FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_veteran')
 WHERE is_current = TRUE;
 ```
 

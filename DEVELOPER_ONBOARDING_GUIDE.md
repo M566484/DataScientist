@@ -762,7 +762,8 @@ CALL sp_record_pipeline_health(
 
 -- Check if alert was sent (review your email)
 -- Review pipeline health dashboard
-SELECT * FROM VESDW_PRD.metadata.vw_pipeline_health_dashboard
+-- Note: Use configuration function to get database name
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_pipeline_health_dashboard')
 WHERE pipeline_name = 'test_veteran_load';
 ```
 

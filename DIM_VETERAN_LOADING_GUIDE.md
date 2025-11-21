@@ -129,8 +129,8 @@ SELECT * FROM VESDW_PRD.warehouse.dim_veteran;
 **✅ SOLUTION: Environment-aware code**
 ```sql
 -- This works in ANY environment!
-USE DATABASE IDENTIFIER(get_dw_database());
-SELECT * FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran');
+USE DATABASE IDENTIFIER(fn_get_dw_database());
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_veteran');
 ```
 
 ### How This Guide Handles Environments

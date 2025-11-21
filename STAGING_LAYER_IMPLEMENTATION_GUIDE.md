@@ -29,8 +29,8 @@ Before starting, verify these tables exist:
 
 ```sql
 -- Set database context dynamically
-SET dw_database = (SELECT get_dw_database());
-SET ods_database = (SELECT get_ods_database());
+SET dw_database = (SELECT fn_get_dw_database());
+SET ods_database = (SELECT fn_get_ods_database());
 
 -- Check ODS tables
 SELECT COUNT(*) FROM IDENTIFIER($ods_database || '.ODS.ods_veterans_source');

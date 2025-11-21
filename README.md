@@ -79,7 +79,10 @@ snowsql -a <your_account> -u <your_username>
 !source snowflake/schema/02_master_deployment.sql
 
 # 4. Verify deployment
-SELECT 'Databases' AS object_type, COUNT(*) AS count FROM INFORMATION_SCHEMA.DATABASES WHERE DATABASE_NAME IN ('VESDW_PRD', 'VESODS_PRDDATA_PRD')
+# Note: Use configuration functions to get actual database names for your environment
+SELECT 'Databases' AS object_type, COUNT(*) AS count
+FROM INFORMATION_SCHEMA.DATABASES
+WHERE DATABASE_NAME = fn_get_dw_database() OR DATABASE_NAME = fn_get_ods_database()
 UNION ALL
 SELECT 'Schemas', COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('staging', 'warehouse', 'marts', 'metadata')
 UNION ALL
@@ -96,7 +99,8 @@ SELECT 'Tasks', COUNT(*) FROM INFORMATION_SCHEMA.TASKS;
 
 ```sql
 -- Run daily health check (see STANDARD_OPERATING_PROCEDURES.md for details)
-USE DATABASE VESDW_PRD;
+-- Note: Use configuration functions to reference databases dynamically
+USE DATABASE IDENTIFIER(fn_get_dw_database());
 USE SCHEMA metadata;
 
 -- 1. Check pipeline health
@@ -105,7 +109,7 @@ WHERE health_status IN ('🔴 CRITICAL', '🟡 WARNING')
 ORDER BY last_run_time DESC;
 
 -- 2. Check data quality
-SELECT * FROM VESDW_PRD.metadata.vw_dq_scorecard
+SELECT * FROM metadata.vw_dq_scorecard
 WHERE overall_score < 95
 ORDER BY last_check_timestamp DESC;
 
@@ -131,13 +135,15 @@ LIMIT 10;
 
 ### Database Structure
 
+**Note:** Actual database names are environment-specific and retrieved using configuration functions (`fn_get_dw_database()` and `fn_get_ods_database()`).
+
 ```
-VESODS_PRDDATA_PRD (Operational Data Store)
+<ODS Database> (Operational Data Store)
 ├── VEMS_CORE                    # VEMS Core system data
 ├── VEMS_PNM                     # VEMS Provider Network Management
 └── OMS                          # Operations Management System
 
-VESDW_PRD (Data Warehouse)
+<DW Database> (Data Warehouse)
 ├── staging                      # Staging layer (multi-source merge)
 ├── warehouse                    # Dimensions & facts (star schema)
 ├── marts                        # Business-specific data marts
@@ -160,14 +166,14 @@ VESDW_PRD (Data Warehouse)
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  ODS LAYER (VESODS_PRDDATA_PRD)                                 │
+│  ODS LAYER (<ODS_DATABASE>)                                     │
 │  ├── Scheduled extraction (daily/hourly)                        │
 │  ├── Minimal transformation                                     │
 │  └── CDC enabled via Snowflake Streams                          │
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  STAGING LAYER (VESDW_PRD.staging)                              │
+│  STAGING LAYER (<DW_DATABASE>.staging)                          │
 │  ├── Multi-source merge logic                                   │
 │  ├── Data quality validation (40+ rules)                        │
 │  ├── Business rule application                                  │
@@ -175,7 +181,7 @@ VESDW_PRD (Data Warehouse)
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  WAREHOUSE LAYER (VESDW_PRD.warehouse)                          │
+│  WAREHOUSE LAYER (<DW_DATABASE>.warehouse)                      │
 │  ├── 9 Dimension Tables (SCD Type 2)                            │
 │  ├── 9 Fact Tables (transaction, snapshot, accumulating)        │
 │  ├── Surrogate key management                                   │
@@ -183,7 +189,7 @@ VESDW_PRD (Data Warehouse)
 └─────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  MARTS LAYER (VESDW_PRD.marts)                                  │
+│  MARTS LAYER (<DW_DATABASE>.marts)                              │
 │  ├── Clinical Analytics                                         │
 │  ├── Executive Dashboard (KPIs, financials, forecasting)        │
 │  ├── Bottleneck Analysis                                        │

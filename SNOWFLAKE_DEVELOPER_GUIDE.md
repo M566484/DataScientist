@@ -904,7 +904,8 @@ CLONE IDENTIFIER($dw_db || '.warehouse.fact_exam_requests')
 ```sql
 -- List objects
 SHOW DATABASES;
-SHOW SCHEMAS IN DATABASE VESDW_PRD;
+-- Use configuration function to get database name
+SHOW SCHEMAS IN DATABASE IDENTIFIER(fn_get_dw_database());
 SHOW TABLES IN SCHEMA warehouse;
 SHOW WAREHOUSES;
 SHOW TASKS;
