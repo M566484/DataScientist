@@ -67,7 +67,7 @@ The VES Data Pipeline follows a **four-layer medallion architecture** pattern op
 └─────────────────────────────────────────────────────────────────────┘
                      │
                      ▼
-           BI Tools & Analytics (Tableau, Power BI, etc.)
+           BI Tools & Analytics (Qlik)
 ```
 
 ---
