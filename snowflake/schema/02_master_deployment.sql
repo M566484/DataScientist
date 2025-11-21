@@ -49,6 +49,25 @@
 -- Step 9: Create Marts Layer Views
 !source ../marts/01_create_marts_clinical.sql
 
+-- Step 10: Create Metadata Infrastructure (NEW - Maintainability Enhancements)
+!source ../metadata/01_create_metadata_tables.sql
+!source ../metadata/02_system_configuration_framework.sql
+
+-- Step 11: Create Monitoring Infrastructure (NEW - Simplified Golden Signals)
+!source ../monitoring/00_comprehensive_monitoring_dashboard.sql
+!source ../monitoring/02_golden_signals_dashboard.sql
+
+-- Step 12: Create Quality Infrastructure (NEW - Advanced DQ Framework)
+!source ../quality/00_advanced_data_quality_framework.sql
+
+-- Step 13: Create Orchestration Infrastructure (NEW - Metadata-Driven)
+!source ../orchestration/01_snowflake_native_orchestration.sql
+!source ../orchestration/02_metadata_driven_orchestration.sql
+
+-- Step 14: Create Testing Infrastructure (NEW - Automated Testing)
+!source ../testing/01_create_qa_framework.sql
+!source ../testing/02_automated_testing_framework.sql
+
 -- =====================================================
 -- Verify Deployment
 -- =====================================================
@@ -109,3 +128,91 @@ SELECT procedure_name, created
 FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.PROCEDURES
 WHERE procedure_schema = 'WAREHOUSE'
 ORDER BY procedure_name;
+
+-- =====================================================
+-- NEW: Verify Maintainability Enhancements
+-- =====================================================
+
+-- Show configuration framework
+SELECT '=== Configuration Framework ===' AS info;
+SELECT
+    'System Configuration' AS component,
+    COUNT(*) AS total_configs,
+    COUNT(DISTINCT config_category) AS categories
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.system_configuration');
+
+-- Show Golden Signals Dashboard
+SELECT '=== Golden Signals Dashboard ===' AS info;
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.metadata.vw_golden_signals_dashboard');
+
+-- Show orchestration configuration
+SELECT '=== Metadata-Driven Orchestration ===' AS info;
+SELECT
+    'Dimension Load Config' AS component,
+    COUNT(*) AS active_count,
+    SUM(estimated_duration_minutes) AS total_est_duration_min
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.dimension_load_config')
+WHERE is_active = TRUE
+UNION ALL
+SELECT
+    'Fact Load Config',
+    COUNT(*),
+    SUM(estimated_duration_minutes)
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.fact_load_config')
+WHERE is_active = TRUE;
+
+-- Show testing framework
+SELECT '=== Automated Testing Framework ===' AS info;
+SELECT
+    test_category,
+    COUNT(*) AS total_tests,
+    COUNT(CASE WHEN is_active = TRUE THEN 1 END) AS active_tests
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.etl_test_cases')
+GROUP BY test_category
+ORDER BY test_category;
+
+-- =====================================================
+-- Deployment Summary
+-- =====================================================
+
+SELECT '=== DEPLOYMENT COMPLETE ===' AS status;
+SELECT
+    'Databases' AS component,
+    COUNT(*) AS count
+FROM INFORMATION_SCHEMA.DATABASES
+WHERE DATABASE_NAME LIKE 'VES%'
+UNION ALL
+SELECT 'Dimensions', COUNT(*)
+FROM IDENTIFIER(fn_get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
+WHERE TABLE_SCHEMA = 'WAREHOUSE' AND TABLE_NAME LIKE 'dim_%'
+UNION ALL
+SELECT 'Facts', COUNT(*)
+FROM IDENTIFIER(fn_get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
+WHERE TABLE_SCHEMA = 'WAREHOUSE' AND TABLE_NAME LIKE 'fact_%'
+UNION ALL
+SELECT 'Configurations', COUNT(*)
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.system_configuration')
+UNION ALL
+SELECT 'Test Cases', COUNT(*)
+FROM IDENTIFIER(fn_get_dw_database() || '.metadata.etl_test_cases')
+UNION ALL
+SELECT 'Monitoring Views', COUNT(*)
+FROM IDENTIFIER(fn_get_dw_database() || '.INFORMATION_SCHEMA.VIEWS')
+WHERE TABLE_SCHEMA = 'metadata' AND TABLE_NAME LIKE 'vw_%';
+
+-- =====================================================
+-- Next Steps
+-- =====================================================
+
+SELECT '=== NEXT STEPS ===' AS info;
+SELECT 'Run the morning health check:' AS step, 'SELECT * FROM vw_golden_signals_dashboard;' AS command
+UNION ALL
+SELECT 'Run all tests:', 'CALL sp_run_etl_tests(''ALL'', ''ALL'', NULL);'
+UNION ALL
+SELECT 'View load plan:', 'SELECT * FROM vw_pipeline_execution_plan;'
+UNION ALL
+SELECT 'View configurations:', 'SELECT * FROM vw_active_configurations;'
+UNION ALL
+SELECT 'Read Quick Start Guide:', 'See QUICK_START_GUIDE.md'
+UNION ALL
+SELECT 'Read Troubleshooting Guide:', 'See QUICK_REF_Troubleshooting.md';
