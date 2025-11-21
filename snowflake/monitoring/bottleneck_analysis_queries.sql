@@ -112,7 +112,7 @@ SELECT
     COUNT(*) AS request_count,
     SUM(CASE WHEN exam_execution_bottleneck_flag = TRUE THEN 1 ELSE 0 END) AS bottleneck_count,
     ROUND(SUM(CASE WHEN exam_execution_bottleneck_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS bottleneck_percentage
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE exam_duration_minutes IS NOT NULL
 
 UNION ALL
@@ -127,7 +127,7 @@ SELECT
     COUNT(*) AS request_count,
     SUM(CASE WHEN qa_review_bottleneck_flag = TRUE THEN 1 ELSE 0 END) AS bottleneck_count,
     ROUND(SUM(CASE WHEN qa_review_bottleneck_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS bottleneck_percentage
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE total_qa_process_hours IS NOT NULL
 
 ORDER BY avg_duration_hours DESC;
@@ -145,7 +145,7 @@ SELECT
     MEDIAN(primary_bottleneck_hours) AS median_bottleneck_duration_hours,
     AVG(total_cycle_time_hours) AS avg_total_cycle_time_hours,
     ROUND(AVG(primary_bottleneck_hours) / NULLIF(AVG(total_cycle_time_hours), 0) * 100, 2) AS avg_pct_of_total_time
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE primary_bottleneck_stage IS NOT NULL
 GROUP BY primary_bottleneck_stage, primary_bottleneck_type
 ORDER BY bottleneck_occurrence_count DESC;
@@ -162,8 +162,8 @@ SELECT
     AVG(fb.primary_bottleneck_hours) AS avg_bottleneck_hours,
     AVG(fb.total_cycle_time_hours) AS avg_total_cycle_time_hours,
     ROUND(AVG(fb.primary_bottleneck_hours) / NULLIF(AVG(fb.total_cycle_time_hours), 0) * 100, 2) AS pct_of_total_time
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
 WHERE fb.primary_bottleneck_stage IS NOT NULL
     AND dd.year_month >= DATEADD(month, -6, CURRENT_DATE()) -- Last 6 months
 GROUP BY dd.year_month, fb.primary_bottleneck_stage, fb.primary_bottleneck_type
@@ -193,7 +193,7 @@ SELECT
     AVG(external_percentage) AS avg_external_pct,
     SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE total_cycle_time_hours > 0
 GROUP BY
     CASE
@@ -217,7 +217,7 @@ SELECT
     MEDIAN(queue_wait_hours) AS median_duration_hours,
     PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY queue_wait_hours) AS p90_duration_hours,
     AVG(total_cycle_time_hours) AS avg_impact_on_total_cycle
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE queue_wait_hours IS NOT NULL
 
 UNION ALL
@@ -231,7 +231,7 @@ SELECT
     MEDIAN(total_qa_process_hours) AS median_duration_hours,
     PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY total_qa_process_hours) AS p90_duration_hours,
     AVG(total_cycle_time_hours) AS avg_impact_on_total_cycle
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE total_qa_process_hours IS NOT NULL
 
 UNION ALL
@@ -245,7 +245,7 @@ SELECT
     MEDIAN(validation_duration_hours) AS median_duration_hours,
     PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY validation_duration_hours) AS p90_duration_hours,
     AVG(total_cycle_time_hours) AS avg_impact_on_total_cycle
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE validation_duration_hours IS NOT NULL
 
 UNION ALL
@@ -259,7 +259,7 @@ SELECT
     MEDIAN(time_to_examiner_response_hours) AS median_duration_hours,
     PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY time_to_examiner_response_hours) AS p90_duration_hours,
     AVG(total_cycle_time_hours) AS avg_impact_on_total_cycle
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE time_to_examiner_response_hours IS NOT NULL
 
 ORDER BY avg_duration_hours DESC;
@@ -279,7 +279,7 @@ SELECT
     SUM(CASE WHEN reschedule_count > 0 THEN 1 ELSE 0 END) AS reschedule_incidents,
     AVG(reschedule_count) AS avg_reschedules_per_request,
     SUM(CASE WHEN no_show_count > 0 THEN 1 ELSE 0 END) AS no_show_incidents
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE scheduled_to_appointment_hours IS NOT NULL
 
 UNION ALL
@@ -295,7 +295,7 @@ SELECT
     0 AS reschedule_incidents,
     0 AS avg_reschedules_per_request,
     0 AS no_show_incidents
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE qa_approval_to_delivery_hours IS NOT NULL;
 
 -- -----------------------------------------------------------------------------
@@ -323,9 +323,9 @@ SELECT
     SUM(CASE WHEN fb.overall_performance_rating IN ('EXCELLENT', 'GOOD') THEN 1 ELSE 0 END) AS good_performance_count,
     ROUND(SUM(CASE WHEN fb.overall_performance_rating IN ('EXCELLENT', 'GOOD') THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS good_performance_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
 GROUP BY df.facility_name, ds.specialty_name
 HAVING COUNT(*) >= 10 -- Only facilities/specialties with sufficient volume
 ORDER BY internal_bottleneck_rate DESC, request_count DESC
@@ -365,10 +365,10 @@ SELECT
     SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_examiner de ON fb.examiner_dim_sk = de.examiner_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_examiner de ON fb.examiner_dim_sk = de.examiner_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
 WHERE fb.examiner_dim_sk IS NOT NULL
 GROUP BY de.examiner_name, ds.specialty_name, df.facility_name
 HAVING COUNT(*) >= 5 -- Minimum assignments for statistical relevance
@@ -405,8 +405,8 @@ SELECT
     SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
 GROUP BY df.facility_name, df.facility_state, df.facility_region
 HAVING COUNT(*) >= 20 -- Minimum volume for analysis
 ORDER BY capacity_constraint_rate DESC, total_requests DESC;
@@ -440,8 +440,8 @@ SELECT
     SUM(CASE WHEN fb.sla_at_risk_flag = TRUE THEN 1 ELSE 0 END) AS sla_at_risk_count,
     ROUND(SUM(CASE WHEN fb.sla_at_risk_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_at_risk_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
 GROUP BY ds.specialty_name, ds.specialty_category
 ORDER BY avg_queue_hours DESC, shortage_rate_pct DESC
 LIMIT 50;
@@ -487,7 +487,7 @@ SELECT
     SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE qa_cycle_count IS NOT NULL
 GROUP BY
     CASE
@@ -530,7 +530,7 @@ SELECT
     SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE qa_rework_flag = TRUE
 GROUP BY
     CASE
@@ -576,7 +576,7 @@ SELECT
     SUM(CASE WHEN sla_met_flag = TRUE THEN 1 ELSE 0 END) AS sla_met_count,
     ROUND(SUM(CASE WHEN sla_met_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_met_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE overall_quality_score IS NOT NULL
 GROUP BY
     CASE
@@ -626,7 +626,7 @@ SELECT
     -- Severity
     SUM(CASE WHEN days_until_sla_breach < -5 THEN 1 ELSE 0 END) AS severe_breach_count
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE primary_bottleneck_stage IS NOT NULL
 GROUP BY primary_bottleneck_stage, primary_bottleneck_type
 ORDER BY sla_breach_rate DESC, total_requests DESC;
@@ -670,12 +670,12 @@ SELECT
     fb.reschedule_count,
     fb.expedite_flag
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_veteran dv ON fb.veteran_dim_sk = dv.veteran_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_type det ON fb.exam_type_dim_sk = det.exam_type_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_veteran dv ON fb.veteran_dim_sk = dv.veteran_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_type det ON fb.exam_type_dim_sk = det.exam_type_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
 WHERE fb.sla_at_risk_flag = TRUE
     OR fb.sla_breach_flag = TRUE
     AND fb.completion_date_sk IS NULL -- Only open requests
@@ -717,7 +717,7 @@ SELECT
     SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 WHERE likely_root_cause IS NOT NULL
 GROUP BY likely_root_cause
 ORDER BY occurrence_count DESC;
@@ -755,7 +755,7 @@ SELECT
     SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) AS sla_breach_count,
     ROUND(SUM(CASE WHEN sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
 GROUP BY
     CASE
         WHEN chronic_reassignment_pattern_flag = TRUE THEN 'Chronic Reassignment'
@@ -800,7 +800,7 @@ SELECT
     SUM(CASE WHEN first_pass_approval_flag = TRUE THEN 1 ELSE 0 END) AS first_pass_count,
     ROUND(SUM(CASE WHEN first_pass_approval_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS first_pass_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks;
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks');
 
 -- -----------------------------------------------------------------------------
 -- Query 7.2: Weekly Bottleneck Trends
@@ -831,8 +831,8 @@ SELECT
     -- SLA performance
     ROUND(SUM(CASE WHEN fb.sla_met_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_met_rate
 
-FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk
+FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
 WHERE dd.date_sk >= DATEADD(week, -12, CURRENT_DATE()) -- Last 12 weeks
 GROUP BY dd.year_week
 ORDER BY dd.year_week DESC;
@@ -846,7 +846,7 @@ WITH current_performance AS (
         primary_bottleneck_stage,
         COUNT(*) AS recent_count,
         AVG(primary_bottleneck_hours) AS avg_hours
-    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
     WHERE request_date_sk >= DATEADD(day, -7, CURRENT_DATE())
     GROUP BY primary_bottleneck_stage
 ),
@@ -855,7 +855,7 @@ historical_baseline AS (
         primary_bottleneck_stage,
         AVG(primary_bottleneck_hours) AS baseline_avg_hours,
         STDDEV(primary_bottleneck_hours) AS baseline_stddev
-    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks
+    FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks')
     WHERE request_date_sk BETWEEN DATEADD(day, -60, CURRENT_DATE()) AND DATEADD(day, -8, CURRENT_DATE())
     GROUP BY primary_bottleneck_stage
 )
