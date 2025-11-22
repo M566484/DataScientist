@@ -329,7 +329,7 @@ SELECT
     table_name,
     row_count,
     comment
-FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES
+FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
 WHERE table_schema = 'REFERENCE'
   AND table_type = 'BASE TABLE'
 ORDER BY table_name;

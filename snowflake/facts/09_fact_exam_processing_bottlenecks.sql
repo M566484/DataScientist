@@ -240,15 +240,13 @@ CREATE OR REPLACE TABLE IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_process
 
     CONSTRAINT pk_fact_exam_processing_bottlenecks PRIMARY KEY (exam_request_sk),
     CONSTRAINT fk_bottleneck_veteran FOREIGN KEY (veteran_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_veteran')(veteran_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_veterans')(veteran_sk),
     CONSTRAINT fk_bottleneck_examiner FOREIGN KEY (examiner_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_examiner')(examiner_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
     CONSTRAINT fk_bottleneck_facility FOREIGN KEY (facility_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility')(facility_sk),
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities')(facility_sk),
     CONSTRAINT fk_bottleneck_exam_type FOREIGN KEY (exam_type_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_type')(exam_type_sk),
-    CONSTRAINT fk_bottleneck_specialty FOREIGN KEY (specialty_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty')(specialty_sk)
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk)
 )
 COMMENT = 'Comprehensive exam processing bottleneck detection and analysis'
 ;

@@ -163,7 +163,7 @@ SELECT
     AVG(fb.total_cycle_time_hours) AS avg_total_cycle_time_hours,
     ROUND(AVG(fb.primary_bottleneck_hours) / NULLIF(AVG(fb.total_cycle_time_hours), 0) * 100, 2) AS pct_of_total_time
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_dates') dd ON fb.request_date_sk = dd.date_sk
 WHERE fb.primary_bottleneck_stage IS NOT NULL
     AND dd.year_month >= DATEADD(month, -6, CURRENT_DATE()) -- Last 6 months
 GROUP BY dd.year_month, fb.primary_bottleneck_stage, fb.primary_bottleneck_type
@@ -304,7 +304,7 @@ WHERE qa_approval_to_delivery_hours IS NOT NULL;
 -- -----------------------------------------------------------------------------
 SELECT
     df.facility_name,
-    ds.specialty_name,
+    -- ds.specialty_name, -- dim_specialty table does not exist
     COUNT(*) AS request_count,
     AVG(fb.internal_process_hours) AS avg_internal_hours,
     AVG(fb.external_dependency_hours) AS avg_external_hours,
@@ -324,9 +324,9 @@ SELECT
     ROUND(SUM(CASE WHEN fb.overall_performance_rating IN ('EXCELLENT', 'GOOD') THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS good_performance_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
-GROUP BY df.facility_name, ds.specialty_name
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
+-- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+GROUP BY df.facility_name -- , ds.specialty_name
 HAVING COUNT(*) >= 10 -- Only facilities/specialties with sufficient volume
 ORDER BY internal_bottleneck_rate DESC, request_count DESC
 LIMIT 50;
@@ -341,7 +341,7 @@ LIMIT 50;
 -- -----------------------------------------------------------------------------
 SELECT
     de.examiner_name,
-    ds.specialty_name,
+    -- ds.specialty_name, -- dim_specialty table does not exist
     df.facility_name,
     COUNT(*) AS total_assignments,
 
@@ -366,11 +366,11 @@ SELECT
     ROUND(SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_examiner de ON fb.examiner_dim_sk = de.examiner_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_evaluators') de ON fb.examiner_dim_sk = de.examiner_sk
+-- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
 WHERE fb.examiner_dim_sk IS NOT NULL
-GROUP BY de.examiner_name, ds.specialty_name, df.facility_name
+GROUP BY de.examiner_name, df.facility_name -- , ds.specialty_name
 HAVING COUNT(*) >= 5 -- Minimum assignments for statistical relevance
 ORDER BY overload_rate_pct DESC, total_assignments DESC
 LIMIT 100;
@@ -406,7 +406,7 @@ SELECT
     ROUND(SUM(CASE WHEN fb.sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_breach_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
 GROUP BY df.facility_name, df.facility_state, df.facility_region
 HAVING COUNT(*) >= 20 -- Minimum volume for analysis
 ORDER BY capacity_constraint_rate DESC, total_requests DESC;
@@ -414,10 +414,12 @@ ORDER BY capacity_constraint_rate DESC, total_requests DESC;
 -- -----------------------------------------------------------------------------
 -- Query 3.3: Specialty Availability Bottlenecks
 -- Purpose: Identify specialties with examiner shortages
+-- NOTE: This query is currently non-functional as dim_specialty table does not exist
 -- -----------------------------------------------------------------------------
 SELECT
-    ds.specialty_name,
-    ds.specialty_category,
+    -- ds.specialty_name, -- dim_specialty table does not exist
+    -- ds.specialty_category, -- dim_specialty table does not exist
+    fb.specialty_dim_sk,
     COUNT(*) AS total_requests,
 
     -- Availability indicators
@@ -441,8 +443,8 @@ SELECT
     ROUND(SUM(CASE WHEN fb.sla_at_risk_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_at_risk_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
-GROUP BY ds.specialty_name, ds.specialty_category
+-- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+GROUP BY fb.specialty_dim_sk -- ds.specialty_name, ds.specialty_category
 ORDER BY avg_queue_hours DESC, shortage_rate_pct DESC
 LIMIT 50;
 
@@ -639,7 +641,7 @@ SELECT
     fb.exam_request_sk,
     dv.veteran_id,
     det.exam_type_name,
-    ds.specialty_name,
+    -- ds.specialty_name, -- dim_specialty table does not exist
     df.facility_name,
     dd.full_date AS request_date,
 
@@ -671,11 +673,11 @@ SELECT
     fb.expedite_flag
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_veteran dv ON fb.veteran_dim_sk = dv.veteran_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_type det ON fb.exam_type_dim_sk = det.exam_type_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty ds ON fb.specialty_dim_sk = ds.specialty_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facility df ON fb.facility_dim_sk = df.facility_sk')
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_veterans') dv ON fb.veteran_dim_sk = dv.veteran_sk
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_request_types') det ON fb.exam_type_dim_sk = det.exam_type_sk
+-- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_dates') dd ON fb.request_date_sk = dd.date_sk
 WHERE fb.sla_at_risk_flag = TRUE
     OR fb.sla_breach_flag = TRUE
     AND fb.completion_date_sk IS NULL -- Only open requests
@@ -832,7 +834,7 @@ SELECT
     ROUND(SUM(CASE WHEN fb.sla_met_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_met_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
-JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_date dd ON fb.request_date_sk = dd.date_sk')
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_dates') dd ON fb.request_date_sk = dd.date_sk
 WHERE dd.date_sk >= DATEADD(week, -12, CURRENT_DATE()) -- Last 12 weeks
 GROUP BY dd.year_week
 ORDER BY dd.year_week DESC;
