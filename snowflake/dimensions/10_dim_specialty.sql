@@ -5,7 +5,7 @@
 -- SCD Type: Type 1
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -120,7 +120,7 @@ SELECT DISTINCT
     END AS board_name,
     TRUE AS active_flag,
     'REFERENCE' AS source_system
-FROM IDENTIFIER(get_dw_database() || '.REFERENCE.ref_code_mapping_specialty')
+FROM IDENTIFIER(fn_get_dw_database() || '.REFERENCE.ref_code_mapping_specialty')
 WHERE active_flag = TRUE;
 
 -- =====================================================

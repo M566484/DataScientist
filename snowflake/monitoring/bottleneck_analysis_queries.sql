@@ -17,7 +17,7 @@
 -- Date: 2025-11-17
 -- =====================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 
 -- =====================================================================================
 -- 1. STAGE-BY-STAGE BOTTLENECK ANALYSIS

@@ -6,7 +6,7 @@
 -- Standards: VES Snowflake Naming Conventions v1.0
 
 -- Create database using dynamic database name
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 
 CREATE DATABASE IF NOT EXISTS IDENTIFIER($dw_database)
     COMMENT = 'Data warehouse for veteran evaluation services and reporting';

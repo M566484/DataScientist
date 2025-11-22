@@ -5,7 +5,7 @@
 -- Type: Conformed Dimension
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 

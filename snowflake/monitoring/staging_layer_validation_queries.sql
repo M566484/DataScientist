@@ -15,8 +15,8 @@
 -- Date: 2025-11-17
 -- =====================================================================================
 
-SET dw_database = (SELECT get_dw_database());
-SET ods_database = (SELECT get_ods_database());
+SET dw_database = (SELECT fn_get_dw_database());
+SET ods_database = (SELECT fn_get_ods_database());
 
 -- =====================================================================================
 -- 1. CROSSWALK VALIDATION QUERIES

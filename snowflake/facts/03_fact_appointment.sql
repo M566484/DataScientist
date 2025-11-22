@@ -6,7 +6,7 @@
 -- Type: Transaction Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -121,12 +121,12 @@ CREATE OR REPLACE TABLE fact_appointments_scheduled (
     updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
-    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
-    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
-    FOREIGN KEY (appointment_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_appointments')(appointment_sk),
-    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk)
+    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
+    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
+    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
+    FOREIGN KEY (appointment_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_appointments')(appointment_sk),
+    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk)
 )
 COMMENT = 'Transaction fact table for appointment scheduling and attendance'
 CLUSTER BY (appointment_date_sk, facility_sk);

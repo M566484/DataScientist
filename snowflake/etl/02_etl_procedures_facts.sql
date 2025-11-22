@@ -5,7 +5,7 @@
 -- Pattern: ODS → Staging → Warehouse (with surrogate key lookups)
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -21,8 +21,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests');
 
@@ -313,8 +313,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Transform ODS to Staging
     CALL sp_transform_ods_to_staging_exam_requests(:p_batch_id);
@@ -352,8 +352,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations');
 

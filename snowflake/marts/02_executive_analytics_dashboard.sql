@@ -21,7 +21,7 @@
 -- Version: 2.0 (Enhanced)
 -- =====================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA marts;
 
@@ -43,8 +43,8 @@ WITH current_month AS (
         AVG(eval.exam_quality_score) AS avg_quality_score,
         COUNT(DISTINCT er.veteran_dim_sk) AS unique_veterans_served,
         COUNT(DISTINCT er.assigned_evaluator_sk) AS active_evaluators
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
-    LEFT JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_evaluation') eval
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
+    LEFT JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_evaluation') eval
         ON er.exam_request_sk = eval.exam_request_sk
     WHERE er.request_date >= DATE_TRUNC('month', CURRENT_DATE())
 ),
@@ -55,8 +55,8 @@ prior_month AS (
         AVG(DATEDIFF(day, er.request_date, er.completion_date)) AS avg_cycle_time_prior,
         SUM(CASE WHEN er.sla_met = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS sla_compliance_prior,
         AVG(eval.exam_quality_score) AS avg_quality_score_prior
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
-    LEFT JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_evaluation') eval
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
+    LEFT JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_evaluation') eval
         ON er.exam_request_sk = eval.exam_request_sk
     WHERE er.request_date >= DATE_TRUNC('month', CURRENT_DATE()) - INTERVAL '1 month'
       AND er.request_date < DATE_TRUNC('month', CURRENT_DATE())
@@ -65,7 +65,7 @@ annual_stats AS (
     SELECT
         COUNT(DISTINCT er.exam_request_sk) AS total_exams_ytd,
         COUNT(DISTINCT CASE WHEN er.exam_status = 'Completed' THEN er.exam_request_sk END) AS completed_exams_ytd
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
     WHERE YEAR(er.request_date) = YEAR(CURRENT_DATE())
 )
 SELECT
@@ -186,8 +186,8 @@ WITH exam_costs AS (
             WHEN er.exam_complexity = 'Complex' THEN 500
             ELSE 350
         END) - (COUNT(DISTINCT er.exam_request_sk) * 350) AS gross_margin_usd
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
-    INNER JOIN IDENTIFIER(get_dw_database() || '.warehouse.dim_date') d
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
+    INNER JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_date') d
         ON er.request_date_sk = d.date_sk
     WHERE er.exam_status = 'Completed'
     GROUP BY d.fiscal_year, d.fiscal_quarter, d.fiscal_month
@@ -232,8 +232,8 @@ WITH evaluator_workload AS (
             WHEN COUNT(DISTINCT er.exam_request_sk) >= 20 THEN '🟡 UNDERUTILIZED'
             ELSE '🔵 VERY LOW'
         END AS utilization_status
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_evaluator') e
-    INNER JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_evaluator') e
+    INNER JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
         ON e.evaluator_sk = er.assigned_evaluator_sk
     WHERE e.is_current = TRUE
       AND er.request_date >= DATE_TRUNC('month', CURRENT_DATE())
@@ -273,7 +273,7 @@ WITH bottleneck_analysis AS (
         SUM(b.primary_bottleneck_hours) * 50 AS estimated_delay_cost_usd,
         -- Calculate SLA breach rate
         SUM(CASE WHEN b.sla_breach_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS sla_breach_rate_pct
-    FROM IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_processing_bottlenecks') b
+    FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_processing_bottlenecks') b
     WHERE b.request_date >= DATE_TRUNC('month', CURRENT_DATE()) - INTERVAL '3 months'
     GROUP BY b.primary_bottleneck_stage, b.primary_bottleneck_type
 )
@@ -321,8 +321,8 @@ SELECT
         WHEN COUNT(DISTINCT er.assigned_evaluator_sk) < 5 THEN '🟡 LOW EVALUATOR COUNT'
         ELSE '🟢 HEALTHY'
     END AS state_health_status
-FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_veteran') v
-INNER JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
+FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_veteran') v
+INNER JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
     ON v.veteran_sk = er.veteran_dim_sk
 WHERE v.is_current = TRUE
   AND er.request_date >= CURRENT_DATE() - 90
@@ -360,10 +360,10 @@ SELECT
     -- Workforce metrics
     COUNT(DISTINCT er.assigned_evaluator_sk) AS active_evaluators,
     COUNT(DISTINCT er.veteran_dim_sk) AS unique_veterans
-FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_date') d
-LEFT JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
+FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_date') d
+LEFT JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
     ON d.date_sk = er.request_date_sk
-LEFT JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_evaluation') eval
+LEFT JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_evaluation') eval
     ON er.exam_request_sk = eval.exam_request_sk
 WHERE d.full_date >= CURRENT_DATE() - 365 -- Last 12 months
 GROUP BY d.full_date, d.day_of_week_name, d.fiscal_year, d.fiscal_quarter, d.fiscal_month;
@@ -404,12 +404,12 @@ SELECT
         WHEN AVG(eval.exam_quality_score) >= 80 THEN '⭐⭐ NEEDS IMPROVEMENT'
         ELSE '⭐ REQUIRES ATTENTION'
     END AS performance_rating
-FROM IDENTIFIER(get_dw_database() || '.warehouse.dim_evaluator') e
-INNER JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_exam_requests') er
+FROM IDENTIFIER(fn_get_dw_database() || '.warehouse.dim_evaluator') e
+INNER JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_exam_requests') er
     ON e.evaluator_sk = er.assigned_evaluator_sk
-INNER JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_evaluation') eval
+INNER JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_evaluation') eval
     ON er.exam_request_sk = eval.exam_request_sk
-LEFT JOIN IDENTIFIER(get_dw_database() || '.warehouse.fact_evaluation_qa_events') qa
+LEFT JOIN IDENTIFIER(fn_get_dw_database() || '.warehouse.fact_evaluation_qa_events') qa
     ON eval.evaluation_sk = qa.evaluation_sk
 WHERE e.is_current = TRUE
   AND er.exam_status = 'Completed'
@@ -443,14 +443,14 @@ BEGIN
         AVG(sla_compliance_pct),
         AVG(avg_cycle_time_days)
     INTO :v_total_exams, :v_sla_compliance, :v_avg_cycle_time
-    FROM IDENTIFIER(get_dw_database() || '.marts.mv_exec_daily_trends
+    FROM IDENTIFIER(fn_get_dw_database() || '.marts.mv_exec_daily_trends
     WHERE full_date >= CURRENT_DATE() - 7;
 
     SELECT
         primary_bottleneck_stage,
         estimated_delay_cost_usd
     INTO :v_top_bottleneck, :v_bottleneck_cost
-    FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_bottleneck_impact
+    FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_bottleneck_impact
     ORDER BY estimated_delay_cost_usd DESC
     LIMIT 1;
 
@@ -513,7 +513,7 @@ WITH monthly_trends AS (
         SUM(exam_requests) AS total_exams,
         LAG(SUM(exam_requests), 1) OVER (ORDER BY fiscal_year, fiscal_month) AS prev_month_exams,
         LAG(SUM(exam_requests), 12) OVER (ORDER BY fiscal_year, fiscal_month) AS same_month_last_year
-    FROM IDENTIFIER(get_dw_database() || '.marts.mv_exec_daily_trends
+    FROM IDENTIFIER(fn_get_dw_database() || '.marts.mv_exec_daily_trends
     GROUP BY fiscal_year, fiscal_month
 ),
 growth_rates AS (
@@ -546,25 +546,25 @@ ORDER BY fiscal_year DESC, fiscal_month DESC;
 
 /*
 -- Example 1: View executive KPI overview
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_kpi_overview;
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_kpi_overview;
 
 -- Example 2: Financial performance this quarter
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_financial_metrics
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_financial_metrics
 WHERE fiscal_quarter = QUARTER(CURRENT_DATE())
   AND fiscal_year = YEAR(CURRENT_DATE());
 
 -- Example 3: Capacity utilization by specialty
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_capacity_utilization
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_capacity_utilization
 WHERE specialty = 'Orthopedic'
 ORDER BY avg_utilization_pct DESC;
 
 -- Example 4: Top 5 costliest bottlenecks
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_bottleneck_impact
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_bottleneck_impact
 ORDER BY estimated_delay_cost_usd DESC
 LIMIT 5;
 
 -- Example 5: States requiring attention
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_geographic_distribution
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_geographic_distribution
 WHERE state_health_status LIKE '%ISSUE%'
 ORDER BY total_exams DESC;
 
@@ -575,18 +575,18 @@ SELECT
     exams_completed,
     sla_compliance_pct,
     avg_cycle_time_days
-FROM IDENTIFIER(get_dw_database() || '.marts.mv_exec_daily_trends
+FROM IDENTIFIER(fn_get_dw_database() || '.marts.mv_exec_daily_trends
 WHERE full_date >= CURRENT_DATE() - 30
 ORDER BY full_date DESC;
 
 -- Example 7: Top performers this quarter
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.mv_exec_evaluator_scorecard
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.mv_exec_evaluator_scorecard
 WHERE performance_rating LIKE '%TOP PERFORMER%'
 ORDER BY avg_quality_score DESC
 LIMIT 20;
 
 -- Example 8: Demand forecast next 3 months
-SELECT * FROM IDENTIFIER(get_dw_database() || '.marts.vw_exec_forecast_demand
+SELECT * FROM IDENTIFIER(fn_get_dw_database() || '.marts.vw_exec_forecast_demand
 ORDER BY fiscal_year DESC, fiscal_month DESC
 LIMIT 3;
 

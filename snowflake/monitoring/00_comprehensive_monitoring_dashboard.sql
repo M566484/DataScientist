@@ -16,7 +16,7 @@
 -- Version: 2.0 (Enhanced)
 -- =====================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA metadata;
 

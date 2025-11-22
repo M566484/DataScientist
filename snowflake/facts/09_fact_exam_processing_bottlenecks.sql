@@ -23,7 +23,7 @@
 -- Date: 2025-11-17
 -- =====================================================================================
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 
 CREATE OR REPLACE TABLE IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') (
 
