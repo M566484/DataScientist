@@ -25,10 +25,10 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_veterans');
 
     -- Transform and load from ODS to Staging
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_veterans') (
         veteran_id,
         first_name,
         middle_name,
@@ -136,7 +136,7 @@ BEGIN
 
         -- Metadata
         source_system,
-        :p_batch_id AS batch_id,
+        p_batch_id AS batch_id,
 
         -- Data Quality Score (calculated)
         (
@@ -160,12 +160,12 @@ BEGIN
             CASE WHEN priority_group NOT BETWEEN 1 AND 8 THEN 'Invalid priority group' END
         ) AS dq_issues
 
-    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source')
-    WHERE batch_id = :p_batch_id
+    FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source')
+    WHERE batch_id = p_batch_id
       AND extraction_timestamp = (
           SELECT MAX(extraction_timestamp)
-          FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source')
-          WHERE batch_id = :p_batch_id
+          FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source')
+          WHERE batch_id = p_batch_id
       );
 
     RETURN 'Transformed ' || SQLROWCOUNT || ' veteran records to staging';
@@ -184,16 +184,18 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
     v_rows_updated INTEGER;
     v_rows_inserted INTEGER;
 BEGIN
     -- Step 1: End-date changed records (Type 2 SCD logic)
-    UPDATE IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') tgt
+    UPDATE IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_veterans') tgt
     SET
         effective_end_date = CURRENT_TIMESTAMP(),
         is_current = FALSE,
         updated_timestamp = CURRENT_TIMESTAMP()
-    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') src
+    FROM IDENTIFIER(v_dw_database || '.STAGING.stg_veterans') src
     WHERE tgt.veteran_id = src.veteran_id
       AND tgt.is_current = TRUE
       AND tgt.source_record_hash != src.source_record_hash;  -- Detect changes
@@ -201,7 +203,7 @@ BEGIN
     v_rows_updated := SQLROWCOUNT;
 
     -- Step 2: Insert new versions for changed records
-    INSERT INTO IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_veterans') (
         veteran_id,
         first_name,
         middle_name,
@@ -280,23 +282,23 @@ BEGIN
         src.source_system,
         CURRENT_TIMESTAMP() AS created_timestamp,
         CURRENT_TIMESTAMP() AS updated_timestamp
-    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') src
-    WHERE src.batch_id = :p_batch_id
+    FROM IDENTIFIER(v_dw_database || '.STAGING.stg_veterans') src
+    WHERE src.batch_id = p_batch_id
       AND (
           -- New record (doesn't exist)
           NOT EXISTS (
               SELECT 1
-              FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') tgt
+              FROM IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_veterans') tgt
               WHERE tgt.veteran_id = src.veteran_id
           )
           OR
-          -- Changed record (hash different from current)
+          -- Changed record (was just end-dated)
           EXISTS (
               SELECT 1
-              FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_veterans') tgt
+              FROM IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_veterans') tgt
               WHERE tgt.veteran_id = src.veteran_id
                 AND tgt.is_current = FALSE  -- Was just end-dated
-                AND tgt.effective_end_date = CURRENT_TIMESTAMP()::DATE
+                AND tgt.effective_end_date >= DATEADD(minute, -5, CURRENT_TIMESTAMP())
           )
       );
 
@@ -318,25 +320,27 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
     v_result VARCHAR;
 BEGIN
     -- Step 1: Transform ODS to Staging
-    CALL sp_transform_ods_to_staging_veterans(:p_batch_id);
+    CALL sp_transform_ods_to_staging_veterans(p_batch_id);
 
     -- Step 2: Load Staging to Warehouse
-    CALL sp_load_dim_veterans(:p_batch_id);
+    CALL sp_load_dim_veterans(p_batch_id);
 
     RETURN 'Veterans ETL pipeline completed successfully';
 EXCEPTION
     WHEN OTHER THEN
         -- Log error
-        INSERT INTO IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_error_log') (
+        INSERT INTO IDENTIFIER(v_ods_database || '.ODS_RAW.ods_error_log') (
             batch_id,
             source_table,
             error_type,
             error_message
         ) VALUES (
-            :p_batch_id,
+            p_batch_id,
             'dim_veterans',
             'ETL_ERROR',
             SQLERRM
@@ -361,9 +365,9 @@ DECLARE
     v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators');
 
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators') (
         evaluator_id,
         first_name,
         last_name,
@@ -441,7 +445,7 @@ BEGIN
 
         -- Metadata
         source_system,
-        :p_batch_id AS batch_id,
+        p_batch_id AS batch_id,
 
         -- Data Quality Score
         (
@@ -463,12 +467,12 @@ BEGIN
             CASE WHEN license_expiration_date < CURRENT_DATE() THEN 'Expired license' END
         ) AS dq_issues
 
-    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source')
-    WHERE batch_id = :p_batch_id
+    FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source')
+    WHERE batch_id = p_batch_id
       AND extraction_timestamp = (
           SELECT MAX(extraction_timestamp)
-          FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source')
-          WHERE batch_id = :p_batch_id
+          FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source')
+          WHERE batch_id = p_batch_id
       );
 
     RETURN 'Transformed ' || SQLROWCOUNT || ' evaluator records to staging';
@@ -487,16 +491,18 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
     v_rows_updated INTEGER;
     v_rows_inserted INTEGER;
 BEGIN
     -- End-date changed records
-    UPDATE IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
+    UPDATE IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
     SET
         effective_end_date = CURRENT_TIMESTAMP(),
         is_current = FALSE,
         updated_timestamp = CURRENT_TIMESTAMP()
-    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators') src
+    FROM IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators') src
     WHERE tgt.evaluator_id = src.evaluator_id
       AND tgt.is_current = TRUE
       AND tgt.source_record_hash != src.source_record_hash;
@@ -504,7 +510,7 @@ BEGIN
     v_rows_updated := SQLROWCOUNT;
 
     -- Insert new/changed records
-    INSERT INTO IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_evaluators') (
         evaluator_id,
         first_name,
         last_name,
@@ -536,25 +542,47 @@ BEGIN
         updated_timestamp
     )
     SELECT
-        src.*,
+        src.evaluator_id,
+        src.first_name,
+        src.last_name,
+        src.full_name,
+        src.specialty,
+        src.sub_specialty,
+        src.credentials,
+        src.license_number,
+        src.license_state,
+        src.license_expiration_date,
+        src.npi_number,
+        src.employer_name,
+        src.employment_type,
+        src.hire_date,
+        src.termination_date,
+        src.years_of_experience,
+        src.va_certified_flag,
+        src.certification_date,
+        src.board_certified_flag,
+        src.average_evaluation_time_minutes,
+        src.total_evaluations_completed,
+        src.active_flag,
+        src.source_record_hash,
         CURRENT_TIMESTAMP() AS effective_start_date,
         TO_TIMESTAMP_NTZ('9999-12-31 23:59:59') AS effective_end_date,
         TRUE AS is_current,
         src.source_system,
         CURRENT_TIMESTAMP() AS created_timestamp,
         CURRENT_TIMESTAMP() AS updated_timestamp
-    FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators') src
-    WHERE src.batch_id = :p_batch_id
+    FROM IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators') src
+    WHERE src.batch_id = p_batch_id
       AND (
           NOT EXISTS (
-              SELECT 1 FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
+              SELECT 1 FROM IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
               WHERE tgt.evaluator_id = src.evaluator_id
           )
           OR EXISTS (
-              SELECT 1 FROM IDENTIFIER(:v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
+              SELECT 1 FROM IDENTIFIER(v_dw_database || '.WAREHOUSE.dim_evaluators') tgt
               WHERE tgt.evaluator_id = src.evaluator_id
                 AND tgt.is_current = FALSE
-                AND tgt.effective_end_date = CURRENT_TIMESTAMP()::DATE
+                AND tgt.effective_end_date >= DATEADD(minute, -5, CURRENT_TIMESTAMP())
           )
       );
 
@@ -576,6 +604,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
     v_batch_id VARCHAR;
     v_result VARCHAR;
 BEGIN
@@ -583,7 +613,7 @@ BEGIN
     v_batch_id := 'BATCH_' || TO_VARCHAR(CURRENT_TIMESTAMP(), 'YYYYMMDD_HH24MISS');
 
     -- Create batch control record
-    INSERT INTO IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control') (
+    INSERT INTO IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control') (
         batch_id,
         batch_name,
         source_system,
@@ -593,7 +623,7 @@ BEGIN
         v_batch_id,
         'Master ETL Pipeline',
         'VES_OMS',
-        :p_extraction_type,
+        p_extraction_type,
         'RUNNING'
     );
 
@@ -602,7 +632,7 @@ BEGIN
     CALL sp_etl_evaluators(v_batch_id);
 
     -- Update batch status
-    UPDATE IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control')
+    UPDATE IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control')
     SET
         batch_status = 'COMPLETED',
         batch_end_timestamp = CURRENT_TIMESTAMP()
@@ -612,7 +642,7 @@ BEGIN
 EXCEPTION
     WHEN OTHER THEN
         -- Update batch status to FAILED
-        UPDATE IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control')
+        UPDATE IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control')
         SET
             batch_status = 'FAILED',
             batch_end_timestamp = CURRENT_TIMESTAMP(),

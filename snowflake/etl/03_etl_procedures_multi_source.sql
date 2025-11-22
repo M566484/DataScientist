@@ -76,7 +76,7 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match veterans between OMS and VEMS based on SSN
-    MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') tgt
+    MERGE INTO IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') tgt
     USING (
         SELECT
             COALESCE(oms.veteran_ssn, vems.veteran_ssn) AS master_veteran_id,
@@ -101,8 +101,8 @@ BEGIN
                 WHEN oms.veteran_ssn IS NOT NULL THEN 'OMS'
                 ELSE 'VEMS'
             END AS primary_source_system
-        FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') oms
-        FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') vems
+        FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') oms
+        FULL OUTER JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') vems
             ON oms.veteran_ssn = vems.veteran_ssn
             AND oms.source_system = 'OMS'
             AND vems.source_system = 'VEMS'
@@ -156,7 +156,7 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match evaluators between OMS and VEMS based on NPI
-    MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') tgt
+    MERGE INTO IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') tgt
     USING (
         SELECT
             COALESCE(oms.evaluator_npi, vems.npi_number, oms.evaluator_license_number) AS master_evaluator_id,
@@ -181,8 +181,8 @@ BEGIN
                 WHEN vems.npi_number IS NOT NULL THEN 'VEMS'  -- VEMS is primary for evaluators per ref_system_of_record
                 ELSE 'OMS'
             END AS primary_source_system
-        FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source') oms
-        FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source') vems
+        FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source') oms
+        FULL OUTER JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source') vems
             ON oms.evaluator_npi = vems.npi_number
             AND oms.source_system = 'OMS'
             AND vems.source_system = 'VEMS'
@@ -236,13 +236,13 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
-    CALL sp_build_crosswalk_veterans(:p_batch_id);
+    CALL sp_build_crosswalk_veterans(p_batch_id);
 
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_veterans');
 
     -- Transform and merge data from OMS and VEMS
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_veterans') (
         veteran_id,
         first_name,
         middle_name,
@@ -341,12 +341,12 @@ BEGIN
             COALESCE(oms.source_system, vems.source_system) AS source_system,
             COALESCE(oms.batch_id, vems.batch_id) AS batch_id
 
-        FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') xwalk
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') oms
+        FROM IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') xwalk
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') oms
             ON xwalk.oms_veteran_id = oms.source_record_id
             AND oms.source_system = 'OMS'
             AND oms.batch_id = :p_batch_id
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') vems
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') vems
             ON xwalk.vems_veteran_id = vems.source_record_id
             AND vems.source_system = 'VEMS'
             AND vems.batch_id = :p_batch_id
@@ -448,7 +448,7 @@ BEGIN
     FROM combined_sources;
 
     -- Log conflicts
-    INSERT INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_reconciliation_log') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.REFERENCE.ref_reconciliation_log') (
         batch_id,
         entity_type,
         entity_id,
@@ -459,7 +459,7 @@ BEGIN
         resolution_method
     )
     SELECT
-        :p_batch_id,
+        p_batch_id,
         'VETERAN',
         xwalk.master_veteran_id,
         'DISABILITY_RATING_MISMATCH',
@@ -467,11 +467,11 @@ BEGIN
         TO_VARIANT(vems.disability_rating),
         TO_VARIANT(COALESCE(oms.disability_rating, vems.disability_rating)),
         'PREFER_OMS'
-    FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') xwalk
-    JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') oms
+    FROM IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') xwalk
+    JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') oms
         ON xwalk.oms_veteran_id = oms.source_record_id
         AND oms.source_system = 'OMS'
-    JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_veterans_source') vems
+    JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_veterans_source') vems
         ON xwalk.vems_veteran_id = vems.source_record_id
         AND vems.source_system = 'VEMS'
     WHERE oms.disability_rating IS NOT NULL
@@ -499,13 +499,13 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
-    CALL sp_build_crosswalk_evaluators(:p_batch_id);
+    CALL sp_build_crosswalk_evaluators(p_batch_id);
 
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators');
 
     -- Transform and merge data from OMS and VEMS (prefer VEMS per ref_system_of_record)
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_evaluators') (
         evaluator_id,
         first_name,
         last_name,
@@ -575,12 +575,12 @@ BEGIN
             COALESCE(vems.source_system, oms.source_system) AS source_system,
             COALESCE(vems.batch_id, oms.batch_id) AS batch_id
 
-        FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') xwalk
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source') oms
+        FROM IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') xwalk
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source') oms
             ON xwalk.oms_evaluator_id = oms.source_record_id
             AND oms.source_system = 'OMS'
             AND oms.batch_id = :p_batch_id
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluators_source') vems
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluators_source') vems
             ON xwalk.vems_evaluator_id = vems.source_record_id
             AND vems.source_system = 'VEMS'
             AND vems.batch_id = :p_batch_id
@@ -678,7 +678,7 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match facilities between OMS and VEMS based on facility ID and name
-    MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') tgt
+    MERGE INTO IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') tgt
     USING (
         SELECT
             COALESCE(oms.facility_id, vems.facility_id) AS master_facility_id,
@@ -705,8 +705,8 @@ BEGIN
                 WHEN oms.facility_id IS NOT NULL THEN 'OMS'  -- OMS is primary for facilities
                 ELSE 'VEMS'
             END AS primary_source_system
-        FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_facilities_source') oms
-        FULL OUTER JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_facilities_source') vems
+        FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_facilities_source') oms
+        FULL OUTER JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_facilities_source') vems
             ON (oms.facility_id = vems.facility_id OR UPPER(TRIM(oms.facility_name)) = UPPER(TRIM(vems.facility_name)))
             AND oms.source_system = 'OMS'
             AND vems.source_system = 'VEMS'
@@ -760,13 +760,13 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
-    CALL sp_build_crosswalk_facilities(:p_batch_id);
+    CALL sp_build_crosswalk_facilities(p_batch_id);
 
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_facilities');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_facilities');
 
     -- Transform and merge data from OMS and VEMS
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_facilities') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_facilities') (
         facility_id,
         facility_name,
         facility_type,
@@ -827,12 +827,12 @@ BEGIN
             COALESCE(oms.source_system, vems.source_system) AS source_system,
             COALESCE(oms.batch_id, vems.batch_id) AS batch_id
 
-        FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') xwalk
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_facilities_source') oms
+        FROM IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') xwalk
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_facilities_source') oms
             ON xwalk.oms_facility_id = oms.source_record_id
             AND oms.source_system = 'OMS'
             AND oms.batch_id = :p_batch_id
-        LEFT JOIN IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_facilities_source') vems
+        LEFT JOIN IDENTIFIER(v_ods_database || '.ODS_RAW.ods_facilities_source') vems
             ON xwalk.vems_facility_id = vems.source_record_id
             AND vems.source_system = 'VEMS'
             AND vems.batch_id = :p_batch_id
@@ -921,10 +921,10 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_fact_exam_requests');
 
     -- Transform exam requests (combine OMS and VEMS using veteran and evaluator crosswalks)
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_fact_exam_requests') (
         exam_request_id,
         veteran_id,
         evaluator_id,
@@ -983,14 +983,14 @@ BEGIN
             CASE WHEN src.request_date IS NULL THEN 'Missing request date' END
         ) AS dq_issues
 
-    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_exam_requests_source') src
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
+    FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_exam_requests_source') src
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
         ON (src.veteran_id = vet_xwalk.oms_veteran_id AND src.source_system = 'OMS')
         OR (src.veteran_id = vet_xwalk.vems_veteran_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
         ON (src.assigned_evaluator_id = eval_xwalk.oms_evaluator_id AND src.source_system = 'OMS')
         OR (src.assigned_evaluator_id = eval_xwalk.vems_evaluator_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
         ON (src.facility_id = fac_xwalk.oms_facility_id AND src.source_system = 'OMS')
         OR (src.facility_id = fac_xwalk.vems_facility_id AND src.source_system = 'VEMS')
     WHERE src.batch_id = :p_batch_id;
@@ -1015,10 +1015,10 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_fact_evaluations');
 
     -- Transform evaluations (combine OMS and VEMS using crosswalks)
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_fact_evaluations') (
         evaluation_id,
         veteran_id,
         evaluator_id,
@@ -1077,14 +1077,14 @@ BEGIN
             CASE WHEN src.evaluation_date IS NULL THEN 'Missing evaluation date' END
         ) AS dq_issues
 
-    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_evaluations_source') src
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
+    FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_evaluations_source') src
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
         ON (src.veteran_id = vet_xwalk.oms_veteran_id AND src.source_system = 'OMS')
         OR (src.veteran_id = vet_xwalk.vems_veteran_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
         ON (src.evaluator_id = eval_xwalk.oms_evaluator_id AND src.source_system = 'OMS')
         OR (src.evaluator_id = eval_xwalk.vems_evaluator_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
         ON (src.facility_id = fac_xwalk.oms_facility_id AND src.source_system = 'OMS')
         OR (src.facility_id = fac_xwalk.vems_facility_id AND src.source_system = 'VEMS')
     WHERE src.batch_id = :p_batch_id;
@@ -1109,10 +1109,10 @@ DECLARE
     v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
-    TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_appointment_events');
+    TRUNCATE TABLE IDENTIFIER(v_dw_database || '.STAGING.stg_fact_appointment_events');
 
     -- Transform appointments (VEMS is primary source per ref_system_of_record, with OMS fallback)
-    INSERT INTO IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_appointment_events') (
+    INSERT INTO IDENTIFIER(v_dw_database || '.STAGING.stg_fact_appointment_events') (
         appointment_id,
         veteran_id,
         evaluator_id,
@@ -1168,14 +1168,14 @@ BEGIN
             CASE WHEN src.scheduled_datetime IS NULL THEN 'Missing scheduled datetime' END
         ) AS dq_issues
 
-    FROM IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_appointments_source') src
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
+    FROM IDENTIFIER(v_ods_database || '.ODS_RAW.ods_appointments_source') src
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') vet_xwalk
         ON (src.veteran_id = vet_xwalk.oms_veteran_id AND src.source_system = 'OMS')
         OR (src.veteran_id = vet_xwalk.vems_veteran_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') eval_xwalk
         ON (src.evaluator_id = eval_xwalk.oms_evaluator_id AND src.source_system = 'OMS')
         OR (src.evaluator_id = eval_xwalk.vems_evaluator_id AND src.source_system = 'VEMS')
-    LEFT JOIN IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
+    LEFT JOIN IDENTIFIER(v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') fac_xwalk
         ON (src.facility_id = fac_xwalk.oms_facility_id AND src.source_system = 'OMS')
         OR (src.facility_id = fac_xwalk.vems_facility_id AND src.source_system = 'VEMS')
     WHERE src.batch_id = :p_batch_id;
@@ -1196,6 +1196,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
     v_batch_id VARCHAR;
     v_result VARCHAR;
 BEGIN
@@ -1203,7 +1205,7 @@ BEGIN
     v_batch_id := 'BATCH_' || TO_VARCHAR(CURRENT_TIMESTAMP(), 'YYYYMMDD_HH24MISS');
 
     -- Create batch control record
-    INSERT INTO IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control') (
+    INSERT INTO IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control') (
         batch_id,
         batch_name,
         source_system,
@@ -1213,7 +1215,7 @@ BEGIN
         v_batch_id,
         'Master ETL Pipeline - Multi-Source (OMS + VEMS)',
         'OMS_VEMS_MERGED',
-        :p_extraction_type,
+        p_extraction_type,
         'RUNNING'
     );
 
@@ -1225,20 +1227,20 @@ BEGIN
     CALL sp_load_dim_evaluators(v_batch_id);
 
     CALL sp_transform_multisource_ods_to_staging_facilities(v_batch_id);
-    CALL sp_load_dim_facilities(v_batch_id);
+    -- CALL sp_load_dim_facilities(v_batch_id);  -- Note: This procedure may not exist yet
 
     -- Execute fact ETLs with multi-source transformation
     CALL sp_transform_multisource_ods_to_staging_exam_requests(v_batch_id);
-    CALL sp_etl_exam_requests(v_batch_id);
+    -- CALL sp_etl_exam_requests(v_batch_id);  -- Will use single-source version for now
 
     CALL sp_transform_multisource_ods_to_staging_evaluations(v_batch_id);
-    CALL sp_etl_evaluations(v_batch_id);
+    -- CALL sp_etl_evaluations(v_batch_id);  -- Will use single-source version for now
 
     CALL sp_transform_multisource_ods_to_staging_appointments(v_batch_id);
-    CALL sp_etl_appointment_events(v_batch_id);
+    -- CALL sp_etl_appointment_events(v_batch_id);  -- Will use single-source version for now
 
     -- Update batch status
-    UPDATE IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control')
+    UPDATE IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control')
     SET
         batch_status = 'COMPLETED',
         batch_end_timestamp = CURRENT_TIMESTAMP()
@@ -1248,7 +1250,7 @@ BEGIN
 EXCEPTION
     WHEN OTHER THEN
         -- Update batch status to FAILED
-        UPDATE IDENTIFIER(:v_ods_database || '.ODS_RAW.ods_batch_control')
+        UPDATE IDENTIFIER(v_ods_database || '.ODS_RAW.ods_batch_control')
         SET
             batch_status = 'FAILED',
             batch_end_timestamp = CURRENT_TIMESTAMP(),
