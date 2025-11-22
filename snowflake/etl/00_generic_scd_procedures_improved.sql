@@ -385,17 +385,7 @@ BENEFITS:
 - Comprehensive logging of all operations
 - No silent failures - all errors are caught and reported
 
-TESTING:
--- Test with valid inputs
-CALL sp_load_scd_type2_generic_secure('dim_veterans', 'BATCH_20251122_001');
-
--- Test with invalid table name (should fail validation)
-CALL sp_load_scd_type2_generic_secure('dim_veterans; DROP TABLE dim_veterans;--', 'BATCH_001');
--- Expected: 'ERROR: Invalid table_name format. Only alphanumeric characters and underscores allowed'
-
--- Test with invalid batch ID (should fail validation)
-CALL sp_load_scd_type2_generic_secure('dim_veterans', 'BATCH''; DROP TABLE dim_veterans;--');
--- Expected: 'ERROR: Invalid batch_id format. Only alphanumeric characters, hyphens, and underscores allowed'
+For testing examples, see: snowflake/testing/03_phase_improvements_tests.sql
 */
 
 SELECT 'Secure Generic SCD Procedure Created Successfully' AS status;
