@@ -304,7 +304,7 @@ WHERE qa_approval_to_delivery_hours IS NOT NULL;
 -- -----------------------------------------------------------------------------
 SELECT
     df.facility_name,
-    -- ds.specialty_name, -- dim_specialty table does not exist
+    ds.specialty_name,
     COUNT(*) AS request_count,
     AVG(fb.internal_process_hours) AS avg_internal_hours,
     AVG(fb.external_dependency_hours) AS avg_external_hours,
@@ -325,8 +325,8 @@ SELECT
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
--- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
-GROUP BY df.facility_name -- , ds.specialty_name
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialties') ds ON fb.specialty_dim_sk = ds.specialty_sk
+GROUP BY df.facility_name, ds.specialty_name
 HAVING COUNT(*) >= 10 -- Only facilities/specialties with sufficient volume
 ORDER BY internal_bottleneck_rate DESC, request_count DESC
 LIMIT 50;
@@ -341,7 +341,7 @@ LIMIT 50;
 -- -----------------------------------------------------------------------------
 SELECT
     de.examiner_name,
-    -- ds.specialty_name, -- dim_specialty table does not exist
+    ds.specialty_name,
     df.facility_name,
     COUNT(*) AS total_assignments,
 
@@ -367,10 +367,10 @@ SELECT
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_evaluators') de ON fb.examiner_dim_sk = de.examiner_sk
--- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialties') ds ON fb.specialty_dim_sk = ds.specialty_sk
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
 WHERE fb.examiner_dim_sk IS NOT NULL
-GROUP BY de.examiner_name, df.facility_name -- , ds.specialty_name
+GROUP BY de.examiner_name, df.facility_name, ds.specialty_name
 HAVING COUNT(*) >= 5 -- Minimum assignments for statistical relevance
 ORDER BY overload_rate_pct DESC, total_assignments DESC
 LIMIT 100;
@@ -414,12 +414,10 @@ ORDER BY capacity_constraint_rate DESC, total_requests DESC;
 -- -----------------------------------------------------------------------------
 -- Query 3.3: Specialty Availability Bottlenecks
 -- Purpose: Identify specialties with examiner shortages
--- NOTE: This query is currently non-functional as dim_specialty table does not exist
 -- -----------------------------------------------------------------------------
 SELECT
-    -- ds.specialty_name, -- dim_specialty table does not exist
-    -- ds.specialty_category, -- dim_specialty table does not exist
-    fb.specialty_dim_sk,
+    ds.specialty_name,
+    ds.specialty_category,
     COUNT(*) AS total_requests,
 
     -- Availability indicators
@@ -443,8 +441,8 @@ SELECT
     ROUND(SUM(CASE WHEN fb.sla_at_risk_flag = TRUE THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS sla_at_risk_rate
 
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
--- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
-GROUP BY fb.specialty_dim_sk -- ds.specialty_name, ds.specialty_category
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialties') ds ON fb.specialty_dim_sk = ds.specialty_sk
+GROUP BY ds.specialty_name, ds.specialty_category
 ORDER BY avg_queue_hours DESC, shortage_rate_pct DESC
 LIMIT 50;
 
@@ -641,7 +639,7 @@ SELECT
     fb.exam_request_sk,
     dv.veteran_id,
     det.exam_type_name,
-    -- ds.specialty_name, -- dim_specialty table does not exist
+    ds.specialty_name,
     df.facility_name,
     dd.full_date AS request_date,
 
@@ -675,7 +673,7 @@ SELECT
 FROM IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_processing_bottlenecks') fb
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_veterans') dv ON fb.veteran_dim_sk = dv.veteran_sk
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_request_types') det ON fb.exam_type_dim_sk = det.exam_type_sk
--- JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialty') ds ON fb.specialty_dim_sk = ds.specialty_sk -- Table does not exist
+JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialties') ds ON fb.specialty_dim_sk = ds.specialty_sk
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities') df ON fb.facility_dim_sk = df.facility_sk
 JOIN IDENTIFIER($dw_database || '.WAREHOUSE.dim_dates') dd ON fb.request_date_sk = dd.date_sk
 WHERE fb.sla_at_risk_flag = TRUE

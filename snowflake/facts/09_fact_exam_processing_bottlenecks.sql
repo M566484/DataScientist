@@ -246,7 +246,9 @@ CREATE OR REPLACE TABLE IDENTIFIER($dw_database || '.WAREHOUSE.fact_exam_process
     CONSTRAINT fk_bottleneck_facility FOREIGN KEY (facility_dim_sk)
         REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_facilities')(facility_sk),
     CONSTRAINT fk_bottleneck_exam_type FOREIGN KEY (exam_type_dim_sk)
-        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk)
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk),
+    CONSTRAINT fk_bottleneck_specialty FOREIGN KEY (specialty_dim_sk)
+        REFERENCES IDENTIFIER($dw_database || '.WAREHOUSE.dim_specialties')(specialty_sk)
 )
 COMMENT = 'Comprehensive exam processing bottleneck detection and analysis'
 ;
