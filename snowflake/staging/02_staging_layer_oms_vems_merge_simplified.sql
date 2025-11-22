@@ -34,8 +34,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Clear existing crosswalk for this batch
     DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran')
@@ -100,8 +100,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator')
     WHERE batch_id = :p_batch_id;
@@ -161,8 +161,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     DELETE FROM IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility')
     WHERE batch_id = :p_batch_id;
@@ -232,8 +232,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Clear staging for this batch
     DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_veterans')
@@ -446,8 +446,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_evaluators')
     WHERE batch_id = :p_batch_id;
@@ -554,8 +554,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_facilities')
     WHERE batch_id = :p_batch_id;
@@ -646,8 +646,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     DELETE FROM IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests')
     WHERE batch_id = :p_batch_id;

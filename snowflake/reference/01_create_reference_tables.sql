@@ -5,7 +5,7 @@
 -- Pattern: Lookup tables for code translation and data harmonization
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 
 -- =====================================================
@@ -329,7 +329,7 @@ SELECT
     table_name,
     row_count,
     comment
-FROM IDENTIFIER(get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
+FROM IDENTIFIER(fn_get_dw_database() || '.INFORMATION_SCHEMA.TABLES')
 WHERE table_schema = 'REFERENCE'
   AND table_type = 'BASE TABLE'
 ORDER BY table_name;

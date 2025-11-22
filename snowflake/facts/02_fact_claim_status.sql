@@ -6,7 +6,7 @@
 -- Type: Accumulating Snapshot Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -89,9 +89,9 @@ CREATE OR REPLACE TABLE fact_claim_status_changes (
     updated_timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
-    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk),
-    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk)
+    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
+    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk),
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk)
 )
 COMMENT = 'Accumulating snapshot fact table for claim status and processing milestones'
 CLUSTER BY (claim_sk, rating_decision_date_sk);

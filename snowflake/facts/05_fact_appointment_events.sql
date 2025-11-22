@@ -7,7 +7,7 @@
 -- Standards: VES Snowflake Naming Conventions v1.0
 -- Complements: fact_appointments_scheduled (accumulating snapshot)
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -100,13 +100,13 @@ CREATE OR REPLACE TABLE fact_appointment_events (
     created_by VARCHAR(100),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
-    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
-    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
-    FOREIGN KEY (appointment_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_appointments')(appointment_sk),
-    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk),
-    FOREIGN KEY (event_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
+    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
+    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
+    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
+    FOREIGN KEY (appointment_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_appointments')(appointment_sk),
+    FOREIGN KEY (claim_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_claims')(claim_sk),
+    FOREIGN KEY (event_date_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
 )
 COMMENT = 'Transaction fact table capturing complete lifecycle history of appointment events - one row per event'
 CLUSTER BY (event_date_sk, appointment_id);

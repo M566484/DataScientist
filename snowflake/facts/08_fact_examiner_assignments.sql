@@ -6,7 +6,7 @@
 -- Type: Transaction Fact Table
 -- Standards: VES Snowflake Naming Conventions v1.0
 
-SET dw_database = (SELECT get_dw_database());
+SET dw_database = (SELECT fn_get_dw_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -232,19 +232,19 @@ CREATE OR REPLACE TABLE fact_examiner_assignments (
     created_by VARCHAR(100),
 
     -- Foreign Key Constraints
-    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
-    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
-    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
-    FOREIGN KEY (medical_condition_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_medical_conditions')(medical_condition_sk),
-    FOREIGN KEY (exam_request_type_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk),
-    FOREIGN KEY (assigned_by_evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (transferred_to_evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (transferred_from_evaluator_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (veteran_previous_examiner_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
-    FOREIGN KEY (assignment_event_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk),
-    FOREIGN KEY (exam_request_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk),
-    FOREIGN KEY (scheduled_exam_date_sk) REFERENCES IDENTIFIER(get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
+    FOREIGN KEY (evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (veteran_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_veterans')(veteran_sk),
+    FOREIGN KEY (facility_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_facilities')(facility_sk),
+    FOREIGN KEY (evaluation_type_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluation_types')(evaluation_type_sk),
+    FOREIGN KEY (medical_condition_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_medical_conditions')(medical_condition_sk),
+    FOREIGN KEY (exam_request_type_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_exam_request_types')(exam_request_type_sk),
+    FOREIGN KEY (assigned_by_evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (transferred_to_evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (transferred_from_evaluator_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (veteran_previous_examiner_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_evaluators')(evaluator_sk),
+    FOREIGN KEY (assignment_event_date_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk),
+    FOREIGN KEY (exam_request_date_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk),
+    FOREIGN KEY (scheduled_exam_date_sk) REFERENCES IDENTIFIER(fn_get_dw_database() || '.WAREHOUSE.dim_dates')(date_sk)
 )
 COMMENT = 'Transaction fact table tracking examiner assignment events - supports workload optimization and capacity management'
 CLUSTER BY (assignment_event_date_sk, evaluator_sk, event_type);

@@ -6,8 +6,8 @@
 -- Standards: VES Snowflake Naming Conventions v1.0
 
 -- Set dynamic database context using environment functions
-SET dw_database = (SELECT get_dw_database());
-SET ods_database = (SELECT get_ods_database());
+SET dw_database = (SELECT fn_get_dw_database());
+SET ods_database = (SELECT fn_get_ods_database());
 USE DATABASE IDENTIFIER($dw_database);
 USE SCHEMA WAREHOUSE;
 
@@ -23,7 +23,7 @@ RETURNS VARCHAR
 AS
 $$
     SELECT standard_value
-    FROM IDENTIFIER(get_dw_database() || '.REFERENCE.ref_code_mapping_specialty')
+    FROM IDENTIFIER(fn_get_dw_database() || '.REFERENCE.ref_code_mapping_specialty')
     WHERE source_system = p_source_system
       AND source_code = p_source_code
       AND active_flag = TRUE
@@ -38,7 +38,7 @@ RETURNS VARCHAR
 AS
 $$
     SELECT standard_value
-    FROM IDENTIFIER(get_dw_database() || '.REFERENCE.ref_code_mapping_request_type')
+    FROM IDENTIFIER(fn_get_dw_database() || '.REFERENCE.ref_code_mapping_request_type')
     WHERE source_system = p_source_system
       AND source_code = p_source_code
       AND active_flag = TRUE
@@ -53,7 +53,7 @@ RETURNS VARCHAR
 AS
 $$
     SELECT standard_value
-    FROM IDENTIFIER(get_dw_database() || '.REFERENCE.ref_code_mapping_appointment_status')
+    FROM IDENTIFIER(fn_get_dw_database() || '.REFERENCE.ref_code_mapping_appointment_status')
     WHERE source_system = p_source_system
       AND source_code = p_source_code
       AND active_flag = TRUE
@@ -72,8 +72,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match veterans between OMS and VEMS based on SSN
     MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_veteran') tgt
@@ -152,8 +152,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match evaluators between OMS and VEMS based on NPI
     MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_evaluator') tgt
@@ -232,8 +232,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
     CALL sp_build_crosswalk_veterans(:p_batch_id);
@@ -495,8 +495,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
     CALL sp_build_crosswalk_evaluators(:p_batch_id);
@@ -674,8 +674,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Match facilities between OMS and VEMS based on facility ID and name
     MERGE INTO IDENTIFIER(:v_dw_database || '.REFERENCE.ref_entity_crosswalk_facility') tgt
@@ -756,8 +756,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- First, build crosswalk
     CALL sp_build_crosswalk_facilities(:p_batch_id);
@@ -917,8 +917,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
     TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_exam_requests');
@@ -1011,8 +1011,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
     TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_evaluations');
@@ -1105,8 +1105,8 @@ LANGUAGE SQL
 AS
 $$
 DECLARE
-    v_dw_database VARCHAR DEFAULT (SELECT get_dw_database());
-    v_ods_database VARCHAR DEFAULT (SELECT get_ods_database());
+    v_dw_database VARCHAR DEFAULT (SELECT fn_get_dw_database());
+    v_ods_database VARCHAR DEFAULT (SELECT fn_get_ods_database());
 BEGIN
     -- Truncate staging table
     TRUNCATE TABLE IDENTIFIER(:v_dw_database || '.STAGING.stg_fact_appointment_events');
